@@ -1,9 +1,9 @@
 package gr.iti.mklab.reveal.web;
 
-import eu.socialsensor.framework.client.dao.MediaItemDAO;
-import eu.socialsensor.framework.client.dao.impl.MediaItemDAOImpl;
 import eu.socialsensor.framework.common.domain.MediaItem;
+import eu.socialsensor.framework.common.domain.WebPage;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
+import gr.iti.mklab.reveal.solr.SolrManager;
 import gr.iti.mklab.reveal.visual.IndexingManager;
 import gr.iti.mklab.visual.utilities.Answer;
 import gr.iti.mklab.visual.utilities.Result;
@@ -12,9 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -29,6 +27,8 @@ public class RevealController {
 
     private static final Logger logger = LoggerFactory.getLogger(RevealController.class);
 
+    protected SolrManager solr;
+
     //protected MongoManager mgr = new MongoManager("127.0.0.1", "Linear", "MediaItems");
 
     public RevealController() {
@@ -36,6 +36,7 @@ public class RevealController {
 
         try {
             mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Prototype", "MediaItems");
+            solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
         } catch (Exception ex) {
             //ignore
         }
@@ -223,18 +224,26 @@ public class RevealController {
 
     @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<MediaItem> findSimilarImages(@RequestParam(value = "collection", required=false) String collectionName,
+    public List<SimilarityResult> findSimilarImages(@RequestParam(value = "collection", required=false) String collectionName,
                                     @RequestParam(value = "imageurl", required = true) String imageurl) {
         try {
             Answer answer = IndexingManager.getInstance().findSimilar(imageurl, collectionName, 10);
-            List<MediaItem> items = new ArrayList<MediaItem>();
+            List<SimilarityResult> items = new ArrayList<SimilarityResult>();
             for (Result r: answer.getResults()){
-               items.add(mediaDao.getMediaItem(r.getExternalId()));
+               items.add(new SimilarityResult(mediaDao.getMediaItem(r.getExternalId()), r.getDistance()));
             }
             return items;
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @RequestMapping(value = "/media/search/text", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<WebPage> findItemsByKeyword(@RequestParam(value = "query", required=true) String query,
+                                              @RequestParam(value = "count", required = false, defaultValue = "50") int num){
+        return solr.collectMediaItemsByQuery(query, num);
+
     }
 
     /*@RequestMapping(value = "/media/test", method = RequestMethod.GET, produces = "application/json")

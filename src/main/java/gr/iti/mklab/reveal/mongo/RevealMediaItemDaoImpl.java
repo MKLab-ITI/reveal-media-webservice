@@ -18,7 +18,7 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
 
     private MongoHandler mongoHandler;
 
-    public RevealMediaItemDaoImpl(String mongohost, String db, String collection) throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
+    public RevealMediaItemDaoImpl(String mongohost, String db, String collection) throws Exception {
         super(mongohost, db, collection);
 
         // Get private mongoHandler field with Reflection

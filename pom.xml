@@ -8,7 +8,7 @@
     <name>reveal</name>
 
     <properties>
-        <spring.version>3.2.0.RELEASE</spring.version>
+        <spring.version>4.1.0.RELEASE</spring.version>
     </properties>
 
     <dependencies>
@@ -65,25 +65,19 @@
         </dependency>
 
         <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-asl</artifactId>
-            <version>1.9.13</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.3.0</version>
         </dependency>
-
         <dependency>
-            <groupId>eu.socialsensor</groupId>
-            <artifactId>socialsensor-framework-client</artifactId>
-            <version>0.1</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.3.0</version>
         </dependency>
-        <!--<dependency>
-            <groupId>foo.bar</groupId>
-            <artifactId>SocialSensorClient</artifactId>
-            <version>5.6.7</version>
-        </dependency>-->
-        <!--<dependency>
-            <groupId>foo.bar</groupId>
-            <artifactId>MultimediaIndexing</artifactId>
-            <version>5.6.7</version>
+        <!-- <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-core</artifactId>
+            <version>4.10.0</version>
         </dependency>-->
         <dependency>
             <groupId>eu.socialsensor</groupId>
@@ -93,8 +87,18 @@
         <dependency>
             <groupId>eu.socialsensor</groupId>
             <artifactId>socialsensor-framework-common</artifactId>
-            <version>0.1</version>
+            <version>0.2-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>eu.socialsensor</groupId>
+            <artifactId>socialsensor-framework-client</artifactId>
+            <version>0.2-SNAPSHOT</version>
+        </dependency>
+        <!--<dependency>
+            <groupId>foo.bar</groupId>
+            <artifactId>SocialSensorClient</artifactId>
+            <version>5.6.7</version>
+        </dependency>-->
         <dependency>
             <groupId>com.sleepycat</groupId>
             <artifactId>je</artifactId>
@@ -130,6 +134,12 @@
             <artifactId>lingpipe</artifactId>
             <version>4.0.1</version>
         </dependency>
+       <!-- <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.5</version>
+            <scope>provided</scope>
+        </dependency>-->
 
     </dependencies>
 
