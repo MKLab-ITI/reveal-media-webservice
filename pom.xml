@@ -23,6 +23,16 @@
             <artifactId>spring-web</artifactId>
             <version>${spring.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.6.1</version>
+        </dependency>
 
         <!-- Servlet -->
         <dependency>
@@ -64,16 +74,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.3.0</version>
-        </dependency>
         <!-- <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
@@ -89,16 +89,16 @@
             <artifactId>socialsensor-framework-common</artifactId>
             <version>0.2-SNAPSHOT</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>eu.socialsensor</groupId>
             <artifactId>socialsensor-framework-client</artifactId>
-            <version>0.2-SNAPSHOT</version>
-        </dependency>
-        <!--<dependency>
+            <version>0.2.2-SNAPSHOT</version>
+        </dependency>-->
+        <dependency>
             <groupId>foo.bar</groupId>
             <artifactId>SocialSensorClient</artifactId>
             <version>5.6.7</version>
-        </dependency>-->
+        </dependency>
         <dependency>
             <groupId>com.sleepycat</groupId>
             <artifactId>je</artifactId>

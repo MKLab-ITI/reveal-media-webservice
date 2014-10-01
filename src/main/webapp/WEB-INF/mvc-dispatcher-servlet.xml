@@ -16,7 +16,7 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
     </bean>
 
     <bean id="jsonConverter"
-          class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+          class="org.springframework.http.converter.json.GsonHttpMessageConverter">
         <property name="supportedMediaTypes" value="application/json" />
     </bean>
 
@@ -24,7 +24,7 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
         <mvc:message-converters>
             <bean class="org.springframework.http.converter.ResourceHttpMessageConverter"/>
             <bean class="org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter"/>
-            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"/>
+            <bean class="org.springframework.http.converter.json.GsonHttpMessageConverter"/>
         </mvc:message-converters>
     </mvc:annotation-driven>
 

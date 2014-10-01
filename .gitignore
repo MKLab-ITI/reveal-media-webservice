@@ -9,6 +9,7 @@
 *.iws
 out/
 artifacts/
+smb:/
 
 # Mac
 .DS_Store

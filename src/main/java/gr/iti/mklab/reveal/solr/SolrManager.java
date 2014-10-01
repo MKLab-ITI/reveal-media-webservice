@@ -59,7 +59,7 @@ public class SolrManager {
     public List<WebPage> test() {
 
         String query = "text:this";
-        List<WebPage> mediaItems = collectMediaItemsByQuery("love", 100);
+        List<WebPage> mediaItems = collectMediaItemsByQuery("putin", 100);
         return mediaItems;
 
     }
@@ -114,6 +114,18 @@ public class SolrManager {
         }
         response.setResults(webPages);
         return response;
+    }
+
+    public WebPage toWebPage(SolrWebPage page) throws MalformedURLException {
+
+        WebPage webPage = new WebPage(page.getUrl(), page.getReference());
+
+        webPage.setTitle(page.getTitle());
+        webPage.setStreamId(page.getStreamId());
+        webPage.setDate(page.getDate());
+
+
+        return webPage;
     }
 
 }

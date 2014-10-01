@@ -18,6 +18,10 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
 
     private MongoHandler mongoHandler;
 
+    public RevealMediaItemDaoImpl() throws Exception{
+        super("localhost");
+    }
+
     public RevealMediaItemDaoImpl(String mongohost, String db, String collection) throws Exception {
         super(mongohost, db, collection);
 

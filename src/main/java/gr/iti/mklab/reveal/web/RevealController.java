@@ -1,5 +1,8 @@
 package gr.iti.mklab.reveal.web;
 
+import eu.socialsensor.framework.client.dao.MediaClusterDAO;
+import eu.socialsensor.framework.client.dao.impl.MediaClusterDAOImpl;
+import eu.socialsensor.framework.common.domain.MediaCluster;
 import eu.socialsensor.framework.common.domain.MediaItem;
 import eu.socialsensor.framework.common.domain.WebPage;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
@@ -24,6 +27,7 @@ public class RevealController {
 
 
     protected RevealMediaItemDaoImpl mediaDao;
+    protected MediaClusterDAOImpl clusterDAO;
 
     private static final Logger logger = LoggerFactory.getLogger(RevealController.class);
 
@@ -36,6 +40,7 @@ public class RevealController {
 
         try {
             mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Prototype", "MediaItems");
+            clusterDAO = new MediaClusterDAOImpl(mongoHost, "Prototype", "MediaClusters");
             solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
         } catch (Exception ex) {
             //ignore
@@ -56,6 +61,20 @@ public class RevealController {
     public List<MediaItem> mediaItems(@RequestParam(value = "count", required = false, defaultValue = "10") int num) {
         List<MediaItem> list = mediaDao.getLastMediaItems(num);
         return list;
+    }
+
+    /**
+     * Returns by default the last 10 media items or the number specified by count
+     * <p/>
+     * Example: http://localhost:8090/reveal/mmapi/media?count=20
+     *
+     * @param clusterId
+     * @return
+     */
+    @RequestMapping(value = "/media/cluster/{id}", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public MediaCluster mediaClusters(@PathVariable(value = "id") String clusterId) {
+            return clusterDAO.getMediaCluster(clusterId);
     }
 
     /**
