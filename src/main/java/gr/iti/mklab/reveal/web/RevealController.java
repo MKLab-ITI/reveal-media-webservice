@@ -7,6 +7,8 @@ import eu.socialsensor.framework.common.domain.MediaItem;
 import eu.socialsensor.framework.common.domain.WebPage;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import gr.iti.mklab.reveal.solr.SolrManager;
+import gr.iti.mklab.reveal.util.EntityForTweet;
+import gr.iti.mklab.reveal.util.NamedEntityDAO;
 import gr.iti.mklab.reveal.visual.IndexingManager;
 import gr.iti.mklab.visual.utilities.Answer;
 import gr.iti.mklab.visual.utilities.Result;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
+import javax.swing.text.html.parser.Entity;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -39,8 +42,8 @@ public class RevealController {
         String mongoHost = "127.0.0.1";
 
         try {
-            mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Prototype", "MediaItems");
-            clusterDAO = new MediaClusterDAOImpl(mongoHost, "Prototype", "MediaClusters");
+            mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
+            clusterDAO = new MediaClusterDAOImpl(mongoHost, "Showcase", "MediaClusters");
             solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
         } catch (Exception ex) {
             //ignore
@@ -63,6 +66,30 @@ public class RevealController {
         return list;
     }
 
+
+    /**
+     * Returns by default the last 10 media items or the number specified by count
+     * <p/>
+     * Example: http://localhost:8090/reveal/mmapi/media?count=20
+     *
+     * @param num
+     * @return
+     */
+    @RequestMapping(value = "/mediaWithEntities", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<EntityResult> mediaItemsWithEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int num) throws Exception {
+        List<MediaItem> list = mediaDao.getLastMediaItems(15);
+        List<EntityResult> result = new ArrayList<EntityResult>(list.size());
+        NamedEntityDAO dao = new NamedEntityDAO("160.40.51.20", "Showcase", "NamedEntities");
+        for (MediaItem item : list) {
+            EntityForTweet eft = dao.getItemForTweetId(item.getId());
+            if (eft != null) {
+                result.add(new EntityResult(item, eft.namedEntities));
+            }
+        }
+        return result;
+    }
+
     /**
      * Returns by default the last 10 media items or the number specified by count
      * <p/>
@@ -74,7 +101,7 @@ public class RevealController {
     @RequestMapping(value = "/media/cluster/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public MediaCluster mediaClusters(@PathVariable(value = "id") String clusterId) {
-            return clusterDAO.getMediaCluster(clusterId);
+        return clusterDAO.getMediaCluster(clusterId);
     }
 
     /**
@@ -243,13 +270,13 @@ public class RevealController {
 
     @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<SimilarityResult> findSimilarImages(@RequestParam(value = "collection", required=false) String collectionName,
-                                    @RequestParam(value = "imageurl", required = true) String imageurl) {
+    public List<SimilarityResult> findSimilarImages(@RequestParam(value = "collection", required = false) String collectionName,
+                                                    @RequestParam(value = "imageurl", required = true) String imageurl) {
         try {
             Answer answer = IndexingManager.getInstance().findSimilar(imageurl, collectionName, 10);
             List<SimilarityResult> items = new ArrayList<SimilarityResult>();
-            for (Result r: answer.getResults()){
-               items.add(new SimilarityResult(mediaDao.getMediaItem(r.getExternalId()), r.getDistance()));
+            for (Result r : answer.getResults()) {
+                items.add(new SimilarityResult(mediaDao.getMediaItem(r.getExternalId()), r.getDistance()));
             }
             return items;
         } catch (Exception e) {
@@ -259,8 +286,8 @@ public class RevealController {
 
     @RequestMapping(value = "/media/search/text", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<WebPage> findItemsByKeyword(@RequestParam(value = "query", required=true) String query,
-                                              @RequestParam(value = "count", required = false, defaultValue = "50") int num){
+    public List<WebPage> findItemsByKeyword(@RequestParam(value = "query", required = true) String query,
+                                            @RequestParam(value = "count", required = false, defaultValue = "50") int num) {
         return solr.collectMediaItemsByQuery(query, num);
 
     }

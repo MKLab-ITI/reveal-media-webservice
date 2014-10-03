@@ -37,6 +37,7 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
 
         //getting value of private field using reflection
         mongoHandler = (MongoHandler) privateField.get(this);
+        mongoHandler.sortBy("id", MongoHandler.ASC);
     }
 
     public List<MediaItem> search(long publicationDate, long width, long height, boolean indexed) {
