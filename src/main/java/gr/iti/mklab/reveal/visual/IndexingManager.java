@@ -13,6 +13,7 @@ import gr.iti.mklab.visual.extraction.SURFExtractor;
 import gr.iti.mklab.visual.utilities.Answer;
 import gr.iti.mklab.visual.vectorization.ImageVectorization;
 import gr.iti.mklab.visual.vectorization.ImageVectorizationResult;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 
 import javax.imageio.ImageIO;
@@ -82,6 +83,9 @@ public class IndexingManager {
         File jeLck = new File(ivfpqIndexFolder, "je.lck");
         if (jeLck.exists()) {
             jeLck.delete();
+        }
+        else{
+            jeLck.getParentFile().mkdirs();
         }
 
         int maximumNumVectors = 100000;
@@ -166,7 +170,7 @@ public class IndexingManager {
             for (String collectionName : indices.keySet()) {
                 AbstractSearchStructure index = indices.get(collectionName);
                 int ivfpqIndexCount = index.getLoadCounter();
-                response = collection + ivfpqIndexCount;
+                response += collectionName + ivfpqIndexCount;
             }
             System.out.println(response);
         }

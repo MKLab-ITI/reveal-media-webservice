@@ -56,13 +56,15 @@ public class RevealController {
      * <p/>
      * Example: http://localhost:8090/reveal/mmapi/media?count=20
      *
-     * @param num
+     * @param count
+     * @param offset
      * @return
      */
     @RequestMapping(value = "/media", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<MediaItem> mediaItems(@RequestParam(value = "count", required = false, defaultValue = "10") int num) {
-        List<MediaItem> list = mediaDao.getLastMediaItems(num);
+    public List<MediaItem> mediaItems(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                      @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
+        List<MediaItem> list = mediaDao.getMediaItems(offset, count);
         return list;
     }
 
@@ -78,7 +80,7 @@ public class RevealController {
     @RequestMapping(value = "/mediaWithEntities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<EntityResult> mediaItemsWithEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int num) throws Exception {
-        List<MediaItem> list = mediaDao.getLastMediaItems(15);
+        List<MediaItem> list = mediaDao.getLastMediaItems(num);
         List<EntityResult> result = new ArrayList<EntityResult>(list.size());
         NamedEntityDAO dao = new NamedEntityDAO("160.40.51.20", "Showcase", "NamedEntities");
         for (MediaItem item : list) {
@@ -284,7 +286,7 @@ public class RevealController {
         }
     }
 
-    @RequestMapping(value = "/media/search/text", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/media/webpages/search", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<WebPage> findItemsByKeyword(@RequestParam(value = "query", required = true) String query,
                                             @RequestParam(value = "count", required = false, defaultValue = "50") int num) {
