@@ -1,13 +1,12 @@
 package gr.iti.mklab.reveal.web;
 
-import eu.socialsensor.framework.client.dao.MediaClusterDAO;
-import eu.socialsensor.framework.client.dao.impl.MediaClusterDAOImpl;
-import eu.socialsensor.framework.common.domain.MediaCluster;
-import eu.socialsensor.framework.common.domain.MediaItem;
 import eu.socialsensor.framework.common.domain.WebPage;
+import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import gr.iti.mklab.reveal.solr.SolrManager;
 import gr.iti.mklab.reveal.util.EntityForTweet;
+import gr.iti.mklab.reveal.util.MediaCluster;
+import gr.iti.mklab.reveal.util.MediaItem;
 import gr.iti.mklab.reveal.util.NamedEntityDAO;
 import gr.iti.mklab.reveal.visual.IndexingManager;
 import gr.iti.mklab.visual.utilities.Answer;
@@ -30,7 +29,7 @@ public class RevealController {
 
 
     protected RevealMediaItemDaoImpl mediaDao;
-    protected MediaClusterDAOImpl clusterDAO;
+    protected RevealMediaClusterDaoImpl clusterDAO;
 
     private static final Logger logger = LoggerFactory.getLogger(RevealController.class);
 
@@ -43,7 +42,7 @@ public class RevealController {
 
         try {
             mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
-            clusterDAO = new MediaClusterDAOImpl(mongoHost, "Showcase", "MediaClusters");
+            clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClusters");
             solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
         } catch (Exception ex) {
             //ignore
@@ -80,7 +79,7 @@ public class RevealController {
     @RequestMapping(value = "/mediaWithEntities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<EntityResult> mediaItemsWithEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int num) throws Exception {
-        List<MediaItem> list = mediaDao.getLastMediaItems(num);
+        List<MediaItem> list = mediaDao.getMediaItems(num, 0);
         List<EntityResult> result = new ArrayList<EntityResult>(list.size());
         NamedEntityDAO dao = new NamedEntityDAO("160.40.51.20", "Showcase", "NamedEntities");
         for (MediaItem item : list) {
@@ -97,13 +96,36 @@ public class RevealController {
      * <p/>
      * Example: http://localhost:8090/reveal/mmapi/media?count=20
      *
+     * @return
+     */
+    @RequestMapping(value = "/media/clusters", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<MediaCluster> mediaClusters(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
+        List<MediaCluster> clusters = clusterDAO.getSortedClusters(offset, count);
+        for (MediaCluster c:clusters){
+            c.item = mediaDao.getItem(c.getMembers().iterator().next());
+        }
+        return clusters;
+    }
+
+    /**
+     * Returns by default the last 10 media items or the number specified by count
+     * <p/>
+     * Example: http://localhost:8090/reveal/mmapi/media?count=20
+     *
      * @param clusterId
      * @return
      */
     @RequestMapping(value = "/media/cluster/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public MediaCluster mediaClusters(@PathVariable(value = "id") String clusterId) {
-        return clusterDAO.getMediaCluster(clusterId);
+    public List<MediaItem> mediaCluster(@PathVariable(value = "id") String clusterId) {
+        MediaCluster cluster = clusterDAO.getCluster(clusterId);
+        List<MediaItem> items = new ArrayList<MediaItem>(cluster.getCount());
+        for(String id:cluster.getMembers()){
+            items.add( mediaDao.getItem(id));
+        }
+        return items;
     }
 
     /**
@@ -114,12 +136,12 @@ public class RevealController {
      * @param mediaItemId
      * @return
      */
-    @RequestMapping(value = "/media/image/{id}", method = RequestMethod.GET, produces = "application/json")
+    /*@RequestMapping(value = "/media/image/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public MediaItem mediaItemById(@PathVariable("id") String mediaItemId) {
         MediaItem mi = mediaDao.getMediaItem(mediaItemId);
         return mi;
-    }
+    }*/
 
     /**
      * Searches for images with publicationTime, width and height GREATER than the provided values
@@ -128,37 +150,27 @@ public class RevealController {
      * @param date
      * @param w
      * @param h
-     * @param indexed
      * @return
      */
     @RequestMapping(value = "/media/image/search", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<MediaItem> mediaItemsSearch(
-            @RequestParam(value = "date", required = false) Long date,
-            @RequestParam(value = "w", required = false) Long w,
-            @RequestParam(value = "h", required = false) Long h,
-            @RequestParam(value = "indexed", required = false) Boolean indexed) {
+            @RequestParam(value = "date", required = false, defaultValue = "-1") long date,
+            @RequestParam(value = "w", required = false, defaultValue = "0") int w,
+            @RequestParam(value = "h", required = false,defaultValue = "0") int h,
+            @RequestParam(value = "query", required = false) String text,
+            @RequestParam(value = "uid", required = false) String uid,
+            @RequestParam(value = "count", required = false, defaultValue = "10") int count,
+            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
 
-        if (date == null) {
-            date = new Date(0).getTime();
-        }
-        if (w == null) {
-            w = Long.valueOf(0);
-        }
-        if (h == null) {
-            h = Long.valueOf(0);
-        }
-        if (indexed == null) {
-            indexed = false;
-        }
-        List<MediaItem> list = mediaDao.search(date, w, h, indexed);
+        List<MediaItem> list = mediaDao.search(uid,text, w,  h, date, count, offset);
         return list;
     }
 
     /**
      * Adds a collection with the specified name
      * <p/>
-     * Example: http://localhost:8090/reveal/mmapi/collections/add?name=revealsample
+     * Example: http://localhost:8090/reveal/mmapi/collections/add?name=re, defaultValue = "-1"vealsample
      *
      * @param name
      * @return
@@ -273,11 +285,15 @@ public class RevealController {
     @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<SimilarityResult> findSimilarImages(@RequestParam(value = "collection", required = false) String collectionName,
-                                                    @RequestParam(value = "imageurl", required = true) String imageurl) {
+                                                    @RequestParam(value = "imageurl", required = true) String imageurl,
+                                                    @RequestParam(value = "offset", required = true, defaultValue="0") int offset,
+                                                    @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
         try {
-            Answer answer = IndexingManager.getInstance().findSimilar(imageurl, collectionName, 10);
+            int total = offset+count;
+            Answer answer = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total);
             List<SimilarityResult> items = new ArrayList<SimilarityResult>();
-            for (Result r : answer.getResults()) {
+            for (int i=offset; i<total; i++) {
+                Result r = answer.getResults()[i];
                 items.add(new SimilarityResult(mediaDao.getMediaItem(r.getExternalId()), r.getDistance()));
             }
             return items;
