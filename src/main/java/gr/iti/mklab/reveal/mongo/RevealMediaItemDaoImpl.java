@@ -57,12 +57,20 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
 
     }
 
-    public List<MediaItem> search(String uid, String text, int width, int height, long publicationDate, int limit, int offset) {
+    public List<MediaItem> search(String username, String text, int width, int height, long publicationDate, int limit, int offset) {
         BasicDBObject q = new BasicDBObject();
         if (!StringUtils.isEmpty(text))
             q.put("description", java.util.regex.Pattern.compile(text, Pattern.CASE_INSENSITIVE));
-        if (!StringUtils.isEmpty(uid))
-            q.put("uid", uid);
+        if (!StringUtils.isEmpty(username)){
+            DBObject o = new BasicDBObject();
+            o.put("userid",username);
+            List<StreamUser> users = userDAO.getStreamUsers(o);
+            if(users!=null && users.size()>0){
+                q.put("uid",users.get(0).getId());
+            }else{
+                return new ArrayList<MediaItem>();
+            }
+        }
         if (width > 0)
             q.put("width", new BasicDBObject("$gt", width));
         if (height > 0)
@@ -109,8 +117,9 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
     public static void main(String[] args) {
         try {
             RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "Showcase", "MediaItems");
-            //List<MediaItem> items = mediaDao.search("putin", 600, 400, -1, 10, 5);
-            List<MediaItem> items = mediaDao.getMediaItems(10,50);
+
+            List<MediaItem> items = mediaDao.search("mrsShanegray",null, 0, 0, -1, 10, 0);
+            //List<MediaItem> items = mediaDao.getMediaItems(10,50);
             for (MediaItem item : items) {
                 System.out.println(item.toJSONString());
             }

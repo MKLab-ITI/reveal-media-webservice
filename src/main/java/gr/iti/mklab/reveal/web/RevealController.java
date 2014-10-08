@@ -119,11 +119,21 @@ public class RevealController {
      */
     @RequestMapping(value = "/media/cluster/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<MediaItem> mediaCluster(@PathVariable(value = "id") String clusterId) {
+    public List<MediaItem> mediaCluster(@PathVariable(value = "id") String clusterId,
+                                        @RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                        @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
+
         MediaCluster cluster = clusterDAO.getCluster(clusterId);
-        List<MediaItem> items = new ArrayList<MediaItem>(cluster.getCount());
-        for(String id:cluster.getMembers()){
-            items.add( mediaDao.getItem(id));
+        int numMembers = cluster.getCount();
+        if(offset>numMembers)
+            offset = 0;
+        if (offset+count>numMembers)
+            count = numMembers - offset;
+        int total = offset+count;
+        String[] members = cluster.getMembers().toArray(new String[cluster.getCount()]);
+        List<MediaItem> items = new ArrayList<>(count);
+        for(int i=offset; i<total; i++){
+            items.add( mediaDao.getItem(members[i]));
         }
         return items;
     }
@@ -159,11 +169,11 @@ public class RevealController {
             @RequestParam(value = "w", required = false, defaultValue = "0") int w,
             @RequestParam(value = "h", required = false,defaultValue = "0") int h,
             @RequestParam(value = "query", required = false) String text,
-            @RequestParam(value = "uid", required = false) String uid,
+            @RequestParam(value = "user", required = false) String username,
             @RequestParam(value = "count", required = false, defaultValue = "10") int count,
             @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
 
-        List<MediaItem> list = mediaDao.search(uid,text, w,  h, date, count, offset);
+        List<MediaItem> list = mediaDao.search(username,text, w,  h, date, count, offset);
         return list;
     }
 
