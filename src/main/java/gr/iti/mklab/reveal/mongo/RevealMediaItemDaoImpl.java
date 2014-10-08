@@ -57,10 +57,12 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
 
     }
 
-    public List<MediaItem> search(String username, String text, int width, int height, long publicationDate, int limit, int offset) {
+    public List<MediaItem> search(String username, String text, int width, int height, long publicationDate, int limit, int offset, String type) {
         BasicDBObject q = new BasicDBObject();
         if (!StringUtils.isEmpty(text))
             q.put("description", java.util.regex.Pattern.compile(text, Pattern.CASE_INSENSITIVE));
+        if (!StringUtils.isEmpty(type))
+            q.put("type", type);
         if (!StringUtils.isEmpty(username)){
             DBObject o = new BasicDBObject();
             o.put("userid",username);
@@ -80,8 +82,11 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
         return get(q, offset, limit);
     }
 
-    public List<MediaItem> getMediaItems(int offset, int limit) {
-        return get(new BasicDBObject(), offset, limit);
+    public List<MediaItem> getMediaItems(int offset, int limit, String type) {
+        BasicDBObject q = new BasicDBObject();
+        if (!StringUtils.isEmpty(type))
+            q.put("type", type);
+        return get(q, offset, limit);
     }
 
     public MediaItem getItem(String id){
@@ -118,7 +123,7 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
         try {
             RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "Showcase", "MediaItems");
 
-            List<MediaItem> items = mediaDao.search("mrsShanegray",null, 0, 0, -1, 10, 0);
+            List<MediaItem> items = mediaDao.search("mrsShanegray",null, 0, 0, -1, 10, 0,"video");
             //List<MediaItem> items = mediaDao.getMediaItems(10,50);
             for (MediaItem item : items) {
                 System.out.println(item.toJSONString());

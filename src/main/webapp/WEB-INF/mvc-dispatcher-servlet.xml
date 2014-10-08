@@ -20,6 +20,8 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
         <property name="supportedMediaTypes" value="application/json" />
     </bean>
 
+    <!--<bean class="com.mangofactory.swagger.configuration.SpringSwaggerConfig" />-->
+
     <mvc:annotation-driven ignoreDefaultModelOnRedirect="true" >
         <mvc:message-converters>
             <bean class="org.springframework.http.converter.ResourceHttpMessageConverter"/>

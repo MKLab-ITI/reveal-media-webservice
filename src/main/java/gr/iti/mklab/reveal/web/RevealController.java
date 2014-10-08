@@ -17,9 +17,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.text.html.parser.Entity;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -62,8 +60,9 @@ public class RevealController {
     @RequestMapping(value = "/media", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<MediaItem> mediaItems(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                      @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
-        List<MediaItem> list = mediaDao.getMediaItems(offset, count);
+                                      @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                      @RequestParam(value = "type", required = false) String type) {
+        List<MediaItem> list = mediaDao.getMediaItems(offset, count,type);
         return list;
     }
 
@@ -79,7 +78,7 @@ public class RevealController {
     @RequestMapping(value = "/mediaWithEntities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<EntityResult> mediaItemsWithEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int num) throws Exception {
-        List<MediaItem> list = mediaDao.getMediaItems(num, 0);
+        List<MediaItem> list = mediaDao.getMediaItems(num, 0,null);
         List<EntityResult> result = new ArrayList<EntityResult>(list.size());
         NamedEntityDAO dao = new NamedEntityDAO("160.40.51.20", "Showcase", "NamedEntities");
         for (MediaItem item : list) {
@@ -126,7 +125,7 @@ public class RevealController {
         MediaCluster cluster = clusterDAO.getCluster(clusterId);
         int numMembers = cluster.getCount();
         if(offset>numMembers)
-            offset = 0;
+            return new ArrayList<>();
         if (offset+count>numMembers)
             count = numMembers - offset;
         int total = offset+count;
@@ -170,10 +169,11 @@ public class RevealController {
             @RequestParam(value = "h", required = false,defaultValue = "0") int h,
             @RequestParam(value = "query", required = false) String text,
             @RequestParam(value = "user", required = false) String username,
+            @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "count", required = false, defaultValue = "10") int count,
             @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
 
-        List<MediaItem> list = mediaDao.search(username,text, w,  h, date, count, offset);
+        List<MediaItem> list = mediaDao.search(username,text, w,  h, date, count, offset,type);
         return list;
     }
 
