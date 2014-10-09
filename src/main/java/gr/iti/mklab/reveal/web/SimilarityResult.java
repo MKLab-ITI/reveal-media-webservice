@@ -1,6 +1,8 @@
 package gr.iti.mklab.reveal.web;
 
-import eu.socialsensor.framework.common.domain.MediaItem;
+
+
+import gr.iti.mklab.reveal.util.MediaItem;
 
 import java.io.Serializable;
 import java.net.MalformedURLException;
@@ -31,6 +33,10 @@ public class SimilarityResult implements Serializable {
                 .create();
         return gson.toJson(this);
     }*/
+
+    public MediaItem getItem(){
+        return item;
+    }
 
     @Override
     public String toString() {

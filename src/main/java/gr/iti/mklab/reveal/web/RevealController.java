@@ -18,6 +18,8 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -62,7 +64,7 @@ public class RevealController {
     public List<MediaItem> mediaItems(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
                                       @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                       @RequestParam(value = "type", required = false) String type) {
-        List<MediaItem> list = mediaDao.getMediaItems(offset, count,type);
+        List<MediaItem> list = mediaDao.getMediaItems(offset, count, type);
         return list;
     }
 
@@ -78,7 +80,7 @@ public class RevealController {
     @RequestMapping(value = "/mediaWithEntities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<EntityResult> mediaItemsWithEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int num) throws Exception {
-        List<MediaItem> list = mediaDao.getMediaItems(num, 0,null);
+        List<MediaItem> list = mediaDao.getMediaItems(num, 0, null);
         List<EntityResult> result = new ArrayList<EntityResult>(list.size());
         NamedEntityDAO dao = new NamedEntityDAO("160.40.51.20", "Showcase", "NamedEntities");
         for (MediaItem item : list) {
@@ -102,7 +104,7 @@ public class RevealController {
     public List<MediaCluster> mediaClusters(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
                                             @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
         List<MediaCluster> clusters = clusterDAO.getSortedClusters(offset, count);
-        for (MediaCluster c:clusters){
+        for (MediaCluster c : clusters) {
             c.item = mediaDao.getItem(c.getMembers().iterator().next());
         }
         return clusters;
@@ -124,15 +126,15 @@ public class RevealController {
 
         MediaCluster cluster = clusterDAO.getCluster(clusterId);
         int numMembers = cluster.getCount();
-        if(offset>numMembers)
+        if (offset > numMembers)
             return new ArrayList<>();
-        if (offset+count>numMembers)
+        if (offset + count > numMembers)
             count = numMembers - offset;
-        int total = offset+count;
+        int total = offset + count;
         String[] members = cluster.getMembers().toArray(new String[cluster.getCount()]);
         List<MediaItem> items = new ArrayList<>(count);
-        for(int i=offset; i<total; i++){
-            items.add( mediaDao.getItem(members[i]));
+        for (int i = offset; i < total; i++) {
+            items.add(mediaDao.getItem(members[i]));
         }
         return items;
     }
@@ -166,14 +168,14 @@ public class RevealController {
     public List<MediaItem> mediaItemsSearch(
             @RequestParam(value = "date", required = false, defaultValue = "-1") long date,
             @RequestParam(value = "w", required = false, defaultValue = "0") int w,
-            @RequestParam(value = "h", required = false,defaultValue = "0") int h,
+            @RequestParam(value = "h", required = false, defaultValue = "0") int h,
             @RequestParam(value = "query", required = false) String text,
             @RequestParam(value = "user", required = false) String username,
             @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "count", required = false, defaultValue = "10") int count,
             @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
 
-        List<MediaItem> list = mediaDao.search(username,text, w,  h, date, count, offset,type);
+        List<MediaItem> list = mediaDao.search(username, text, w, h, date, count, offset, type);
         return list;
     }
 
@@ -291,22 +293,43 @@ public class RevealController {
             return new IndexingResult(false, msg);
     }
 
+    private List<SimilarityResult> finallist;
+    private String lastImageUrl;
+    private double lastThreshold;
 
     @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<SimilarityResult> findSimilarImages(@RequestParam(value = "collection", required = false) String collectionName,
                                                     @RequestParam(value = "imageurl", required = true) String imageurl,
-                                                    @RequestParam(value = "offset", required = true, defaultValue="0") int offset,
-                                                    @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
+                                                    @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                    @RequestParam(value = "count", required = false, defaultValue = "50") int count,
+                                                    @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
-            int total = offset+count;
-            Answer answer = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total);
-            List<SimilarityResult> items = new ArrayList<SimilarityResult>();
-            for (int i=offset; i<total; i++) {
-                Result r = answer.getResults()[i];
-                items.add(new SimilarityResult(mediaDao.getMediaItem(r.getExternalId()), r.getDistance()));
+
+            if (!imageurl.equals(lastImageUrl) || finallist == null || (finallist != null && offset + count > finallist.size()) || lastThreshold != threshold) {
+                int total = offset + count;
+                if (total < 100)
+                    total = 100;
+                lastThreshold = threshold;
+                lastImageUrl = imageurl;
+                Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
+                finallist = new ArrayList<>(temp.length);
+                List<SimilarityResult> chronological = new ArrayList<>(temp.length);
+                for (Result r : temp) {
+                    if (r.getDistance() < threshold)
+                        finallist.add(new SimilarityResult(mediaDao.getItem(r.getExternalId()), r.getDistance()));
+                    else
+                        chronological.add(new SimilarityResult(mediaDao.getItem(r.getExternalId()), r.getDistance()));
+                }
+                Collections.sort(chronological, new Comparator<SimilarityResult>() {
+                    @Override
+                    public int compare(SimilarityResult result, SimilarityResult result2) {
+                        return Long.compare(result2.getItem().getPublicationTime(), result.getItem().getPublicationTime());
+                    }
+                });
+                finallist.addAll(chronological);
             }
-            return items;
+            return finallist.subList(offset, offset + count);
         } catch (Exception e) {
             return null;
         }
@@ -376,6 +399,19 @@ public class RevealController {
 
         public String getContent() {
             return content;
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        int offset = 5;
+        int count = 5;
+        int total = offset + count;
+        Answer answer = IndexingManager.getInstance().findSimilar("https://pbs.twimg.com/media/BhZpUMmIIAAQOsr.png", "showcase", total);
+        List<SimilarityResult> items = new ArrayList<SimilarityResult>();
+        for (int i = offset; i < total; i++) {
+            Result r = answer.getResults()[i];
+            System.out.println(i);
+            //items.add(new SimilarityResult(mediaDao.getItem(r.getExternalId()), r.getDistance()));
         }
     }
 }

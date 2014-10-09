@@ -24,6 +24,7 @@ public class TextImporter {
     }
 
     private void importUsersFromFiles() throws Exception {
+        int count=0;
         RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "Showcase", "MediaItems");
         StreamUserDAOImpl userDAO = new StreamUserDAOImpl("160.40.51.20", "Showcase", "StreamUsers");
         BufferedReader reader;
@@ -35,46 +36,56 @@ public class TextImporter {
         }
 
         for (int i = 30; i < jsonFiles.size(); i++) {
+
             System.out.println(jsonFiles.get(i));
             reader = new BufferedReader(new InputStreamReader(
                     new FileInputStream(jsonFiles.get(i)), "UTF-8"));
             String line = null;
             while ((line = reader.readLine()) != null) {
+                count++;
+                if(count==930){
+                    System.out.println(line);
+                }
                 try {
                     JsonObject tweet = parser.parse(line).getAsJsonObject();
                     String tweetId = tweet.get("id").getAsString();
                     JsonObject user = tweet.get("user").getAsJsonObject();
+                    if(user==null){
+                        System.out.println("USER IS NULL");
+                    }
                     if (user != null) {
                         String userId = user.get("id").getAsString();
                         StreamUser su = new StreamUser(tweetId, StreamUser.Operation.UPDATE);
-                        if (user.has("description"))
+                        if (!user.get("description").isJsonNull())
                             su.setDescription(user.get("description").getAsString());
                         su.setId(userId);
-                        if (user.has("url"))
+                        if (!user.get("url").isJsonNull())
                             su.setPageUrl(user.get("url").getAsString());
-                        if (user.has("name"))
+                        if (!user.get("name").isJsonNull())
                             su.setName(user.get("name").getAsString());
-                        if (user.has("profile_image_url"))
+                        if (!user.get("profile_image_url").isJsonNull())
                             su.setImageUrl(user.get("profile_image_url").getAsString());
                         if (user.has("followers_count"))
                             su.setFollowers(user.get("followers_count").getAsLong());
-                        if (user.has("name")){
+                        if (!user.get("screen_name").isJsonNull()){
                             String screenName = user.get("screen_name").getAsString();
                             su.setUserid(screenName);
                             su.setUrl("https://twitter.com/"+screenName);
                         }
 
                         MediaItem item = mediaDao.getMediaItem(tweetId);
+
                         if (item != null) {
-                            System.out.println(item);
+                            //System.out.println(item);
                             item.setUserId(userId);
-                            System.out.println(user);
+                            //System.out.println(user);
                             //mediaDao.updateMediaItem(item);
-                            userDAO.updateStreamUser(su);
+                            if (!userDAO.exists(su.getId()))
+                                userDAO.insertStreamUser(su);
                         }
                     }
                 } catch (Exception ex) {
-
+                    System.out.println(ex +"line "+line);
                 }
             }
             reader.close();
