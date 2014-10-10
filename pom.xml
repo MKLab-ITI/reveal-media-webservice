@@ -90,21 +90,21 @@
             <version>0.2-SNAPSHOT</version>
         </dependency>
         <!--<dependency>
-            <groupId>com.mangofactory</groupId>
-            <artifactId>swagger-springmvc</artifactId>
-            <version>0.8.8</version>
-        </dependency>
-        <dependency>
+           <groupId>com.mangofactory</groupId>
+           <artifactId>swagger-springmvc</artifactId>
+           <version>0.8.8</version>
+       </dependency>
+       <dependency>
             <groupId>org.ajar</groupId>
             <artifactId>swagger-spring-mvc-ui</artifactId>
             <version>0.1</version>
             <scope>compile</scope>
-        </dependency>-->
-        <!--<dependency>
-            <groupId>eu.socialsensor</groupId>
-            <artifactId>socialsensor-framework-client</artifactId>
-            <version>0.2.2-SNAPSHOT</version>
-        </dependency>-->
+        </dependency>
+       <dependency>
+           <groupId>eu.socialsensor</groupId>
+           <artifactId>socialsensor-framework-client</artifactId>
+           <version>0.2.2-SNAPSHOT</version>
+       </dependency>-->
         <dependency>
             <groupId>foo.bar</groupId>
             <artifactId>SocialSensorClient</artifactId>
@@ -145,12 +145,12 @@
             <artifactId>lingpipe</artifactId>
             <version>4.0.1</version>
         </dependency>
-       <!-- <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.5</version>
-            <scope>provided</scope>
-        </dependency>-->
+        <!-- <dependency>
+             <groupId>org.slf4j</groupId>
+             <artifactId>slf4j-api</artifactId>
+             <version>1.7.5</version>
+             <scope>provided</scope>
+         </dependency>-->
 
     </dependencies>
 

@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+
 @Controller
 @RequestMapping("/mmapi")
 public class RevealController {
@@ -147,12 +148,12 @@ public class RevealController {
      * @param mediaItemId
      * @return
      */
-    /*@RequestMapping(value = "/media/image/{id}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/media/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public MediaItem mediaItemById(@PathVariable("id") String mediaItemId) {
-        MediaItem mi = mediaDao.getMediaItem(mediaItemId);
+        MediaItem mi = mediaDao.getItem(mediaItemId);
         return mi;
-    }*/
+    }
 
     /**
      * Searches for images with publicationTime, width and height GREATER than the provided values
@@ -314,6 +315,47 @@ public class RevealController {
                 lastImageUrl = imageurl;
                 Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
                 finallist = new ArrayList<>(temp.length);
+                for (Result r : temp) {
+                    if (r.getDistance() <= threshold) {
+                        MediaItem found = mediaDao.getItem(r.getExternalId());
+                        if (found.getPublicationTime() > 0)
+                            finallist.add(new SimilarityResult(found, r.getDistance()));
+                    }
+                }
+                Collections.sort(finallist, new Comparator<SimilarityResult>() {
+                    @Override
+                    public int compare(SimilarityResult result, SimilarityResult result2) {
+                        return Long.compare(result.getItem().getPublicationTime(), result2.getItem().getPublicationTime());
+                    }
+                });
+            }
+            return finallist.subList(offset, offset + count);
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
+    /*private List<SimilarityResult> finallist;
+    private String lastImageUrl;
+    private double lastThreshold;
+
+    @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<SimilarityResult> findSimilarImages(@RequestParam(value = "collection", required = false) String collectionName,
+                                                    @RequestParam(value = "imageurl", required = true) String imageurl,
+                                                    @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                    @RequestParam(value = "count", required = false, defaultValue = "50") int count,
+                                                    @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
+        try {
+
+            if (!imageurl.equals(lastImageUrl) || finallist == null || (finallist != null && offset + count > finallist.size()) || lastThreshold != threshold) {
+                int total = offset + count;
+                if (total < 100)
+                    total = 100;
+                lastThreshold = threshold;
+                lastImageUrl = imageurl;
+                Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
+                finallist = new ArrayList<>(temp.length);
                 List<SimilarityResult> chronological = new ArrayList<>(temp.length);
                 for (Result r : temp) {
                     if (r.getDistance() < threshold)
@@ -333,7 +375,7 @@ public class RevealController {
         } catch (Exception e) {
             return null;
         }
-    }
+    }*/
 
     @RequestMapping(value = "/media/webpages/search", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody

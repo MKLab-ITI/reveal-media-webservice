@@ -92,8 +92,10 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
     public MediaItem getItem(String id){
         String json = mongoHandler.findOne("id", id);
         MediaItem item = gson.fromJson(json, MediaItem.class);
-        StreamUser user = userDAO.getStreamUser(item.getUserId());
-        item.setUser(user);
+        if(item!=null) {
+            StreamUser user = userDAO.getStreamUser(item.getUserId());
+            item.setUser(user);
+        }
         return item;
     }
 

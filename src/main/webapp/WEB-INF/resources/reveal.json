@@ -1,0 +1,98 @@
+{
+   "apiVersion":"1.0",
+   "swaggerVersion":"1.2",
+   "basePath":"/",
+   "resourcePath":"/mmapi",
+   "produces":[
+      "application/json"
+   ],
+   "consumes":[
+      "application/json"
+   ],
+   "authorizations":{
+      "oauth2":[
+         {
+            "scope":"global",
+            "description":"accessEverything"
+         }
+      ]
+   },
+   "apis":[
+      {
+         "path":"/media",
+         "description":"Gets media items by count, offset and type",
+         "operations":[
+            {
+               "method":"get",
+               "summary":"Gets media items by count, offset and type",
+               "notes":"Gets media items by count, offset and type",
+               "type":"Media",
+               "nickname":"getMediaItemsHttp",
+               "produces":[
+                  "application/json"
+               ],
+               "authorizations":{
+                  "oauth2":[
+                     {
+                        "scope":"global",
+                        "description":"accessEverything"
+                     }
+                  ]
+               },
+               "parameters":[
+                  {
+                     "name":"count",
+                     "description":"The number of items",
+                     "defaultValue":"10",
+                     "required":false,
+                     "type":"integer",
+                     "format":"int32",
+                     "paramType":"query",
+                     "allowMultiple":false
+                  },
+                  {
+                     "name":"offset",
+                     "description":"The offset",
+                     "defaultValue":"0",
+                     "required":false,
+                     "type":"integer",
+                     "format":"int32",
+                     "paramType":"query",
+                     "allowMultiple":false
+                  },
+                  {
+                     "name":"type",
+                     "description":"The type, can be image or video",
+                     "defaultValue":"",
+                     "required":false,
+                     "type":"String",
+                     "format":"String",
+                     "paramType":"query",
+                     "allowMultiple":false
+                  }
+               ],
+               "responseMessages":[
+                  {
+                     "code":404,
+                     "message":"Not Found"
+                  },
+                  {
+                     "code":403,
+                     "message":"Forbidden"
+                  },
+                  {
+                     "code":401,
+                     "message":"Unauthorized"
+                  },
+                  {
+                     "code":200,
+                     "message":"OK",
+                     "responseModel":"Business"
+                  }
+               ],
+               "deprecated":"false"
+            }
+         ]
+      }
+   ]
+}

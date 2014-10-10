@@ -20,8 +20,6 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
         <property name="supportedMediaTypes" value="application/json" />
     </bean>
 
-    <!--<bean class="com.mangofactory.swagger.configuration.SpringSwaggerConfig" />-->
-
     <mvc:annotation-driven ignoreDefaultModelOnRedirect="true" >
         <mvc:message-converters>
             <bean class="org.springframework.http.converter.ResourceHttpMessageConverter"/>
@@ -29,5 +27,8 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
             <bean class="org.springframework.http.converter.json.GsonHttpMessageConverter"/>
         </mvc:message-converters>
     </mvc:annotation-driven>
+
+
+    <mvc:resources mapping="/api-docs/**" location="/WEB-INF/resources/" />
 
 </beans>
