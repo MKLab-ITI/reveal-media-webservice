@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.visual;
 
 import com.google.common.base.Strings;
+import gr.iti.mklab.reveal.web.RevealException;
 import gr.iti.mklab.reveal.web.StatisticsResult;
 import gr.iti.mklab.visual.aggregation.AbstractFeatureAggregator;
 import gr.iti.mklab.visual.aggregation.VladAggregatorMultipleVocabularies;
@@ -156,7 +157,7 @@ public class IndexingManager {
     }
 
 
-    public StatisticsResult[] statistics(String collection) {
+    public StatisticsResult[] statistics(String collection) throws RevealException {
 
         StatisticsResult[] results;
 
@@ -167,8 +168,10 @@ public class IndexingManager {
             System.out.println("Load counter " + ivfpqIndexCount);
             results = new StatisticsResult[1];
             results[0] = new StatisticsResult(collection, ivfpqIndexCount);
+            return results;
         } else {
-            results = new StatisticsResult[indices.keySet().size()];
+            throw new RevealException("Collection not loaded", null);
+            /*results = new StatisticsResult[indices.keySet().size()];
             int count = 0;
             for (String collectionName : indices.keySet()) {
                 AbstractSearchStructure index = indices.get(collectionName);
@@ -177,8 +180,8 @@ public class IndexingManager {
                 results[count] = new StatisticsResult(collectionName, ivfpqIndexCount);
                 count++;
             }
-            //return new StatisticsResult(response, 5);
+            //return new StatisticsResult(response, 5);*/
         }
-        return results;
+
     }
 }

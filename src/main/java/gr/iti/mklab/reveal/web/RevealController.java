@@ -13,6 +13,8 @@ import gr.iti.mklab.visual.utilities.Answer;
 import gr.iti.mklab.visual.utilities.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
@@ -236,11 +238,14 @@ public class RevealController {
     @RequestMapping(value = "/media/{collection}/index", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public String indexImageFromUrl(@PathVariable("collection") String collectionName,
-                                    @RequestParam(value = "imageurl", required = true) String imageurl) {
+                                    @RequestParam(value = "imageurl", required = true) String imageurl) throws RevealException {
         try {
-            return String.valueOf(IndexingManager.getInstance().indexImage(imageurl, collectionName));
+             if(IndexingManager.getInstance().indexImage(imageurl, collectionName))
+                 return imageurl+" has been indexed";
+            else
+                 throw new RevealException("Error. Image "+imageurl+" has already been indexed",null);
         } catch (Exception e) {
-            return e.getMessage();
+            throw new RevealException(e.getMessage(), e);
         }
     }
 
@@ -254,12 +259,8 @@ public class RevealController {
      */
     @RequestMapping(value = "/collections/{collection}/statistics", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public StatisticsResult[] getStatistics(@PathVariable("collection") String collectionName) {
-        try {
-            return IndexingManager.getInstance().statistics(collectionName);
-        } catch (Exception e) {
-            return null;
-        }
+    public StatisticsResult[] getStatistics(@PathVariable("collection") String collectionName) throws RevealException {
+        return IndexingManager.getInstance().statistics(collectionName);
     }
 
 
@@ -383,6 +384,13 @@ public class RevealController {
                                             @RequestParam(value = "count", required = false, defaultValue = "50") int num) {
         return solr.collectMediaItemsByQuery(query, num);
 
+    }
+
+    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(RevealException.class)
+    @ResponseBody
+    public RevealException handleCustomException(RevealException ex) {
+        return ex;
     }
 
     /*@RequestMapping(value = "/media/test", method = RequestMethod.GET, produces = "application/json")
