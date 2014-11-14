@@ -254,11 +254,11 @@ public class RevealController {
      */
     @RequestMapping(value = "/collections/{collection}/statistics", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public String getStatistics(@PathVariable("collection") String collectionName) {
+    public StatisticsResult[] getStatistics(@PathVariable("collection") String collectionName) {
         try {
             return IndexingManager.getInstance().statistics(collectionName);
         } catch (Exception e) {
-            return e.getMessage();
+            return null;
         }
     }
 

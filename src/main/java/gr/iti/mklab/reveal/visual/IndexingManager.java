@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.visual;
 
 import com.google.common.base.Strings;
+import gr.iti.mklab.reveal.web.StatisticsResult;
 import gr.iti.mklab.visual.aggregation.AbstractFeatureAggregator;
 import gr.iti.mklab.visual.aggregation.VladAggregatorMultipleVocabularies;
 import gr.iti.mklab.visual.datastructures.AbstractSearchStructure;
@@ -85,7 +86,7 @@ public class IndexingManager {
             jeLck.delete();
         }
         else{
-            jeLck.getParentFile().mkdirs();
+            jeLck.getParentFile().getParentFile().mkdirs();
         }
 
         int maximumNumVectors = 100000;
@@ -155,25 +156,29 @@ public class IndexingManager {
     }
 
 
-    public String statistics(String collection) {
+    public StatisticsResult[] statistics(String collection) {
 
-        String response = null;
+        StatisticsResult[] results;
 
         if (collection != null && indices.containsKey(collection)) {
             System.out.println("Collection " + collection + " found");
             AbstractSearchStructure index = indices.get(collection);
             int ivfpqIndexCount = index.getLoadCounter();
             System.out.println("Load counter " + ivfpqIndexCount);
-            response = collection + ivfpqIndexCount;
-            System.out.println(response);
+            results = new StatisticsResult[1];
+            results[0] = new StatisticsResult(collection, ivfpqIndexCount);
         } else {
+            results = new StatisticsResult[indices.keySet().size()];
+            int count = 0;
             for (String collectionName : indices.keySet()) {
                 AbstractSearchStructure index = indices.get(collectionName);
                 int ivfpqIndexCount = index.getLoadCounter();
-                response += collectionName + ivfpqIndexCount;
+                //response += collectionName + ivfpqIndexCount;
+                results[count] = new StatisticsResult(collectionName, ivfpqIndexCount);
+                count++;
             }
-            System.out.println(response);
+            //return new StatisticsResult(response, 5);
         }
-        return response;
+        return results;
     }
 }
