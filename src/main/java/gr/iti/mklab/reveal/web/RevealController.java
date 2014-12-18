@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.web;
 
 import eu.socialsensor.framework.common.domain.WebPage;
+import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import gr.iti.mklab.reveal.solr.SolrManager;
@@ -38,20 +39,31 @@ public class RevealController {
 
     protected SolrManager solr;
 
+    protected CrawlQueueController crawlerCtrler;
+
     //protected MongoManager mgr = new MongoManager("127.0.0.1", "Linear", "MediaItems");
 
-    public RevealController() {
+    public RevealController() throws Exception {
         String mongoHost = "127.0.0.1";
+        mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
+        clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClusters");
+        crawlerCtrler = new CrawlQueueController();
+        //solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
 
-        try {
-            mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
-            clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClusters");
-            solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
-        } catch (Exception ex) {
-            //ignore
-        }
     }
 
+    @RequestMapping(value = "/crawler/add", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public void submitCrawlingJob(@RequestParam(value = "name", required = true) String name) {
+        String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
+        crawlerCtrler.submit(rootCrawlerDir + "crawl_" + name, name);
+    }
+
+    @RequestMapping(value = "/crawler/stop", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public void cancelCrawlingJob(@RequestParam(value = "name", required = true) String name) {
+        crawlerCtrler.cancel(9995);
+    }
 
     /**
      * Returns by default the last 10 media items or the number specified by count
@@ -240,10 +252,10 @@ public class RevealController {
     public String indexImageFromUrl(@PathVariable("collection") String collectionName,
                                     @RequestParam(value = "imageurl", required = true) String imageurl) throws RevealException {
         try {
-             if(IndexingManager.getInstance().indexImage(imageurl, collectionName))
-                 return imageurl+" has been indexed";
+            if (IndexingManager.getInstance().indexImage(imageurl, collectionName))
+                return imageurl + " has been indexed";
             else
-                 throw new RevealException("Error. Image "+imageurl+" has already been indexed",null);
+                throw new RevealException("Error. Image " + imageurl + " has already been indexed", null);
         } catch (Exception e) {
             throw new RevealException(e.getMessage(), e);
         }
@@ -453,7 +465,7 @@ public class RevealController {
     }
 
     public static void main(String[] args) throws Exception {
-        int offset = 5;
+        /*int offset = 5;
         int count = 5;
         int total = offset + count;
         Answer answer = IndexingManager.getInstance().findSimilar("https://pbs.twimg.com/media/BhZpUMmIIAAQOsr.png", "showcase", total);
@@ -462,6 +474,9 @@ public class RevealController {
             Result r = answer.getResults()[i];
             System.out.println(i);
             //items.add(new SimilarityResult(mediaDao.getItem(r.getExternalId()), r.getDistance()));
-        }
+        }*/
+        String[] command = {"/bin/bash", "crawl9995.sh"};
+        ProcessBuilder p = new ProcessBuilder(command);
+        Process pr = p.start();
     }
 }
