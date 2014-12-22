@@ -2,6 +2,7 @@ package gr.iti.mklab.reveal.web;
 
 import eu.socialsensor.framework.common.domain.WebPage;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
+import gr.iti.mklab.reveal.crawler.CrawlRequest;
 import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import gr.iti.mklab.reveal.solr.SolrManager;
@@ -52,17 +53,23 @@ public class RevealController {
 
     }
 
-    @RequestMapping(value = "/crawler/add", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/crawls/add", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public void submitCrawlingJob(@RequestParam(value = "name", required = true) String name) {
+    public CrawlRequest submitCrawlingJob(@RequestParam(value = "name", required = true) String name) {
         String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
-        crawlerCtrler.submit(rootCrawlerDir + "crawl_" + name, name);
+        return crawlerCtrler.submit(rootCrawlerDir + "crawl_" + name, name);
     }
 
-    @RequestMapping(value = "/crawler/stop", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public void cancelCrawlingJob(@RequestParam(value = "name", required = true) String name) {
-        crawlerCtrler.cancel(9995);
+    public CrawlRequest cancelCrawlingJob(@PathVariable(value = "id")String id) {
+        return crawlerCtrler.cancel(id);
+    }
+
+    @RequestMapping(value = "/crawls/{id}/status", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public CrawlRequest getCrawlingJobStatus(@PathVariable(value = "id")String id) {
+        return crawlerCtrler.getStatus(id);
     }
 
     /**

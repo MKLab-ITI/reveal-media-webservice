@@ -33,13 +33,13 @@ public class CrawlQueueController {
     /**
      * The number of AVAILABLE_PORTS defines the number of simultaneously running BUbiNG Agents
      */
-    private final static Integer[] AVAILABLE_PORTS = {9995};
+    private final static Integer[] AVAILABLE_PORTS = {9995, 9997, 9999};
 
     public CrawlQueueController() {
         // Sets up the Morphia Manager
         MorphiaManager.setup(DB_NAME);
         // Creates a DAO object to persist submitted crawl requests
-        dao = new BasicDAO<CrawlRequest, ObjectId>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB().getName());
+        dao = new BasicDAO<>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB().getName());
         // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();
@@ -56,10 +56,23 @@ public class CrawlQueueController {
      * @param crawlDir
      * @param collectionName
      */
-    public synchronized void submit(String crawlDir, String collectionName) {
+    public synchronized CrawlRequest submit(String crawlDir, String collectionName) {
         System.out.println("submit event");
-        enqueue(crawlDir, collectionName);
+        CrawlRequest r = enqueue(crawlDir, collectionName);
         tryLaunch();
+        return r;
+    }
+
+    public synchronized CrawlRequest cancel(String id) {
+        CrawlRequest req = getCrawlRequest(id).get(0);
+        req.requestState = CrawlRequest.STATE.STOPPING;
+        dao.save(req);
+        cancelForPort(req.portNumber);
+        return req;
+    }
+
+    public synchronized  CrawlRequest getStatus(String id){
+        return getCrawlRequest(id).get(0);
     }
 
     /**
@@ -67,7 +80,7 @@ public class CrawlQueueController {
      *
      * @param portNumber
      */
-    public void cancel(int portNumber) {
+    private void cancelForPort(int portNumber) {
         try {
             //JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
             JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:" + portNumber + "/jmxrmi");
@@ -85,7 +98,7 @@ public class CrawlQueueController {
         }
     }
 
-    private void enqueue(String crawlDir, String collectionName) {
+    private CrawlRequest enqueue(String crawlDir, String collectionName) {
         CrawlRequest r = new CrawlRequest();
         r.collectionName = collectionName;
         r.requestState = CrawlRequest.STATE.WAITING;
@@ -93,6 +106,7 @@ public class CrawlQueueController {
         r.creationDate = new Date();
         r.crawlDataPath = crawlDir;
         dao.save(r);
+        return r;
     }
 
     private void tryLaunch() {
@@ -133,14 +147,14 @@ public class CrawlQueueController {
     private void launch(String scriptName) {
 
         try {
-            String path = "/home/iti-310/vdata/"+scriptName;
+            String path = "/home/iti-310/vdata/" + scriptName;
             String[] command = {path};
             ProcessBuilder p = new ProcessBuilder(command);
             Process pr = p.start();
             inheritIO(pr.getInputStream(), System.out);
             inheritIO(pr.getErrorStream(), System.err);
         } catch (IOException ioe) {
-            System.out.println("Problem starting process for scriptName " + scriptName+ " "+ioe);
+            System.out.println("Problem starting process for scriptName " + scriptName + " " + ioe);
         }
     }
 
@@ -163,6 +177,10 @@ public class CrawlQueueController {
                 future.cancel(true);
             exec.shutdownNow();
         }
+    }
+
+    private List<CrawlRequest> getCrawlRequest(String id) {
+        return dao.getDatastore().find(CrawlRequest.class).filter("id", id).asList();
     }
 
     private List<CrawlRequest> getRunningCrawls() {

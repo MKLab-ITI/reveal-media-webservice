@@ -11,11 +11,11 @@ import java.util.Date;
  *
  * @author kandreadou
  */
-@Entity
+@Entity(noClassnameStored=true)
 public class CrawlRequest {
 
     public enum STATE {
-        WAITING, PENDING, PAUSED, RUNNING, FINISHED
+        WAITING, STOPPING, PAUSED, RUNNING, FINISHED
     }
 
     /**
@@ -51,9 +51,14 @@ public class CrawlRequest {
      */
     public String collectionName;
 
+    /**
+     * The number of crawled images
+     */
+    public int numImages;
+
     /** The request's unique id */
     @Id
-    public ObjectId id;
+    public String id = new ObjectId().toString();
 
 }
 
