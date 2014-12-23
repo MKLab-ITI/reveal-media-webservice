@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.crawler;
 
+import gr.iti.mklab.simmo.items.Image;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
@@ -9,13 +10,11 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -72,7 +71,11 @@ public class CrawlQueueController {
     }
 
     public synchronized  CrawlRequest getStatus(String id){
-        return getCrawlRequest(id).get(0);
+        CrawlRequest req = getCrawlRequest(id).get(0);
+        DAO<Image, ObjectId> images = new BasicDAO<>(Image.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), req.collectionName);
+        req.numImages = (int) images.count();
+        dao.save(req);
+        return req;
     }
 
     /**

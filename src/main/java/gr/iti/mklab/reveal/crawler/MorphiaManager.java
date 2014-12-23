@@ -3,6 +3,7 @@ package gr.iti.mklab.reveal.crawler;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import gr.iti.mklab.simmo.items.Image;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
 
@@ -19,7 +20,7 @@ public class MorphiaManager {
             mongoClient = new MongoClient(new MongoClientURI(System.getProperty("MONGO_URI", "mongodb://localhost:27017")));
             db = mongoClient.getDB(dbName);
             ds = morphia.createDatastore(mongoClient, db.getName());
-            morphia.map(CrawlRequest.class);
+            morphia.map(CrawlRequest.class).map(Image.class);
             ds.ensureCaps();
             ds.ensureIndexes();
         } catch (Exception e) {

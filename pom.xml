@@ -150,6 +150,11 @@
             <artifactId>morphia</artifactId>
             <version>0.108</version>
         </dependency>
+        <dependency>
+            <groupId>gr.iti.mklab</groupId>
+            <artifactId>simmo</artifactId>
+            <version>1.0.0</version>
+        </dependency>
         <!-- <dependency>
              <groupId>org.slf4j</groupId>
              <artifactId>slf4j-api</artifactId>
