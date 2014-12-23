@@ -1,7 +1,9 @@
 package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.simmo.items.Image;
+import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import org.bson.types.ObjectId;
+import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 
@@ -76,6 +78,12 @@ public class CrawlQueueController {
         req.numImages = (int) images.count();
         dao.save(req);
         return req;
+    }
+
+    public List<Image> getImages(String id, int count, int offset){
+        CrawlRequest req = getCrawlRequest(id).get(0);
+        Datastore ds = MorphiaManager.getMorphia().createDatastore(MorphiaManager.getMongoClient(),req.collectionName);
+        return ds.find(Image.class).offset(offset).limit(count).asList();
     }
 
     /**

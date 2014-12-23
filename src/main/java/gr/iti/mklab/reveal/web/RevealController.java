@@ -11,6 +11,7 @@ import gr.iti.mklab.reveal.util.MediaCluster;
 import gr.iti.mklab.reveal.util.MediaItem;
 import gr.iti.mklab.reveal.util.NamedEntityDAO;
 import gr.iti.mklab.reveal.visual.IndexingManager;
+import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.visual.utilities.Answer;
 import gr.iti.mklab.visual.utilities.Result;
 import org.slf4j.Logger;
@@ -51,6 +52,14 @@ public class RevealController {
         crawlerCtrler = new CrawlQueueController();
         //solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
 
+    }
+
+    @RequestMapping(value = "/crawls/{id}", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<Image> getCrawledImages(@PathVariable(value = "id") String id,
+                                        @RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                        @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
+        return crawlerCtrler.getImages(id, count, offset);
     }
 
     @RequestMapping(value = "/crawls/add", method = RequestMethod.GET, produces = "application/json")

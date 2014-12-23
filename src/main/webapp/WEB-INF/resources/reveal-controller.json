@@ -405,6 +405,57 @@
                 }
             }
         },
+        "/crawls/{id}": {
+            "get": {
+                "tags": [
+                    "crawls"
+                ],
+                "summary": "Gets a collection of images from the specified collection",
+                "description": "",
+                "operationId": "crawl",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The crawl request id",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "count",
+                        "description": "The number of items",
+                        "defaultValue": "10",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "description": "The offset",
+                        "defaultValue": "0",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    },
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
         "/crawls/add": {
             "get": {
                 "tags": [
@@ -555,9 +606,9 @@
                     "type": "integer"
                 },
                 "members": {
-                    "type":"array",
-                    "items":{
-                        "type":"string"
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 },
                 "item": {
