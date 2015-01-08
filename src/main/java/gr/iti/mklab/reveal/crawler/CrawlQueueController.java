@@ -2,6 +2,7 @@ package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
+import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.dao.BasicDAO;
@@ -57,9 +58,9 @@ public class CrawlQueueController {
      * @param crawlDir
      * @param collectionName
      */
-    public synchronized CrawlRequest submit(String crawlDir, String collectionName) {
-        System.out.println("submit event");
-        CrawlRequest r = enqueue(crawlDir, collectionName);
+    public synchronized CrawlRequest submit(boolean isNew, String crawlDir, String collectionName, String... keywords) {
+        System.out.println("submit event "+ ArrayUtils.toString(keywords));
+        CrawlRequest r = enqueue(isNew, crawlDir, collectionName, keywords);
         tryLaunch();
         return r;
     }
@@ -109,13 +110,16 @@ public class CrawlQueueController {
         }
     }
 
-    private CrawlRequest enqueue(String crawlDir, String collectionName) {
+    private CrawlRequest enqueue(boolean isNew, String crawlDir, String collectionName, String... keywords) {
         CrawlRequest r = new CrawlRequest();
         r.collectionName = collectionName;
         r.requestState = CrawlRequest.STATE.WAITING;
         r.lastStateChange = new Date();
         r.creationDate = new Date();
         r.crawlDataPath = crawlDir;
+        r.isNew = isNew;
+        for (String k : keywords)
+            r.keywords.add(k);
         dao.save(r);
         return r;
     }
@@ -144,6 +148,9 @@ public class CrawlQueueController {
                 }
             }
         }
+        List<CrawlRequest> waitingList = getWaitingCrawls();
+        if(waitingList.isEmpty())
+            return;
         for (Integer i : ports) {
             System.out.println("Try launch crawl for port " + i);
             // Check if port is really available, if it is launch the respective script
@@ -196,6 +203,10 @@ public class CrawlQueueController {
 
     private List<CrawlRequest> getRunningCrawls() {
         return dao.getDatastore().find(CrawlRequest.class).filter("requestState", CrawlRequest.STATE.RUNNING).asList();
+    }
+
+    private List<CrawlRequest> getWaitingCrawls() {
+        return dao.getDatastore().find(CrawlRequest.class).filter("requestState", CrawlRequest.STATE.WAITING).asList();
     }
 
     private boolean isPortAvailable(int port) {

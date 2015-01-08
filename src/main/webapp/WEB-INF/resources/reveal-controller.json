@@ -457,7 +457,7 @@
             }
         },
         "/crawls/add": {
-            "get": {
+            "post": {
                 "tags": [
                     "crawls"
                 ],
@@ -472,9 +472,9 @@
                 ],
                 "parameters": [
                     {
-                        "in": "query",
-                        "name": "name",
-                        "description": "The crawl request name",
+                        "in": "body",
+                        "name": "body",
+                        "description": "Crawl parameters",
                         "required": true,
                         "type": "string"
                     }

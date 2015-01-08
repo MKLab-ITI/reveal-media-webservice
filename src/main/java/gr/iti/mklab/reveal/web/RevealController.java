@@ -62,11 +62,11 @@ public class RevealController {
         return crawlerCtrler.getImages(id, count, offset);
     }
 
-    @RequestMapping(value = "/crawls/add", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/crawls/add", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
     @ResponseBody
-    public CrawlRequest submitCrawlingJob(@RequestParam(value = "name", required = true) String name) {
+    public CrawlRequest submitCrawlingJob(@RequestBody CrawlPostRequest request) {
         String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
-        return crawlerCtrler.submit(rootCrawlerDir + "crawl_" + name, name);
+        return crawlerCtrler.submit(request.isNew, rootCrawlerDir + "crawl_" + request.collectionName, request.collectionName, request.keywords.toArray(new String[request.keywords.size()]));
     }
 
     @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")

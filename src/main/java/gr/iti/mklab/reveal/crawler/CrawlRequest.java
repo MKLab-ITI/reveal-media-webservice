@@ -5,6 +5,8 @@ import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Id;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A CrawlRequest class for storing the queue state to MongoDB
@@ -55,6 +57,16 @@ public class CrawlRequest {
      * The number of crawled images
      */
     public int numImages;
+
+    /**
+     * A list of keywords to focus the crawl on
+     */
+    public Set<String> keywords = new HashSet<String>();
+    /**
+     * Will be this a new or an already existing crawl?
+     * By default start a new crawl
+     */
+    public boolean isNew = true;
 
     /** The request's unique id */
     @Id
