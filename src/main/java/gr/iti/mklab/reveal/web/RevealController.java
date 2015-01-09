@@ -6,14 +6,18 @@ import gr.iti.mklab.reveal.crawler.CrawlRequest;
 import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import gr.iti.mklab.reveal.solr.SolrManager;
+import gr.iti.mklab.reveal.text.NameThatEntity;
+import gr.iti.mklab.reveal.text.TextPreprocessing;
 import gr.iti.mklab.reveal.util.EntityForTweet;
 import gr.iti.mklab.reveal.util.MediaCluster;
 import gr.iti.mklab.reveal.util.MediaItem;
 import gr.iti.mklab.reveal.util.NamedEntityDAO;
 import gr.iti.mklab.reveal.visual.IndexingManager;
+import gr.iti.mklab.simmo.annotations.NamedEntity;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.visual.utilities.Answer;
 import gr.iti.mklab.visual.utilities.Result;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -22,11 +26,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Controller
@@ -43,6 +51,8 @@ public class RevealController {
 
     protected CrawlQueueController crawlerCtrler;
 
+    protected NameThatEntity nte;
+
     //protected MongoManager mgr = new MongoManager("127.0.0.1", "Linear", "MediaItems");
 
     public RevealController() throws Exception {
@@ -50,8 +60,30 @@ public class RevealController {
         mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
         clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClusters");
         crawlerCtrler = new CrawlQueueController();
+        nte = new NameThatEntity();
+        nte.initPipeline(); //Should be called only once in the beggining
         //solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
+    }
 
+    @RequestMapping(value = "/text/entities", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<NamedEntity> analyze(
+            @RequestParam(value = "url", required = true) String urlStr) throws Exception {
+        URL url = new URL(urlStr);
+        URLConnection con = url.openConnection();
+        Pattern p = Pattern.compile("text/html;\\s+charset=([^\\s]+)\\s*");
+        Matcher m = p.matcher(con.getContentType());
+/* If Content-Type doesn't match this pre-conception, choose default and
+ * hope for the best. */
+        String charset = m.matches() ? m.group(1) : "ISO-8859-1";
+        String txt = IOUtils.toString(con.getInputStream(), charset);
+
+        TextPreprocessing textPre = new TextPreprocessing(txt);
+        // Get the cleaned text
+        ArrayList<String> cleanedText = textPre.getCleanedSentences();
+        //Run the NER
+        List<NamedEntity> names = nte.tagIt(cleanedText);
+        return names;
     }
 
     @RequestMapping(value = "/crawls/{id}", method = RequestMethod.GET, produces = "application/json")
@@ -71,13 +103,13 @@ public class RevealController {
 
     @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public CrawlRequest cancelCrawlingJob(@PathVariable(value = "id")String id) {
+    public CrawlRequest cancelCrawlingJob(@PathVariable(value = "id") String id) {
         return crawlerCtrler.cancel(id);
     }
 
     @RequestMapping(value = "/crawls/{id}/status", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public CrawlRequest getCrawlingJobStatus(@PathVariable(value = "id")String id) {
+    public CrawlRequest getCrawlingJobStatus(@PathVariable(value = "id") String id) {
         return crawlerCtrler.getStatus(id);
     }
 
