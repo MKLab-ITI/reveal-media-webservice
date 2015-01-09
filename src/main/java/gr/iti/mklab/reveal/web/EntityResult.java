@@ -7,7 +7,10 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 
 /**
- * Created by kandreadou on 10/3/14.
+ * THIS IS OBSOLETE AND WILL BE DELETED WHEN NO LONGER NEEDED
+ * DO NOT USE THIS CLASS
+ * @deprecated
+ * @author kandreadou
  */
 public class EntityResult implements Serializable {
 

@@ -15,13 +15,11 @@ import gr.iti.mklab.reveal.util.NamedEntityDAO;
 import gr.iti.mklab.reveal.visual.IndexingManager;
 import gr.iti.mklab.simmo.annotations.NamedEntity;
 import gr.iti.mklab.simmo.items.Image;
-import gr.iti.mklab.visual.utilities.Answer;
 import gr.iti.mklab.visual.utilities.Result;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
@@ -96,7 +94,7 @@ public class RevealController {
 
     @RequestMapping(value = "/crawls/add", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
     @ResponseBody
-    public CrawlRequest submitCrawlingJob(@RequestBody CrawlPostRequest request) {
+    public CrawlRequest submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) {
         String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
         return crawlerCtrler.submit(request.isNew, rootCrawlerDir + "crawl_" + request.collectionName, request.collectionName, request.keywords.toArray(new String[request.keywords.size()]));
     }
@@ -252,13 +250,13 @@ public class RevealController {
      */
     @RequestMapping(value = "/collections/add", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public IndexingResult collectionsAdd(
+    public Responses.IndexResponse collectionsAdd(
             @RequestParam(value = "name", required = true) String name) {
         try {
             IndexingManager.getInstance().createIndex(name);
-            return new IndexingResult();
+            return new Responses.IndexResponse();
         } catch (Exception ex) {
-            return new IndexingResult(false, ex.toString());
+            return new Responses.IndexResponse(false, ex.toString());
         }
     }
 
@@ -319,7 +317,7 @@ public class RevealController {
      */
     @RequestMapping(value = "/collections/{collection}/statistics", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public StatisticsResult[] getStatistics(@PathVariable("collection") String collectionName) throws RevealException {
+    public Responses.StatsResponse[] getStatistics(@PathVariable("collection") String collectionName) throws RevealException {
         return IndexingManager.getInstance().statistics(collectionName);
     }
 
@@ -335,11 +333,11 @@ public class RevealController {
      */
     @RequestMapping(value = "/media/image/index", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
     @ResponseBody
-    public IndexingResult indexWithPost(
-            @RequestBody IndexingRequest request) {
+    public Responses.IndexResponse indexWithPost(
+            @RequestBody Requests.IndexPostRequest request) {
 
         String msg = null;
-        for (String url : request.getUrls()) {
+        for (String url : request.urls) {
             try {
                 logger.debug("Indexing image " + url);
                 IndexingManager.getInstance().indexImage(url, request.collection);
@@ -350,9 +348,9 @@ public class RevealController {
             logger.error(url);
         }
         if (msg == null)
-            return new IndexingResult();
+            return new Responses.IndexResponse();
         else
-            return new IndexingResult(false, msg);
+            return new Responses.IndexResponse(false, msg);
     }
 
     private List<SimilarityResult> finallist;

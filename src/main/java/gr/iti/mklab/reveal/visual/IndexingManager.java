@@ -1,13 +1,12 @@
 package gr.iti.mklab.reveal.visual;
 
 import com.google.common.base.Strings;
+import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.reveal.web.RevealException;
-import gr.iti.mklab.reveal.web.StatisticsResult;
 import gr.iti.mklab.visual.aggregation.AbstractFeatureAggregator;
 import gr.iti.mklab.visual.aggregation.VladAggregatorMultipleVocabularies;
 import gr.iti.mklab.visual.datastructures.AbstractSearchStructure;
 import gr.iti.mklab.visual.datastructures.IVFPQ;
-import gr.iti.mklab.visual.datastructures.Linear;
 import gr.iti.mklab.visual.datastructures.PQ;
 import gr.iti.mklab.visual.dimreduction.PCA;
 import gr.iti.mklab.visual.extraction.AbstractFeatureExtractor;
@@ -15,8 +14,6 @@ import gr.iti.mklab.visual.extraction.SURFExtractor;
 import gr.iti.mklab.visual.utilities.Answer;
 import gr.iti.mklab.visual.vectorization.ImageVectorization;
 import gr.iti.mklab.visual.vectorization.ImageVectorizationResult;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -81,12 +78,11 @@ public class IndexingManager {
 
     public void createIndex(String name) throws Exception {
         //String ivfpqIndexFolder = "/home/kandreadou/webservice/reveal_indices/" + name + "_" + targetLengthMax;
-        String ivfpqIndexFolder = "/home/iti-310/VisualIndex/data/"+name+"/ivfpq";
+        String ivfpqIndexFolder = "/home/iti-310/VisualIndex/data/" + name + "/ivfpq";
         File jeLck = new File(ivfpqIndexFolder, "je.lck");
         if (jeLck.exists()) {
             jeLck.delete();
-        }
-        else{
+        } else {
             jeLck.getParentFile().getParentFile().mkdirs();
         }
 
@@ -157,17 +153,17 @@ public class IndexingManager {
     }
 
 
-    public StatisticsResult[] statistics(String collection) throws RevealException {
+    public Responses.StatsResponse[] statistics(String collection) throws RevealException {
 
-        StatisticsResult[] results;
+        Responses.StatsResponse[] results;
 
         if (collection != null && indices.containsKey(collection)) {
             System.out.println("Collection " + collection + " found");
             AbstractSearchStructure index = indices.get(collection);
             int ivfpqIndexCount = index.getLoadCounter();
             System.out.println("Load counter " + ivfpqIndexCount);
-            results = new StatisticsResult[1];
-            results[0] = new StatisticsResult(collection, ivfpqIndexCount);
+            results = new Responses.StatsResponse[1];
+            results[0] = new Responses.StatsResponse(collection, ivfpqIndexCount);
             return results;
         } else {
             throw new RevealException("Collection not loaded", null);
