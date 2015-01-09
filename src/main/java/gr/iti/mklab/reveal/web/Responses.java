@@ -1,5 +1,9 @@
 package gr.iti.mklab.reveal.web;
 
+import gr.iti.mklab.reveal.util.MediaItem;
+
+import java.net.MalformedURLException;
+
 /**
  * Created by kandreadou on 1/9/15.
  */
@@ -30,6 +34,18 @@ public class Responses {
 
         public IndexResponse() {
             this.success = true;
+        }
+    }
+
+    public static class SimilarityResponse {
+
+        protected double distance;
+
+        protected MediaItem item;
+
+        public SimilarityResponse(MediaItem item, double distance) throws MalformedURLException {
+            this.item = item;
+            this.distance = distance;
         }
     }
 

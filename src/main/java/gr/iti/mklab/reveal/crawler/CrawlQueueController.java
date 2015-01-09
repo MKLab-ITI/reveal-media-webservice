@@ -182,7 +182,7 @@ public class CrawlQueueController {
 
         @Override
         public void run() {
-            System.out.println("polling event");
+            System.out.println("NEW polling event");
             tryLaunch();
         }
 

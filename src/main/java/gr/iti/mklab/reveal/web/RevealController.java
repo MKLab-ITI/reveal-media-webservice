@@ -353,19 +353,18 @@ public class RevealController {
             return new Responses.IndexResponse(false, msg);
     }
 
-    private List<SimilarityResult> finallist;
+    private List<Responses.SimilarityResponse> finallist;
     private String lastImageUrl;
     private double lastThreshold;
 
     @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<SimilarityResult> findSimilarImages(@RequestParam(value = "collection", required = false) String collectionName,
-                                                    @RequestParam(value = "imageurl", required = true) String imageurl,
-                                                    @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                                    @RequestParam(value = "count", required = false, defaultValue = "50") int count,
-                                                    @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
+    public List<Responses.SimilarityResponse> findSimilarImages(@RequestParam(value = "collection", required = true) String collectionName,
+                                                                @RequestParam(value = "imageurl", required = true) String imageurl,
+                                                                @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                                @RequestParam(value = "count", required = false, defaultValue = "50") int count,
+                                                                @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
-
             if (!imageurl.equals(lastImageUrl) || finallist == null || (finallist != null && offset + count > finallist.size()) || lastThreshold != threshold) {
                 int total = offset + count;
                 if (total < 100)
@@ -373,23 +372,33 @@ public class RevealController {
                 lastThreshold = threshold;
                 lastImageUrl = imageurl;
                 Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
+                System.out.println("results size " + temp.length);
                 finallist = new ArrayList<>(temp.length);
                 for (Result r : temp) {
                     if (r.getDistance() <= threshold) {
                         MediaItem found = mediaDao.getItem(r.getExternalId());
+                        /* This is for testing with collections without Mongo DB
+                        System.out.println("Found media item");
+                        if (found == null) {
+                            found = mediaDao.getItem("438653967841505280");
+                        }*/
                         if (found.getPublicationTime() > 0)
-                            finallist.add(new SimilarityResult(found, r.getDistance()));
+                            finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }
-                Collections.sort(finallist, new Comparator<SimilarityResult>() {
+                Collections.sort(finallist, new Comparator<Responses.SimilarityResponse>() {
                     @Override
-                    public int compare(SimilarityResult result, SimilarityResult result2) {
-                        return Long.compare(result.getItem().getPublicationTime(), result2.getItem().getPublicationTime());
+                    public int compare(Responses.SimilarityResponse result, Responses.SimilarityResponse result2) {
+                        return Long.compare(result.item.getPublicationTime(), result2.item.getPublicationTime());
                     }
                 });
             }
-            return finallist.subList(offset, offset + count);
+            if (finallist.size() < count)
+                return finallist;
+            else
+                return finallist.subList(offset, offset + count);
         } catch (Exception e) {
+            System.out.println(e);
             return new ArrayList<>();
         }
     }
