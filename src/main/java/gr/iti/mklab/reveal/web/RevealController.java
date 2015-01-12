@@ -8,6 +8,8 @@ import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import gr.iti.mklab.reveal.solr.SolrManager;
 import gr.iti.mklab.reveal.text.NameThatEntity;
 import gr.iti.mklab.reveal.text.TextPreprocessing;
+import gr.iti.mklab.reveal.text.htmlsegmentation.BoilerpipeContentExtraction;
+import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
 import gr.iti.mklab.reveal.util.EntityForTweet;
 import gr.iti.mklab.reveal.util.MediaCluster;
 import gr.iti.mklab.reveal.util.MediaItem;
@@ -15,7 +17,10 @@ import gr.iti.mklab.reveal.util.NamedEntityDAO;
 import gr.iti.mklab.reveal.visual.IndexingManager;
 import gr.iti.mklab.simmo.annotations.NamedEntity;
 import gr.iti.mklab.simmo.items.Image;
+import gr.iti.mklab.simmo.morphia.MediaDAO;
+import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import gr.iti.mklab.visual.utilities.Result;
+import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,20 +68,28 @@ public class RevealController {
         //solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
     }
 
+    @RequestMapping(value = "/text/entities", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
+    @ResponseBody
+    public List<NamedEntity> entitiesFromString(@RequestBody Requests.EntitiesPostRequest req) throws Exception {
+        TextPreprocessing textPre = new TextPreprocessing(req.text);
+        // Get the cleaned text
+        ArrayList<String> cleanedText = textPre.getCleanedSentences();
+        //Run the NER
+        List<NamedEntity> names = nte.tagIt(cleanedText);
+        return names;
+    }
+
     @RequestMapping(value = "/text/entities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<NamedEntity> analyze(
+    public List<NamedEntity> entitiesFromURL(
             @RequestParam(value = "url", required = true) String urlStr) throws Exception {
-        URL url = new URL(urlStr);
-        URLConnection con = url.openConnection();
-        Pattern p = Pattern.compile("text/html;\\s+charset=([^\\s]+)\\s*");
-        Matcher m = p.matcher(con.getContentType());
-/* If Content-Type doesn't match this pre-conception, choose default and
- * hope for the best. */
-        String charset = m.matches() ? m.group(1) : "ISO-8859-1";
-        String txt = IOUtils.toString(con.getInputStream(), charset);
 
-        TextPreprocessing textPre = new TextPreprocessing(txt);
+        BoilerpipeContentExtraction bp = new BoilerpipeContentExtraction();
+        //Extract content from URL
+        Content c = bp.contentFromURL(urlStr);
+        String text = c.getTitle() + " " + c.getText();
+
+        TextPreprocessing textPre = new TextPreprocessing(text);
         // Get the cleaned text
         ArrayList<String> cleanedText = textPre.getCleanedSentences();
         //Run the NER
@@ -113,7 +126,7 @@ public class RevealController {
 
     /**
      * Returns by default the last 10 media items or the number specified by count
-     * <p/>
+     * <p>
      * Example: http://localhost:8090/reveal/mmapi/media?count=20
      *
      * @param count
@@ -129,10 +142,22 @@ public class RevealController {
         return list;
     }
 
+    @RequestMapping(value = "/medianew", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<Image> mediaItemsGeneric(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                         @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                         @RequestParam(value = "collection", required = true) String collection) {
+        MorphiaManager.setup(collection);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+        List<Image> result = imageDAO.getDatastore().find(Image.class).offset(offset).limit(count).asList();
+        MorphiaManager.tearDown();
+        return result;
+    }
+
 
     /**
      * Returns by default the last 10 media items or the number specified by count
-     * <p/>
+     * <p>
      * Example: http://localhost:8090/reveal/mmapi/media?count=20
      *
      * @param num
@@ -155,7 +180,7 @@ public class RevealController {
 
     /**
      * Returns by default the last 10 media items or the number specified by count
-     * <p/>
+     * <p>
      * Example: http://localhost:8090/reveal/mmapi/media?count=20
      *
      * @return
@@ -173,7 +198,7 @@ public class RevealController {
 
     /**
      * Returns by default the last 10 media items or the number specified by count
-     * <p/>
+     * <p>
      * Example: http://localhost:8090/reveal/mmapi/media?count=20
      *
      * @param clusterId
@@ -202,7 +227,7 @@ public class RevealController {
 
     /**
      * Returns the image with the specified id
-     * <p/>
+     * <p>
      * Example: http://localhost:8090/reveal/mmapi/media/image/6f1d874534e126dcf9296c9b050cef23
      *
      * @param mediaItemId
@@ -242,7 +267,7 @@ public class RevealController {
 
     /**
      * Adds a collection with the specified name
-     * <p/>
+     * <p>
      * Example: http://localhost:8090/reveal/mmapi/collections/add?name=re, defaultValue = "-1"vealsample
      *
      * @param name
@@ -286,7 +311,7 @@ public class RevealController {
 
     /**
      * Indexes the image in the specified url
-     * <p/>
+     * <p>
      * http://localhost:8090/reveal/mmapi/media/revealsample_1024/index?imageurl=http%3A%2F%2Fww2.hdnux.com%2Fphotos%2F31%2F11%2F13%2F6591221%2F3%2F628x471.jpg
      *
      * @param collectionName
@@ -309,7 +334,7 @@ public class RevealController {
 
     /**
      * Gets statistics for the given collection
-     * <p/>
+     * <p>
      * Example: http://localhost:8090/reveal/mmapi/collections/revealsample_1024/statistics
      *
      * @param collectionName

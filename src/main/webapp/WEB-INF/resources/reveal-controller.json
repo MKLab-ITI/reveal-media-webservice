@@ -405,6 +405,75 @@
                 }
             }
         },
+        "/media/image/similar": {
+            "get": {
+                "tags": [
+                    "media"
+                ],
+                "summary": "Get similar items",
+                "description": "",
+                "operationId": "similar",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "count",
+                        "description": "The number of items",
+                        "defaultValue": "50",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "description": "The offset",
+                        "defaultValue": "0",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "threshold",
+                        "defaultValue": "0.6",
+                        "description": "The similarity threshold",
+                        "required": false,
+                        "type": "double"
+                    },
+                    {
+                        "in": "query",
+                        "name": "imageurl",
+                        "description": "The image url",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "collection",
+                        "description": "The collection name",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/MediaItem"
+                        }
+                    },
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
         "/crawls/{id}": {
             "get": {
                 "tags": [
@@ -583,7 +652,40 @@
                         "in": "query",
                         "name": "url",
                         "description": "The url of the webpage",
-                        "required": true,
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/NamedEntity"
+                        }
+                    },
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "text analysis"
+                ],
+                "summary": "Extracts the named entities from the provided text",
+                "description": "",
+                "operationId": "text",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "text",
+                        "description": "The text",
                         "type": "string"
                     }
                 ],
@@ -662,7 +764,7 @@
                 }
             }
         },
-        "NamedEntity":{
+        "NamedEntity": {
             "token": {
                 "type": "string"
             },
