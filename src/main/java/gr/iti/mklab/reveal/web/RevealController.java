@@ -20,24 +20,17 @@ import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import gr.iti.mklab.visual.utilities.Result;
-import org.apache.commons.cli.MissingArgumentException;
-import org.apache.commons.io.IOUtils;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 @Controller
@@ -62,11 +55,15 @@ public class RevealController {
         String mongoHost = "127.0.0.1";
         mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
         clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClusters");
-        crawlerCtrler = new CrawlQueueController();
+        //crawlerCtrler = new CrawlQueueController();
         nte = new NameThatEntity();
         nte.initPipeline(); //Should be called only once in the beggining
         //solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
     }
+
+    ////////////////////////////////////////////////////////
+    ///////// NAMED ENTITIES     ///////////////////////////
+    ///////////////////////////////////////////////////////
 
     @RequestMapping(value = "/text/entities", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
     @ResponseBody
@@ -84,18 +81,27 @@ public class RevealController {
     public List<NamedEntity> entitiesFromURL(
             @RequestParam(value = "url", required = true) String urlStr) throws Exception {
 
+        long now = System.currentTimeMillis();
         BoilerpipeContentExtraction bp = new BoilerpipeContentExtraction();
         //Extract content from URL
         Content c = bp.contentFromURL(urlStr);
+        System.out.println("Boilerpipe time " + (System.currentTimeMillis() - now));
         String text = c.getTitle() + " " + c.getText();
-
+        now = System.currentTimeMillis();
         TextPreprocessing textPre = new TextPreprocessing(text);
         // Get the cleaned text
         ArrayList<String> cleanedText = textPre.getCleanedSentences();
+        System.out.println("Preprocessing time " + (System.currentTimeMillis() - now));
         //Run the NER
+        now = System.currentTimeMillis();
         List<NamedEntity> names = nte.tagIt(cleanedText);
+        System.out.println("Named Entity time " + (System.currentTimeMillis() - now));
         return names;
     }
+
+    ////////////////////////////////////////////////////////
+    ///////// CRAWLER            ///////////////////////////
+    ///////////////////////////////////////////////////////
 
     @RequestMapping(value = "/crawls/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
@@ -124,6 +130,10 @@ public class RevealController {
         return crawlerCtrler.getStatus(id);
     }
 
+    ////////////////////////////////////////////////////////
+    ///////// MEDIA OLD API FROM SOCIAL SENSOR /////////////
+    ///////////////////////////////////////////////////////
+
     /**
      * Returns by default the last 10 media items or the number specified by count
      * <p>
@@ -140,18 +150,6 @@ public class RevealController {
                                       @RequestParam(value = "type", required = false) String type) {
         List<MediaItem> list = mediaDao.getMediaItems(offset, count, type);
         return list;
-    }
-
-    @RequestMapping(value = "/medianew", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<Image> mediaItemsGeneric(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                         @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                         @RequestParam(value = "collection", required = true) String collection) {
-        MorphiaManager.setup(collection);
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
-        List<Image> result = imageDAO.getDatastore().find(Image.class).offset(offset).limit(count).asList();
-        MorphiaManager.tearDown();
-        return result;
     }
 
 
@@ -470,6 +468,58 @@ public class RevealController {
         }
     }*/
 
+    ////////////////////////////////////////////////////////
+    ///////// MEDIA NEW API WITH SIMMO FRAMEWORK ///////////
+    ///////////////////////////////////////////////////////
+
+    @RequestMapping(value = "/media/v2/{collection}", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<Image> mediaItemsV2(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                    @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                    @PathVariable(value = "collection") String collection) {
+        MorphiaManager.setup(collection);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+        List<Image> result = imageDAO.getDatastore().find(Image.class).offset(offset).limit(count).asList();
+        MorphiaManager.tearDown();
+        return result;
+    }
+
+    @RequestMapping(value = "/media/v2/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public Image mediaItemByIdV2(@PathVariable(value = "collection") String collection,
+                                     @PathVariable("id") String id) {
+        MorphiaManager.setup(collection);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+        Image result = imageDAO.get(new ObjectId(id));
+        MorphiaManager.tearDown();
+       return result;
+    }
+
+    /*@RequestMapping(value = "/media/v2/{collection}/search", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<Image> mediaItemsSearchV2(
+            @PathVariable(value = "collection") String collection,
+            @RequestParam(value = "date", required = false, defaultValue = "-1") long date,
+            @RequestParam(value = "w", required = false, defaultValue = "0") int w,
+            @RequestParam(value = "h", required = false, defaultValue = "0") int h,
+            @RequestParam(value = "query", required = false) String text,
+            @RequestParam(value = "count", required = false, defaultValue = "10") int count,
+            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
+
+        MorphiaManager.setup(collection);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+        imageDAO.
+        List<Image> result = imageDAO.getDatastore().find(Image.class).offset(offset).limit(count).asList();
+        MorphiaManager.tearDown();
+        return result;
+        List<MediaItem> list = mediaDao.search(username, text, w, h, date, count, offset, type);
+        return list;
+    }*/
+
+    ////////////////////////////////////////////////////////
+    ///////// SOLR               ///////////////////////////
+    ///////////////////////////////////////////////////////
+
     @RequestMapping(value = "/media/webpages/search", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<WebPage> findItemsByKeyword(@RequestParam(value = "query", required = true) String query,
@@ -478,70 +528,15 @@ public class RevealController {
 
     }
 
+    ////////////////////////////////////////////////////////
+    ///////// EXCEPTION HANDLING ///////////////////////////
+    ///////////////////////////////////////////////////////
+
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(RevealException.class)
     @ResponseBody
     public RevealException handleCustomException(RevealException ex) {
         return ex;
-    }
-
-    /*@RequestMapping(value = "/media/test", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<DBObject> mediaFromManager() {
-        return mgr.search();
-    }*/
-
-
-    /////////////////////////////////////////////////////
-    ///////////// TEST STUFF ///////////////////////////
-    ////////////////////////////////////////////////////
-
-    /*@ExceptionHandler(IndexingException.class)
-    public ModelAndView handleIndexingException(HttpServletRequest request, Exception ex){
-        logger.error("Requested URL="+request.getRequestURL());
-        logger.error("Exception Raised="+ex);
-
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.addObject("exception", ex);
-        modelAndView.addObject("url", request.getRequestURL());
-        modelAndView.addObject("message", ex.getMessage());
-
-        modelAndView.setViewName("/WEB-INF/pages/error.html");
-        return modelAndView;
-    }*/
-
-    @RequestMapping(method = RequestMethod.GET)
-    public String printWelcome(ModelMap model) {
-        model.addAttribute("message", "Hello REVEAL!");
-        return "hello";
-    }
-
-    @RequestMapping(value = "/greeting", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public Greeting greeting(@RequestParam(value = "name", required = false, defaultValue = "World") String name) {
-        return new Greeting(5, "test");
-    }
-
-    private static final String template = "Hello, %s!";
-    private final AtomicLong counter = new AtomicLong();
-
-    public class Greeting {
-
-        private final long id;
-        private final String content;
-
-        public Greeting(long id, String content) {
-            this.id = id;
-            this.content = content;
-        }
-
-        public long getId() {
-            return id;
-        }
-
-        public String getContent() {
-            return content;
-        }
     }
 
     public static void main(String[] args) throws Exception {
