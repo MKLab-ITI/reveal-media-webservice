@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.web;
 
 import gr.iti.mklab.reveal.util.MediaItem;
+import gr.iti.mklab.simmo.items.Image;
 
 import java.net.MalformedURLException;
 
@@ -43,8 +44,15 @@ public class Responses {
 
         protected MediaItem item;
 
+        protected Image image;
+
         public SimilarityResponse(MediaItem item, double distance) throws MalformedURLException {
             this.item = item;
+            this.distance = distance;
+        }
+
+        public SimilarityResponse(Image image, double distance) throws MalformedURLException {
+            this.image = image;
             this.distance = distance;
         }
     }

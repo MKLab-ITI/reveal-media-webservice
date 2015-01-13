@@ -27,10 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 
 @Controller
@@ -263,6 +260,60 @@ public class RevealController {
         return list;
     }
 
+    private List<Responses.SimilarityResponse> finallist;
+    private String lastImageUrl;
+    private double lastThreshold;
+
+    @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<Responses.SimilarityResponse> findSimilarImages(@RequestParam(value = "collection", required = true) String collectionName,
+                                                                @RequestParam(value = "imageurl", required = true) String imageurl,
+                                                                @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                                @RequestParam(value = "count", required = false, defaultValue = "50") int count,
+                                                                @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
+        try {
+            if (!imageurl.equals(lastImageUrl) || finallist == null || (finallist != null && offset + count > finallist.size()) || lastThreshold != threshold) {
+                int total = offset + count;
+                if (total < 100)
+                    total = 100;
+                lastThreshold = threshold;
+                lastImageUrl = imageurl;
+                Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
+                System.out.println("results size " + temp.length);
+                finallist = new ArrayList<>(temp.length);
+                for (Result r : temp) {
+                    if (r.getDistance() <= threshold) {
+                        MediaItem found = mediaDao.getItem(r.getExternalId());
+                        /* This is for testing with collections without Mongo DB
+                        System.out.println("Found media item");
+                        if (found == null) {
+                            found = mediaDao.getItem("438653967841505280");
+                        }*/
+                        if (found.getPublicationTime() > 0)
+                            finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
+                    }
+                }
+                Collections.sort(finallist, new Comparator<Responses.SimilarityResponse>() {
+                    @Override
+                    public int compare(Responses.SimilarityResponse result, Responses.SimilarityResponse result2) {
+                        return Long.compare(result.item.getPublicationTime(), result2.item.getPublicationTime());
+                    }
+                });
+            }
+            if (finallist.size() < count)
+                return finallist;
+            else
+                return finallist.subList(offset, offset + count);
+        } catch (Exception e) {
+            System.out.println(e);
+            return new ArrayList<>();
+        }
+    }
+
+    ////////////////////////////////////////////////////////
+    ///////// COLLECTIONS INDEXING             /////////////
+    ///////////////////////////////////////////////////////
+
     /**
      * Adds a collection with the specified name
      * <p>
@@ -294,18 +345,6 @@ public class RevealController {
             return e.getMessage();
         }
     }
-
-    /*@RequestMapping(value = "/media/{collection}/index", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public String indexImageFromFile(@PathVariable("collection") String collectionName,
-                             @RequestParam(value = "folder", required = false) String folder,
-                             @RequestParam(value = "name", required = true) String filename) {
-        try {
-            return String.valueOf(IndexingManager.getInstance().indexImage("/home/kandreadou/Pictures/asdf/", filename, collectionName));
-        } catch (Exception e) {
-            return e.getMessage();
-        }
-    }*/
 
     /**
      * Indexes the image in the specified url
@@ -376,54 +415,137 @@ public class RevealController {
             return new Responses.IndexResponse(false, msg);
     }
 
-    private List<Responses.SimilarityResponse> finallist;
-    private String lastImageUrl;
-    private double lastThreshold;
+    ////////////////////////////////////////////////////////
+    ///////// MEDIA NEW API WITH SIMMO FRAMEWORK ///////////
+    ///////////////////////////////////////////////////////
 
-    @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/media/v2/{collection}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<Responses.SimilarityResponse> findSimilarImages(@RequestParam(value = "collection", required = true) String collectionName,
-                                                                @RequestParam(value = "imageurl", required = true) String imageurl,
-                                                                @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                                                @RequestParam(value = "count", required = false, defaultValue = "50") int count,
-                                                                @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
+    public List<Image> mediaItemsV2(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                    @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                    @PathVariable(value = "collection") String collection) {
+        MorphiaManager.setup(collection);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+        List<Image> result = imageDAO.getItems(count, offset);
+        MorphiaManager.tearDown();
+        return result;
+    }
+
+    @RequestMapping(value = "/media/v2/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public Image mediaItemByIdV2(@PathVariable(value = "collection") String collection,
+                                 @PathVariable("id") String id) {
+        MorphiaManager.setup(collection);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+        Image result = imageDAO.get(new ObjectId(id));
+        MorphiaManager.tearDown();
+        return result;
+    }
+
+    @RequestMapping(value = "/media/v2/{collection}/search", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<Image> mediaItemsSearchV2(
+            @PathVariable(value = "collection") String collection,
+            @RequestParam(value = "date", required = false, defaultValue = "-1") long date,
+            @RequestParam(value = "w", required = false, defaultValue = "0") int w,
+            @RequestParam(value = "h", required = false, defaultValue = "0") int h,
+            @RequestParam(value = "count", required = false, defaultValue = "10") int count,
+            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
+
+        MorphiaManager.setup(collection);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+        List<Image> result = imageDAO.search(new Date(date), w, h, count, offset);
+        MorphiaManager.tearDown();
+        return result;
+    }
+
+    private List<Responses.SimilarityResponse> simList2;
+    private String lastImageUrl2;
+    private double lastThreshold2;
+
+    @RequestMapping(value = "/media/v2/{collection}/similar", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<Responses.SimilarityResponse> findSimilarImagesV2(@PathVariable(value = "collection") String collectionName,
+                                                                  @RequestParam(value = "imageurl", required = true) String imageurl,
+                                                                  @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                                  @RequestParam(value = "count", required = false, defaultValue = "50") int count,
+                                                                  @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
-            if (!imageurl.equals(lastImageUrl) || finallist == null || (finallist != null && offset + count > finallist.size()) || lastThreshold != threshold) {
+            if (!imageurl.equals(lastImageUrl2) || simList2 == null || (simList2 != null && offset + count > simList2.size()) || lastThreshold2 != threshold) {
+                MorphiaManager.setup(collectionName);
+                MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
                 int total = offset + count;
                 if (total < 100)
                     total = 100;
-                lastThreshold = threshold;
-                lastImageUrl = imageurl;
+                lastThreshold2 = threshold;
+                lastImageUrl2 = imageurl;
                 Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
                 System.out.println("results size " + temp.length);
-                finallist = new ArrayList<>(temp.length);
+                simList2 = new ArrayList<>(temp.length);
                 for (Result r : temp) {
                     if (r.getDistance() <= threshold) {
-                        MediaItem found = mediaDao.getItem(r.getExternalId());
-                        /* This is for testing with collections without Mongo DB
-                        System.out.println("Found media item");
-                        if (found == null) {
-                            found = mediaDao.getItem("438653967841505280");
-                        }*/
-                        if (found.getPublicationTime() > 0)
-                            finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
+                        System.out.println("r.getExternalId "+r.getExternalId());
+                        Image found =imageDAO.get(new ObjectId(r.getExternalId()));
+                        if (found.getLastModifiedDate().getTime() > 0)
+                            simList2.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }
-                Collections.sort(finallist, new Comparator<Responses.SimilarityResponse>() {
+                Collections.sort(simList2, new Comparator<Responses.SimilarityResponse>() {
                     @Override
                     public int compare(Responses.SimilarityResponse result, Responses.SimilarityResponse result2) {
-                        return Long.compare(result.item.getPublicationTime(), result2.item.getPublicationTime());
+                        return Long.compare(result.image.getLastModifiedDate().getTime(), result2.image.getLastModifiedDate().getTime());
                     }
                 });
+                MorphiaManager.tearDown();
             }
-            if (finallist.size() < count)
-                return finallist;
+            if (simList2.size() < count)
+                return simList2;
             else
-                return finallist.subList(offset, offset + count);
+                return simList2.subList(offset, offset + count);
+
         } catch (Exception e) {
             System.out.println(e);
             return new ArrayList<>();
         }
+    }
+
+    ////////////////////////////////////////////////////////
+    ///////// SOLR               ///////////////////////////
+    ///////////////////////////////////////////////////////
+
+    @RequestMapping(value = "/media/webpages/search", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<WebPage> findItemsByKeyword(@RequestParam(value = "query", required = true) String query,
+                                            @RequestParam(value = "count", required = false, defaultValue = "50") int num) {
+        return solr.collectMediaItemsByQuery(query, num);
+
+    }
+
+    ////////////////////////////////////////////////////////
+    ///////// EXCEPTION HANDLING ///////////////////////////
+    ///////////////////////////////////////////////////////
+
+    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(RevealException.class)
+    @ResponseBody
+    public RevealException handleCustomException(RevealException ex) {
+        return ex;
+    }
+
+    public static void main(String[] args) throws Exception {
+        /*int offset = 5;
+        int count = 5;
+        int total = offset + count;
+        Answer answer = IndexingManager.getInstance().findSimilar("https://pbs.twimg.com/media/BhZpUMmIIAAQOsr.png", "showcase", total);
+        List<SimilarityResult> items = new ArrayList<SimilarityResult>();
+        for (int i = offset; i < total; i++) {
+            Result r = answer.getResults()[i];
+            System.out.println(i);
+            //items.add(new SimilarityResult(mediaDao.getItem(r.getExternalId()), r.getDistance()));
+        }*/
+        String[] command = {"/bin/bash", "crawl9995.sh"};
+        ProcessBuilder p = new ProcessBuilder(command);
+        Process pr = p.start();
     }
 
     /*private List<SimilarityResult> finallist;
@@ -467,91 +589,4 @@ public class RevealController {
             return null;
         }
     }*/
-
-    ////////////////////////////////////////////////////////
-    ///////// MEDIA NEW API WITH SIMMO FRAMEWORK ///////////
-    ///////////////////////////////////////////////////////
-
-    @RequestMapping(value = "/media/v2/{collection}", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<Image> mediaItemsV2(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                    @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                    @PathVariable(value = "collection") String collection) {
-        MorphiaManager.setup(collection);
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
-        List<Image> result = imageDAO.getDatastore().find(Image.class).offset(offset).limit(count).asList();
-        MorphiaManager.tearDown();
-        return result;
-    }
-
-    @RequestMapping(value = "/media/v2/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public Image mediaItemByIdV2(@PathVariable(value = "collection") String collection,
-                                     @PathVariable("id") String id) {
-        MorphiaManager.setup(collection);
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
-        Image result = imageDAO.get(new ObjectId(id));
-        MorphiaManager.tearDown();
-       return result;
-    }
-
-    /*@RequestMapping(value = "/media/v2/{collection}/search", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<Image> mediaItemsSearchV2(
-            @PathVariable(value = "collection") String collection,
-            @RequestParam(value = "date", required = false, defaultValue = "-1") long date,
-            @RequestParam(value = "w", required = false, defaultValue = "0") int w,
-            @RequestParam(value = "h", required = false, defaultValue = "0") int h,
-            @RequestParam(value = "query", required = false) String text,
-            @RequestParam(value = "count", required = false, defaultValue = "10") int count,
-            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
-
-        MorphiaManager.setup(collection);
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
-        imageDAO.
-        List<Image> result = imageDAO.getDatastore().find(Image.class).offset(offset).limit(count).asList();
-        MorphiaManager.tearDown();
-        return result;
-        List<MediaItem> list = mediaDao.search(username, text, w, h, date, count, offset, type);
-        return list;
-    }*/
-
-    ////////////////////////////////////////////////////////
-    ///////// SOLR               ///////////////////////////
-    ///////////////////////////////////////////////////////
-
-    @RequestMapping(value = "/media/webpages/search", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<WebPage> findItemsByKeyword(@RequestParam(value = "query", required = true) String query,
-                                            @RequestParam(value = "count", required = false, defaultValue = "50") int num) {
-        return solr.collectMediaItemsByQuery(query, num);
-
-    }
-
-    ////////////////////////////////////////////////////////
-    ///////// EXCEPTION HANDLING ///////////////////////////
-    ///////////////////////////////////////////////////////
-
-    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler(RevealException.class)
-    @ResponseBody
-    public RevealException handleCustomException(RevealException ex) {
-        return ex;
-    }
-
-    public static void main(String[] args) throws Exception {
-        /*int offset = 5;
-        int count = 5;
-        int total = offset + count;
-        Answer answer = IndexingManager.getInstance().findSimilar("https://pbs.twimg.com/media/BhZpUMmIIAAQOsr.png", "showcase", total);
-        List<SimilarityResult> items = new ArrayList<SimilarityResult>();
-        for (int i = offset; i < total; i++) {
-            Result r = answer.getResults()[i];
-            System.out.println(i);
-            //items.add(new SimilarityResult(mediaDao.getItem(r.getExternalId()), r.getDistance()));
-        }*/
-        String[] command = {"/bin/bash", "crawl9995.sh"};
-        ProcessBuilder p = new ProcessBuilder(command);
-        Process pr = p.start();
-    }
 }

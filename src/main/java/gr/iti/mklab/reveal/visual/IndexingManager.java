@@ -78,7 +78,11 @@ public class IndexingManager {
 
     public void createIndex(String name) throws Exception {
         //String ivfpqIndexFolder = "/home/kandreadou/webservice/reveal_indices/" + name + "_" + targetLengthMax;
-        String ivfpqIndexFolder = "/home/iti-310/VisualIndex/data/" + name + "/ivfpq";
+        String ivfpqIndexFolder;
+        if (name.equalsIgnoreCase("showcase"))
+            ivfpqIndexFolder = "/home/iti-310/VisualIndex/data/" + name + "/ivfpq";
+        else
+            ivfpqIndexFolder = "/home/iti-310/VisualIndex/data/" + name;
         File jeLck = new File(ivfpqIndexFolder, "je.lck");
         if (jeLck.exists()) {
             jeLck.delete();
