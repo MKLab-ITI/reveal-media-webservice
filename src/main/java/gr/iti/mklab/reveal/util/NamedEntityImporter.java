@@ -24,7 +24,7 @@ public class NamedEntityImporter {
         BufferedReader br = new BufferedReader(new FileReader(new File(path)));
         String line = "";
         while ((line = br.readLine()) != null) {
-            EntityForTweet tweet = gson.fromJson(line, EntityForTweet.class);
+            NamedEntities tweet = gson.fromJson(line, NamedEntities.class);
             dao.addItem(tweet);
             //System.out.println(tweet);
         }

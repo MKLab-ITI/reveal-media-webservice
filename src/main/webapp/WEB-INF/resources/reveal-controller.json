@@ -124,6 +124,47 @@
                 }
             }
         },
+        "/media/text/entities": {
+            "get": {
+                "tags": [
+                    "media"
+                ],
+                "summary": "Get ranked entities by count and offset ",
+                "description": "",
+                "operationId": "getEntities",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "count",
+                        "description": "The number of items",
+                        "defaultValue": "10",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "description": "The offset",
+                        "defaultValue": "0",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
         "/media/{mediaId}": {
             "get": {
                 "tags": [

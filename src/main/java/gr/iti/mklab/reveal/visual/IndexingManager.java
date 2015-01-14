@@ -27,7 +27,6 @@ import java.util.Map;
  */
 public class IndexingManager {
 
-    protected static String DEFAULT_COLLECTION_NAME = "theSnow";
     protected static int maxNumPixels = 768 * 512;
     protected static int targetLengthMax = 1024;
     protected static PCA pca;
@@ -76,6 +75,8 @@ public class IndexingManager {
         }
     }
 
+    //Use showcase for the snow dataset
+    //The collection name for everything else
     public void createIndex(String name) throws Exception {
         //String ivfpqIndexFolder = "/home/kandreadou/webservice/reveal_indices/" + name + "_" + targetLengthMax;
         String ivfpqIndexFolder;
@@ -83,6 +84,7 @@ public class IndexingManager {
             ivfpqIndexFolder = "/home/iti-310/VisualIndex/data/" + name + "/ivfpq";
         else
             ivfpqIndexFolder = "/home/iti-310/VisualIndex/data/" + name;
+        System.out.println("Loading index " + ivfpqIndexFolder);
         File jeLck = new File(ivfpqIndexFolder, "je.lck");
         if (jeLck.exists()) {
             jeLck.delete();
@@ -109,10 +111,6 @@ public class IndexingManager {
     }
 
     public boolean indexImage(String imageFolder, String imageFilename, String collection) throws Exception {
-
-        if (Strings.isNullOrEmpty(collection)) {
-            collection = DEFAULT_COLLECTION_NAME;
-        }
         AbstractSearchStructure index = indices.get(collection);
         if (index == null) {
             createIndex(collection);
@@ -125,9 +123,6 @@ public class IndexingManager {
     }
 
     public boolean indexImage(String url, String collection) throws Exception {
-        if (Strings.isNullOrEmpty(collection)) {
-            collection = DEFAULT_COLLECTION_NAME;
-        }
         AbstractSearchStructure index = indices.get(collection);
         if (index == null) {
             createIndex(collection);
@@ -137,13 +132,13 @@ public class IndexingManager {
         ImageVectorization imvec = new ImageVectorization(url, img, targetLengthMax, maxNumPixels);
         ImageVectorizationResult imvr = imvec.call();
         double[] vector = imvr.getImageVector();
+        //workaround for black or monochrome images
+        if (vector == null || vector.length < 3)
+            return false;
         return index.indexVector(url, vector);
     }
 
     public Answer findSimilar(String url, String collection, int neighbours) throws Exception {
-        if (Strings.isNullOrEmpty(collection)) {
-            collection = DEFAULT_COLLECTION_NAME;
-        }
         AbstractSearchStructure index = indices.get(collection);
         if (index == null) {
             createIndex(collection);

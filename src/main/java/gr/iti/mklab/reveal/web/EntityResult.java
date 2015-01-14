@@ -1,7 +1,8 @@
 package gr.iti.mklab.reveal.web;
 
 import eu.socialsensor.framework.common.domain.MediaItem;
-import gr.iti.mklab.reveal.util.EntityForTweet;
+import gr.iti.mklab.reveal.util.NamedEntities;
+import gr.iti.mklab.reveal.util.NamedEntity;
 
 import java.io.Serializable;
 import java.net.MalformedURLException;
@@ -16,13 +17,13 @@ public class EntityResult implements Serializable {
 
     @com.google.gson.annotations.Expose
     @com.google.gson.annotations.SerializedName("entities")
-    private EntityForTweet.NamedEntity[] entities;
+    private NamedEntity[] entities;
 
     @com.google.gson.annotations.Expose
     @com.google.gson.annotations.SerializedName("item")
     private MediaItem item;
 
-    public EntityResult(MediaItem item, EntityForTweet.NamedEntity[] entities) throws MalformedURLException {
+    public EntityResult(MediaItem item, NamedEntity[] entities) throws MalformedURLException {
         this.item = item;
         this.entities = entities;
     }

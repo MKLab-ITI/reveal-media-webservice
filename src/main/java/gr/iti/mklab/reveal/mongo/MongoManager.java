@@ -11,7 +11,7 @@ import java.util.List;
  */
 public class MongoManager {
 
-    private DBCollection collection;
+    public DBCollection collection;
 
     public MongoManager(String hostName, String dbName, String collectionName){
         try {

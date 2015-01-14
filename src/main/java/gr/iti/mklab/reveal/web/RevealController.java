@@ -10,7 +10,7 @@ import gr.iti.mklab.reveal.text.NameThatEntity;
 import gr.iti.mklab.reveal.text.TextPreprocessing;
 import gr.iti.mklab.reveal.text.htmlsegmentation.BoilerpipeContentExtraction;
 import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
-import gr.iti.mklab.reveal.util.EntityForTweet;
+import gr.iti.mklab.reveal.util.NamedEntities;
 import gr.iti.mklab.reveal.util.MediaCluster;
 import gr.iti.mklab.reveal.util.MediaItem;
 import gr.iti.mklab.reveal.util.NamedEntityDAO;
@@ -20,7 +20,10 @@ import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import gr.iti.mklab.visual.utilities.Result;
+import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
+import org.mongodb.morphia.dao.BasicDAO;
+import org.mongodb.morphia.dao.DAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -149,6 +152,16 @@ public class RevealController {
         return list;
     }
 
+    @RequestMapping(value = "/media/text/entities", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<NamedEntity> getRankedEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                               @RequestParam(value = "offset", required = false, defaultValue = "0") int offset){
+        MorphiaManager.setup("Showcase");
+        DAO<gr.iti.mklab.reveal.util.NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(gr.iti.mklab.reveal.util.NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB().getName());
+        List<NamedEntity> ne =  rankedDAO.getDatastore().find(NamedEntity.class).offset(offset).limit(count).asList();
+        MorphiaManager.tearDown();
+        return ne;
+    }
 
     /**
      * Returns by default the last 10 media items or the number specified by count
@@ -165,7 +178,7 @@ public class RevealController {
         List<EntityResult> result = new ArrayList<EntityResult>(list.size());
         NamedEntityDAO dao = new NamedEntityDAO("160.40.51.20", "Showcase", "NamedEntities");
         for (MediaItem item : list) {
-            EntityForTweet eft = dao.getItemForTweetId(item.getId());
+            NamedEntities eft = dao.getItemForTweetId(item.getId());
             if (eft != null) {
                 result.add(new EntityResult(item, eft.namedEntities));
             }
@@ -484,18 +497,12 @@ public class RevealController {
                 simList2 = new ArrayList<>(temp.length);
                 for (Result r : temp) {
                     if (r.getDistance() <= threshold) {
-                        System.out.println("r.getExternalId "+r.getExternalId());
-                        Image found =imageDAO.get(new ObjectId(r.getExternalId()));
-                        if (found.getLastModifiedDate().getTime() > 0)
-                            simList2.add(new Responses.SimilarityResponse(found, r.getDistance()));
+                        System.out.println("r.getExternalId " + r.getExternalId());
+                        Image found = imageDAO.getDatastore().find(Image.class).field("url").equal(r.getExternalId()).get();
+                        simList2.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }
-                Collections.sort(simList2, new Comparator<Responses.SimilarityResponse>() {
-                    @Override
-                    public int compare(Responses.SimilarityResponse result, Responses.SimilarityResponse result2) {
-                        return Long.compare(result.image.getLastModifiedDate().getTime(), result2.image.getLastModifiedDate().getTime());
-                    }
-                });
+
                 MorphiaManager.tearDown();
             }
             if (simList2.size() < count)

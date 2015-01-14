@@ -21,12 +21,12 @@ public class NamedEntityDAO {
         mongoHandler = new MongoHandler(host, db, collection, indexes);
     }
 
-    public void addItem(EntityForTweet item) {
+    public void addItem(NamedEntities item) {
         mongoHandler.insert(item);
     }
 
-    public EntityForTweet getItemForTweetId(String tweetId){
+    public NamedEntities getItemForTweetId(String tweetId){
         String json = mongoHandler.findOne("tweetId", tweetId);
-        return gson.fromJson(json, EntityForTweet.class);
+        return gson.fromJson(json, NamedEntities.class);
     }
 }

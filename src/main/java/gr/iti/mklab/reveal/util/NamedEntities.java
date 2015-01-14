@@ -5,11 +5,18 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import eu.socialsensor.framework.common.domain.JSONable;
+import org.bson.types.ObjectId;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Id;
 
 /**
  * Created by kandreadou on 10/3/14.
  */
-public class EntityForTweet implements JSONable{
+@Entity
+public class NamedEntities implements JSONable {
+
+    @Id
+    public ObjectId _id;
 
     @Expose
     @SerializedName(value = "tweetId")
@@ -19,15 +26,6 @@ public class EntityForTweet implements JSONable{
     @SerializedName(value = "namedEntities")
     public NamedEntity[] namedEntities;
 
-    public class NamedEntity {
-        @Expose
-        @SerializedName(value = "token")
-        public String token;
-
-        @Expose
-        @SerializedName(value = "type")
-        public String type;
-    }
 
     @Override
     public String toJSONString() {
@@ -36,4 +34,5 @@ public class EntityForTweet implements JSONable{
                 .create();
         return gson.toJson(this);
     }
+
 }
