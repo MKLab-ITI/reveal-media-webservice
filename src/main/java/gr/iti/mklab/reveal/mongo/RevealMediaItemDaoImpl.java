@@ -54,7 +54,11 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
         Field collectionPrivateField = MongoHandler.class.getDeclaredField("collection");
         collectionPrivateField.setAccessible(true);
         dbCollection = (DBCollection) collectionPrivateField.get(mongoHandler);
+    }
 
+    public void teardown(){
+        mongoHandler.clean();
+        mongoHandler.close();
     }
 
     public List<MediaItem> search(String username, String text, int width, int height, long publicationDate, int limit, int offset, String type) {

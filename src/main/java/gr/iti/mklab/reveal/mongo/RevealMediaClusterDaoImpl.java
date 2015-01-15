@@ -41,6 +41,11 @@ public class RevealMediaClusterDaoImpl extends MediaClusterDAOImpl {
         dbCollection = (DBCollection) collectionPrivateField.get(mongoHandler);
     }
 
+    public void teardown(){
+        mongoHandler.clean();
+        mongoHandler.close();
+    }
+
     public List<MediaCluster> getSortedClusters(int offset, int limit) {
         DBCursor cursor = dbCollection.find().sort(new BasicDBObject("count", -1)).skip(offset);
         List<String> jsonResults = new ArrayList<String>();

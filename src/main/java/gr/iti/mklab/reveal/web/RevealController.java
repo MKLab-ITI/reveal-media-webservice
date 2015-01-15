@@ -30,6 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PreDestroy;
 import java.util.*;
 
 
@@ -55,10 +56,21 @@ public class RevealController {
         String mongoHost = "127.0.0.1";
         mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
         clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClusters");
-        //crawlerCtrler = new CrawlQueueController();
+        crawlerCtrler = new CrawlQueueController();
         nte = new NameThatEntity();
         nte.initPipeline(); //Should be called only once in the beggining
         //solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
+    }
+
+    @PreDestroy
+    public void cleanUp() throws Exception {
+        System.out.println("Spring Container destroy");
+        if (crawlerCtrler != null)
+            crawlerCtrler.shutdown();
+        if(mediaDao!=null)
+            mediaDao.teardown();
+        if(clusterDAO!=null)
+            clusterDAO.teardown();
     }
 
     ////////////////////////////////////////////////////////
@@ -130,6 +142,15 @@ public class RevealController {
         return crawlerCtrler.getStatus(id);
     }
 
+    /**
+     * @return a list of CrawlRequests that are either RUNNING or WAITING
+     */
+    @RequestMapping(value = "/crawls/status", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<CrawlRequest> getCrawlerStatus() {
+        return crawlerCtrler.getActiveCrawls();
+    }
+
     ////////////////////////////////////////////////////////
     ///////// MEDIA OLD API FROM SOCIAL SENSOR /////////////
     ///////////////////////////////////////////////////////
@@ -155,10 +176,10 @@ public class RevealController {
     @RequestMapping(value = "/media/text/entities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<NamedEntity> getRankedEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                               @RequestParam(value = "offset", required = false, defaultValue = "0") int offset){
+                                               @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
         MorphiaManager.setup("Showcase");
         DAO<gr.iti.mklab.reveal.util.NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(gr.iti.mklab.reveal.util.NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB().getName());
-        List<NamedEntity> ne =  rankedDAO.getDatastore().find(NamedEntity.class).offset(offset).limit(count).asList();
+        List<NamedEntity> ne = rankedDAO.getDatastore().find(NamedEntity.class).offset(offset).limit(count).asList();
         MorphiaManager.tearDown();
         return ne;
     }

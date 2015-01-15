@@ -674,6 +674,35 @@
                 }
             }
         },
+        "/crawls/status": {
+            "get": {
+                "tags": [
+                    "crawls"
+                ],
+                "summary": "Gets the crawler status",
+                "description": "",
+                "operationId": "crawl",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/CrawlRequest"
+                        }
+                    },
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
         "/text/entities": {
             "get": {
                 "tags": [

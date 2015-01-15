@@ -7,6 +7,7 @@ import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
+import org.mongodb.morphia.query.Query;
 
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
@@ -209,6 +210,20 @@ public class CrawlQueueController {
         return dao.getDatastore().find(CrawlRequest.class).filter("requestState", CrawlRequest.STATE.WAITING).asList();
     }
 
+    /**
+     * WAITING and RUNNING crawls
+     * @return
+     */
+    public List<CrawlRequest> getActiveCrawls(){
+        Query<CrawlRequest> q = dao.createQuery();
+        q.or(
+                q.criteria("requestState").equal(CrawlRequest.STATE.RUNNING),
+                q.criteria("requestState").equal(CrawlRequest.STATE.WAITING),
+                q.criteria("requestState").equal(CrawlRequest.STATE.FINISHED)
+        );
+        return q.asList();
+    }
+
     private boolean isPortAvailable(int port) {
 
         ServerSocket ss = null;
@@ -246,5 +261,11 @@ public class CrawlQueueController {
                 }
             }
         }).start();
+    }
+
+    public static void main(String[] args) throws Exception {
+        CrawlQueueController c = new CrawlQueueController();
+        List<CrawlRequest> list = c.getActiveCrawls();
+        c.shutdown();
     }
 }
