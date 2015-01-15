@@ -56,7 +56,7 @@ public class CrawlRequest {
     /**
      * The number of crawled images
      */
-    public int numImages;
+    //public int numImages;
 
     /**
      * A list of keywords to focus the crawl on

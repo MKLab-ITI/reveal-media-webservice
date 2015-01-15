@@ -76,9 +76,9 @@ public class CrawlQueueController {
 
     public synchronized  CrawlRequest getStatus(String id){
         CrawlRequest req = getCrawlRequest(id).get(0);
-        DAO<Image, ObjectId> images = new BasicDAO<>(Image.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), req.collectionName);
-        req.numImages = (int) images.count();
-        dao.save(req);
+        //DAO<Image, ObjectId> images = new BasicDAO<>(Image.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), req.collectionName);
+        //req.numImages = (int) images.count();
+        //dao.save(req);
         return req;
     }
 
@@ -261,11 +261,5 @@ public class CrawlQueueController {
                 }
             }
         }).start();
-    }
-
-    public static void main(String[] args) throws Exception {
-        CrawlQueueController c = new CrawlQueueController();
-        List<CrawlRequest> list = c.getActiveCrawls();
-        c.shutdown();
     }
 }
