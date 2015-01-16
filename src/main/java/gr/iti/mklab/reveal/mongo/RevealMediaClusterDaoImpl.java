@@ -42,7 +42,7 @@ public class RevealMediaClusterDaoImpl extends MediaClusterDAOImpl {
     }
 
     public void teardown(){
-        mongoHandler.clean();
+        // DO NOT DO CLEAN. It drops the collection
         mongoHandler.close();
     }
 

@@ -314,16 +314,14 @@ public class RevealController {
                 lastImageUrl = imageurl;
                 Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
                 System.out.println("results size " + temp.length);
+                for(Result res:temp){
+                    System.out.println(res.getExternalId()+ " "+res.getDistance()+" "+res.getInternalId());
+                }
                 finallist = new ArrayList<>(temp.length);
                 for (Result r : temp) {
                     if (r.getDistance() <= threshold) {
                         MediaItem found = mediaDao.getItem(r.getExternalId());
-                        /* This is for testing with collections without Mongo DB
-                        System.out.println("Found media item");
-                        if (found == null) {
-                            found = mediaDao.getItem("438653967841505280");
-                        }*/
-                        if (found.getPublicationTime() > 0)
+                        if (found!=null && found.getPublicationTime() > 0)
                             finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }
