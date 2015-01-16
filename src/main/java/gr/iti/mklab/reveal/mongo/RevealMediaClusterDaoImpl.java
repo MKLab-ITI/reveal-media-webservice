@@ -7,6 +7,7 @@ import eu.socialsensor.framework.client.dao.impl.MediaClusterDAOImpl;
 
 import eu.socialsensor.framework.client.mongo.MongoHandler;
 import gr.iti.mklab.reveal.util.MediaCluster;
+import gr.iti.mklab.reveal.util.MediaItem;
 
 
 import java.lang.reflect.Field;
@@ -75,8 +76,9 @@ public class RevealMediaClusterDaoImpl extends MediaClusterDAOImpl {
 
     public static void main(String[] args) {
         try {
+            int offset = 0;
+            int count = 20;
             RevealMediaClusterDaoImpl dao = new RevealMediaClusterDaoImpl("160.40.51.20", "Showcase", "MediaClusters");
-
 
             List<MediaCluster> clusters = dao.getSortedClusters(0, 10);
             for (MediaCluster c : clusters) {

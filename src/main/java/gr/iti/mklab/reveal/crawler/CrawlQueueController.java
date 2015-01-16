@@ -1,10 +1,14 @@
 package gr.iti.mklab.reveal.crawler;
 
+import gr.iti.mklab.reveal.retriever.YoutubeRetriever;
 import gr.iti.mklab.simmo.items.Image;
+import gr.iti.mklab.simmo.items.Video;
+import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.Morphia;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
@@ -59,7 +63,7 @@ public class CrawlQueueController {
      * @param crawlDir
      * @param collectionName
      */
-    public synchronized CrawlRequest submit(boolean isNew, String crawlDir, String collectionName, String... keywords) {
+    public synchronized CrawlRequest submit(boolean isNew, String crawlDir, String collectionName, Set<String> keywords) {
         System.out.println("submit event "+ ArrayUtils.toString(keywords));
         CrawlRequest r = enqueue(isNew, crawlDir, collectionName, keywords);
         tryLaunch();
@@ -111,7 +115,7 @@ public class CrawlQueueController {
         }
     }
 
-    private CrawlRequest enqueue(boolean isNew, String crawlDir, String collectionName, String... keywords) {
+    private CrawlRequest enqueue(boolean isNew, String crawlDir, String collectionName, Set<String> keywords) {
         CrawlRequest r = new CrawlRequest();
         r.collectionName = collectionName;
         r.requestState = CrawlRequest.STATE.WAITING;
@@ -119,8 +123,7 @@ public class CrawlQueueController {
         r.creationDate = new Date();
         r.crawlDataPath = crawlDir;
         r.isNew = isNew;
-        for (String k : keywords)
-            r.keywords.add(k);
+        r.keywords = keywords;
         dao.save(r);
         return r;
     }
@@ -156,11 +159,23 @@ public class CrawlQueueController {
             System.out.println("Try launch crawl for port " + i);
             // Check if port is really available, if it is launch the respective script
             if (isPortAvailable(i)) {
+                //TODO: Ideally this should be done from inside the crawler and not here
+                retrieveYoutubeVideos(waitingList.get(0).collectionName, waitingList.get(0).keywords);
                 launch("crawl" + i + ".sh");
                 break;
             }
             System.out.println("Port " + i + " is not available");
         }
+    }
+
+    private void retrieveYoutubeVideos(String collection, Set<String> keywords){
+        MorphiaManager.setup(collection);
+        YoutubeRetriever r = new YoutubeRetriever();
+        List<Video> results = r.retrieveKeywordsFeeds(keywords);
+        MediaDAO<Video> dao = new MediaDAO<>(Video.class);
+        for (Video v : results)
+            dao.save(v);
+        MorphiaManager.tearDown();
     }
 
     private void launch(String scriptName) {

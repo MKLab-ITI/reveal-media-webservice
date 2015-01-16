@@ -2,8 +2,11 @@ package gr.iti.mklab.reveal.web;
 
 import gr.iti.mklab.reveal.util.MediaItem;
 import gr.iti.mklab.simmo.items.Image;
+import gr.iti.mklab.simmo.items.Video;
 
 import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by kandreadou on 1/9/15.
@@ -55,6 +58,18 @@ public class Responses {
             this.image = image;
             this.distance = distance;
         }
+    }
+
+    public static class MediaResponse {
+        protected List<Image> images = new ArrayList<>();
+
+        protected List<Video> videos = new ArrayList<>();
+
+        protected long numImages;
+
+        protected long numVideos;
+
+        protected long offset;
     }
 
 }

@@ -348,6 +348,24 @@
                         "description": "ID of cluster that needs to be fetched",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "count",
+                        "description": "The number of cluster members",
+                        "defaultValue": "10",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "description": "The offset",
+                        "defaultValue": "0",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -787,6 +805,13 @@
                     "application/json"
                 ],
                 "parameters": [
+                    {
+                        "in": "query",
+                        "name": "type",
+                        "description": "The type, image, video or nothing (for all)",
+                        "required": false,
+                        "type": "string"
+                    },
                     {
                         "in": "query",
                         "name": "count",

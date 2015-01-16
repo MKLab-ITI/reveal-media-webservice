@@ -5,6 +5,7 @@ import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.crawler.CrawlRequest;
 import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
+import gr.iti.mklab.reveal.retriever.YoutubeRetriever;
 import gr.iti.mklab.reveal.solr.SolrManager;
 import gr.iti.mklab.reveal.text.NameThatEntity;
 import gr.iti.mklab.reveal.text.TextPreprocessing;
@@ -17,6 +18,8 @@ import gr.iti.mklab.reveal.util.NamedEntityDAO;
 import gr.iti.mklab.reveal.visual.IndexingManager;
 import gr.iti.mklab.simmo.annotations.NamedEntity;
 import gr.iti.mklab.simmo.items.Image;
+import gr.iti.mklab.simmo.items.Media;
+import gr.iti.mklab.simmo.items.Video;
 import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import gr.iti.mklab.visual.utilities.Result;
@@ -67,9 +70,9 @@ public class RevealController {
         System.out.println("Spring Container destroy");
         if (crawlerCtrler != null)
             crawlerCtrler.shutdown();
-        if(mediaDao!=null)
+        if (mediaDao != null)
             mediaDao.teardown();
-        if(clusterDAO!=null)
+        if (clusterDAO != null)
             clusterDAO.teardown();
     }
 
@@ -127,7 +130,7 @@ public class RevealController {
     @ResponseBody
     public CrawlRequest submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) {
         String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
-        return crawlerCtrler.submit(request.isNew, rootCrawlerDir + "crawl_" + request.collectionName, request.collectionName, request.keywords.toArray(new String[request.keywords.size()]));
+        return crawlerCtrler.submit(request.isNew, rootCrawlerDir + "crawl_" + request.collectionName, request.collectionName, request.keywords);
     }
 
     @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")
@@ -249,7 +252,9 @@ public class RevealController {
         String[] members = cluster.getMembers().toArray(new String[cluster.getCount()]);
         List<MediaItem> items = new ArrayList<>(count);
         for (int i = offset; i < total; i++) {
-            items.add(mediaDao.getItem(members[i]));
+            MediaItem mi = mediaDao.getItem(members[i]);
+            if (mi != null)
+                items.add(mi);
         }
         return items;
     }
@@ -314,14 +319,14 @@ public class RevealController {
                 lastImageUrl = imageurl;
                 Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
                 System.out.println("results size " + temp.length);
-                for(Result res:temp){
-                    System.out.println(res.getExternalId()+ " "+res.getDistance()+" "+res.getInternalId());
+                for (Result res : temp) {
+                    System.out.println(res.getExternalId() + " " + res.getDistance() + " " + res.getInternalId());
                 }
                 finallist = new ArrayList<>(temp.length);
                 for (Result r : temp) {
                     if (r.getDistance() <= threshold) {
                         MediaItem found = mediaDao.getItem(r.getExternalId());
-                        if (found!=null && found.getPublicationTime() > 0)
+                        if (found != null && found.getPublicationTime() > 0)
                             finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }
@@ -453,23 +458,39 @@ public class RevealController {
 
     @RequestMapping(value = "/media/v2/{collection}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<Image> mediaItemsV2(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                    @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                    @PathVariable(value = "collection") String collection) {
+    public Responses.MediaResponse mediaItemsV2(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                                @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                @RequestParam(value = "type", required = false) String type,
+                                                @PathVariable(value = "collection") String collection) {
         MorphiaManager.setup(collection);
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
-        List<Image> result = imageDAO.getItems(count, offset);
+        Responses.MediaResponse response = new Responses.MediaResponse();
+        if (type == null || type.equalsIgnoreCase("image")) {
+            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+            response.images = imageDAO.getItems(count, offset);
+            response.numImages = imageDAO.count();
+        }
+        if (type == null || type.equalsIgnoreCase("video")) {
+            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class);
+            response.videos = videoDAO.getItems(count, offset);
+            response.numVideos = videoDAO.count();
+        }
+        response.offset = offset;
         MorphiaManager.tearDown();
-        return result;
+        return response;
     }
 
     @RequestMapping(value = "/media/v2/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public Image mediaItemByIdV2(@PathVariable(value = "collection") String collection,
+    public Media mediaItemByIdV2(@PathVariable(value = "collection") String collection,
                                  @PathVariable("id") String id) {
         MorphiaManager.setup(collection);
+        Media result;
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
-        Image result = imageDAO.get(new ObjectId(id));
+        result = imageDAO.get(new ObjectId(id));
+        if (result == null) {
+            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class);
+            result = videoDAO.get(new ObjectId(id));
+        }
         MorphiaManager.tearDown();
         return result;
     }

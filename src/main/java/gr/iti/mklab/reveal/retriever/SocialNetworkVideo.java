@@ -31,6 +31,8 @@ public class SocialNetworkVideo extends Video {
 
     protected float rating;
 
+    public SocialNetworkVideo(){}
+
     public SocialNetworkVideo(VideoEntry v) {
 
         if (v == null || v.getId() == null)

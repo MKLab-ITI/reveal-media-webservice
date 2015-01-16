@@ -12,47 +12,50 @@ import org.apache.log4j.Logger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
- * Created by kandreadou on 1/15/15.
+ * A YoutubeRetriever that retrieves videos from youtube given a set of keywords
+ * Based on the socialsensor source code, adapted for the needs of this project
+ *
+ * @author kandreadou
  */
 public class YoutubeRetriever {
 
-    private final String activityFeedUserUrlPrefix = "http://gdata.youtube.com/feeds/api/users/";
     private final String activityFeedVideoUrlPrefix = "http://gdata.youtube.com/feeds/api/videos";
-    private final String uploadsActivityFeedUrlSuffix = "/uploads";
     private Logger logger = Logger.getLogger(YoutubeRetriever.class);
 
     private YouTubeService service;
-    private int results_threshold;
-    private int request_threshold;
-    private long maxRunningTime;
+    // This is an API restriction
+    private final static int RESULTS_THRESHOLD = 500;
+    private final static int REQUEST_THRESHOLD = 50;
+    private final static long MAX_RUNNING_TIME = 120000; //2 MINUTES
 
     private final static String APP_NAME = "reveal-2015";
     private final static String DEV_ID = "AIzaSyA_DFJJ63kioLqZ09fH2kvIlqeNMrPvATU";
 
-    public static void main(String[] args) throws Exception{
-        YoutubeRetriever r = new YoutubeRetriever(APP_NAME, DEV_ID,100,20,50000);
-        List<Video> results = r.retrieveKeywordsFeeds(new String[]{"Ukraine"});
+    public static void main(String[] args) throws Exception {
+        YoutubeRetriever r = new YoutubeRetriever();
+        Set<String> set = new HashSet<>();
+        set.add("Ukraine");
+        set.add("merkel");
+        set.add("intervention");
+        List<Video> results = r.retrieveKeywordsFeeds(set);
         MorphiaManager.setup("youtube");
         MediaDAO<Video> dao = new MediaDAO<>(Video.class);
-        for (Video v:results)
+        for (Video v : results)
             dao.save(v);
+        //SocialNetworkVideo v = (SocialNetworkVideo) dao.get(new ObjectId("54b7dc7c00b0d4e0cd2f784b"));
         MorphiaManager.tearDown();
     }
-    public YoutubeRetriever(String clientId, String developerKey) {
-        this.service = new YouTubeService(clientId, developerKey);
+
+    public YoutubeRetriever() {
+        this.service = new YouTubeService(APP_NAME, DEV_ID);
     }
 
-    public YoutubeRetriever(String clientId, String developerKey, int maxResults, int maxRequests, long maxRunningTime) {
-        this(clientId, developerKey);
-        this.results_threshold = maxResults;
-        this.request_threshold = maxRequests;
-        this.maxRunningTime = maxRunningTime;
-    }
-
-    public List<Video> retrieveKeywordsFeeds(String[] keywords) {
+    public List<Video> retrieveKeywordsFeeds(Set<String> keywords) {
 
         List<Video> items = new ArrayList<>();
 
@@ -62,9 +65,6 @@ public class YoutubeRetriever {
         int numberOfRequests = 0;
 
         long currRunningTime = System.currentTimeMillis();
-
-        boolean isFinished = false;
-
 
         if (keywords == null) {
             logger.error("#YouTube : No keywords feed");
@@ -113,8 +113,8 @@ public class YoutubeRetriever {
                     Video videoItem = new SocialNetworkVideo(video);
                     items.add(videoItem);
 
-                    if (items.size() > results_threshold || numberOfRequests >= request_threshold || (System.currentTimeMillis() - currRunningTime) > maxRunningTime) {
-                       return items;
+                    if (items.size() > RESULTS_THRESHOLD || numberOfRequests >= REQUEST_THRESHOLD || (System.currentTimeMillis() - currRunningTime) > MAX_RUNNING_TIME) {
+                        return items;
                     }
                 }
 

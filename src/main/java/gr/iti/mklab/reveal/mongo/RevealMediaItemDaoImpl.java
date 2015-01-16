@@ -104,7 +104,7 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
     }
 
     private List<MediaItem> get(BasicDBObject object, int offset, int limit) {
-        DBCursor cursor = dbCollection.find(object).skip(offset);
+        DBCursor cursor = dbCollection.find(object).sort(new BasicDBObject("publicationTime",-1)).skip(offset);
         List<String> jsonResults = new ArrayList<String>();
         if (limit > 0) {
             cursor = cursor.limit(limit);
