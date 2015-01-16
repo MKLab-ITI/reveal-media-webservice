@@ -2,16 +2,22 @@ package gr.iti.mklab.reveal.util;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import eu.socialsensor.framework.client.dao.StreamUserDAO;
 import eu.socialsensor.framework.client.dao.impl.StreamUserDAOImpl;
 import eu.socialsensor.framework.common.domain.MediaItem;
 import eu.socialsensor.framework.common.domain.StreamUser;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.util.DateUtil;
+import org.bson.BSONObject;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by kandreadou on 10/6/14.
@@ -20,7 +26,18 @@ public class TextImporter {
 
     public static void main(String[] args) throws Exception {
         TextImporter ti = new TextImporter();
-        ti.importUsersFromFiles();
+        ti.sanitizeStreamUsers();
+    }
+
+    private void sanitizeStreamUsers() throws Exception{
+        StreamUserDAOImpl userDAO = new StreamUserDAOImpl("160.40.51.20", "Showcase", "StreamUsers");
+        StreamUserDAO.StreamUserIterator it = userDAO.getIterator(new BasicDBObject("profileImage", new BasicDBObject("$exists", true)));
+        while(it.hasNext()){
+            StreamUser s = it.next();
+            s.setUrl(s.getPageUrl());
+            s.setImageUrl(s.getProfileImage());
+            userDAO.updateStreamUser(s);
+        }
     }
 
     private void importUsersFromFiles() throws Exception {

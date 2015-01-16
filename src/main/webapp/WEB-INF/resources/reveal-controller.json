@@ -948,6 +948,13 @@
                         "description": "The minimum date",
                         "required": false,
                         "type": "integer"
+                    },
+                    {
+                        "in": "query",
+                        "name": "type",
+                        "description": "The type, image, video or nothing (for all)",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {

@@ -5,7 +5,6 @@ import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.crawler.CrawlRequest;
 import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
-import gr.iti.mklab.reveal.retriever.YoutubeRetriever;
 import gr.iti.mklab.reveal.solr.SolrManager;
 import gr.iti.mklab.reveal.text.NameThatEntity;
 import gr.iti.mklab.reveal.text.TextPreprocessing;
@@ -23,7 +22,6 @@ import gr.iti.mklab.simmo.items.Video;
 import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import gr.iti.mklab.visual.utilities.Result;
-import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
@@ -497,19 +495,30 @@ public class RevealController {
 
     @RequestMapping(value = "/media/v2/{collection}/search", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<Image> mediaItemsSearchV2(
+    public Responses.MediaResponse mediaItemsSearchV2(
             @PathVariable(value = "collection") String collection,
             @RequestParam(value = "date", required = false, defaultValue = "-1") long date,
             @RequestParam(value = "w", required = false, defaultValue = "0") int w,
             @RequestParam(value = "h", required = false, defaultValue = "0") int h,
             @RequestParam(value = "count", required = false, defaultValue = "10") int count,
-            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
+            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+            @RequestParam(value = "type", required = false) String type) {
 
         MorphiaManager.setup(collection);
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
-        List<Image> result = imageDAO.search(new Date(date), w, h, count, offset);
+        Responses.MediaResponse response = new Responses.MediaResponse();
+        if (type == null || type.equalsIgnoreCase("image")) {
+            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+            response.images = imageDAO.search("lastModifiedDate", new Date(date), w, h, count, offset);
+            response.numImages = imageDAO.count();
+        }
+        if (type == null || type.equalsIgnoreCase("video")) {
+            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class);
+            response.videos = videoDAO.search("creationDate", new Date(date), w, h, count, offset);
+            response.numVideos = videoDAO.count();
+        }
+        response.offset = offset;
         MorphiaManager.tearDown();
-        return result;
+        return response;
     }
 
     private List<Responses.SimilarityResponse> simList2;
