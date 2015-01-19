@@ -324,7 +324,7 @@ public class RevealController {
                 for (Result r : temp) {
                     if (r.getDistance() <= threshold) {
                         MediaItem found = mediaDao.getItem(r.getExternalId());
-                        if (found != null && found.getPublicationTime() > 0)
+                        if (found != null)
                             finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }

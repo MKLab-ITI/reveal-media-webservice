@@ -8,6 +8,7 @@ import eu.socialsensor.framework.client.dao.StreamUserDAO;
 import eu.socialsensor.framework.client.dao.impl.StreamUserDAOImpl;
 import eu.socialsensor.framework.common.domain.MediaItem;
 import eu.socialsensor.framework.common.domain.StreamUser;
+import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.util.DateUtil;
@@ -26,9 +27,11 @@ public class TextImporter {
 
     public static void main(String[] args) throws Exception {
         TextImporter ti = new TextImporter();
-        ti.sanitizeStreamUsers();
+        ti.sanitizeMediaClusters();
     }
 
+    // This is needed because of the way the storm focused crawler stores the video
+    // stream users (e.g. Youtube).
     private void sanitizeStreamUsers() throws Exception{
         StreamUserDAOImpl userDAO = new StreamUserDAOImpl("160.40.51.20", "Showcase", "StreamUsers");
         StreamUserDAO.StreamUserIterator it = userDAO.getIterator(new BasicDBObject("profileImage", new BasicDBObject("$exists", true)));
@@ -37,6 +40,15 @@ public class TextImporter {
             s.setUrl(s.getPageUrl());
             s.setImageUrl(s.getProfileImage());
             userDAO.updateStreamUser(s);
+        }
+    }
+
+    // Delete non existing cluster members
+    private void sanitizeMediaClusters() throws Exception {
+        RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", "Showcase", "MediaClusters");
+        List<MediaCluster> clusters = clusterDao.getSortedClusters(0,7278);
+        for(MediaCluster c:clusters){
+            clusterDao.updateCluster(c.getId(), c.getMembers().size());
         }
     }
 

@@ -47,6 +47,15 @@ public class RevealMediaClusterDaoImpl extends MediaClusterDAOImpl {
         mongoHandler.close();
     }
 
+    public void updateCluster(String id, int count){
+        BasicDBObject newDocument = new BasicDBObject();
+        newDocument.append("$set", new BasicDBObject().append("count", count));
+
+        BasicDBObject searchQuery = new BasicDBObject().append("id", id);
+
+        dbCollection.update(searchQuery, newDocument);
+    }
+
     public List<MediaCluster> getSortedClusters(int offset, int limit) {
         DBCursor cursor = dbCollection.find().sort(new BasicDBObject("count", -1)).skip(offset);
         List<String> jsonResults = new ArrayList<String>();
