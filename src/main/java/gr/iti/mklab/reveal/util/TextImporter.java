@@ -6,10 +6,10 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import eu.socialsensor.framework.client.dao.StreamUserDAO;
 import eu.socialsensor.framework.client.dao.impl.StreamUserDAOImpl;
-import eu.socialsensor.framework.common.domain.MediaItem;
 import eu.socialsensor.framework.common.domain.StreamUser;
 import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
+import gr.iti.mklab.reveal.visual.IndexingManager;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.util.DateUtil;
 import org.bson.BSONObject;
@@ -27,15 +27,39 @@ public class TextImporter {
 
     public static void main(String[] args) throws Exception {
         TextImporter ti = new TextImporter();
-        ti.sanitizeMediaClusters();
+        ti.deleteBlankImages();
+    }
+
+    private void deleteBlankImages() throws Exception {
+        IndexingManager.getInstance();
+        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "Showcase", "MediaItems");
+        List<MediaItem> items = mediaDao.getMediaItems(1000, 34110, "image");
+        for (MediaItem item : items) {
+            boolean isBlank = IndexingManager.getInstance().isImageBlank(item.getUrl());
+            if (isBlank)
+                System.out.println("Image " + item.getUrl() +"and id "+item.getId() + " is blank");
+        }
+    }
+
+    private void sanitizeImageSizes() throws Exception {
+        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "Showcase", "MediaItems");
+        int nullCounter = 0;
+        int smallCounter = 0;
+        List<MediaItem> items = mediaDao.getMediaItems(0, 35105, "image");
+        for (MediaItem item : items) {
+            if (item.getWidth() == null || item.getHeight() == null)
+                mediaDao.removeMediaItem(item.getId());
+            else if (item.getHeight() < 200 && item.getWidth() < 200)
+                mediaDao.removeMediaItem(item.getId());
+        }
     }
 
     // This is needed because of the way the storm focused crawler stores the video
     // stream users (e.g. Youtube).
-    private void sanitizeStreamUsers() throws Exception{
+    private void sanitizeStreamUsers() throws Exception {
         StreamUserDAOImpl userDAO = new StreamUserDAOImpl("160.40.51.20", "Showcase", "StreamUsers");
         StreamUserDAO.StreamUserIterator it = userDAO.getIterator(new BasicDBObject("profileImage", new BasicDBObject("$exists", true)));
-        while(it.hasNext()){
+        while (it.hasNext()) {
             StreamUser s = it.next();
             s.setUrl(s.getPageUrl());
             s.setImageUrl(s.getProfileImage());
@@ -46,14 +70,14 @@ public class TextImporter {
     // Delete non existing cluster members
     private void sanitizeMediaClusters() throws Exception {
         RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", "Showcase", "MediaClusters");
-        List<MediaCluster> clusters = clusterDao.getSortedClusters(0,7278);
-        for(MediaCluster c:clusters){
+        List<MediaCluster> clusters = clusterDao.getSortedClusters(0, 7278);
+        for (MediaCluster c : clusters) {
             clusterDao.updateCluster(c.getId(), c.getMembers().size());
         }
     }
 
     private void importUsersFromFiles() throws Exception {
-        int count=0;
+        int count = 0;
         RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "Showcase", "MediaItems");
         StreamUserDAOImpl userDAO = new StreamUserDAOImpl("160.40.51.20", "Showcase", "StreamUsers");
         BufferedReader reader;
@@ -72,14 +96,14 @@ public class TextImporter {
             String line = null;
             while ((line = reader.readLine()) != null) {
                 count++;
-                if(count==930){
+                if (count == 930) {
                     System.out.println(line);
                 }
                 try {
                     JsonObject tweet = parser.parse(line).getAsJsonObject();
                     String tweetId = tweet.get("id").getAsString();
                     JsonObject user = tweet.get("user").getAsJsonObject();
-                    if(user==null){
+                    if (user == null) {
                         System.out.println("USER IS NULL");
                     }
                     if (user != null) {
@@ -96,13 +120,13 @@ public class TextImporter {
                             su.setImageUrl(user.get("profile_image_url").getAsString());
                         if (user.has("followers_count"))
                             su.setFollowers(user.get("followers_count").getAsLong());
-                        if (!user.get("screen_name").isJsonNull()){
+                        if (!user.get("screen_name").isJsonNull()) {
                             String screenName = user.get("screen_name").getAsString();
                             su.setUserid(screenName);
-                            su.setUrl("https://twitter.com/"+screenName);
+                            su.setUrl("https://twitter.com/" + screenName);
                         }
 
-                        MediaItem item = mediaDao.getMediaItem(tweetId);
+                        MediaItem item = (MediaItem) mediaDao.getMediaItem(tweetId);
 
                         if (item != null) {
                             //System.out.println(item);
@@ -114,7 +138,7 @@ public class TextImporter {
                         }
                     }
                 } catch (Exception ex) {
-                    System.out.println(ex +"line "+line);
+                    System.out.println(ex + "line " + line);
                 }
             }
             reader.close();
@@ -139,7 +163,7 @@ public class TextImporter {
             while ((line = reader.readLine()) != null) {
                 JsonObject tweet = parser.parse(line).getAsJsonObject();
                 String tweetId = tweet.get("id").getAsString();
-                MediaItem item = mediaDao.getMediaItem(tweetId);
+                MediaItem item = (MediaItem) mediaDao.getMediaItem(tweetId);
                 if (item != null) {
                     System.out.println(item);
                     if (StringUtils.isEmpty(item.getDescription())) {

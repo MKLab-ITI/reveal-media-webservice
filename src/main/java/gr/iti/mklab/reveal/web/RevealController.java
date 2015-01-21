@@ -238,9 +238,11 @@ public class RevealController {
     @ResponseBody
     public List<MediaItem> mediaCluster(@PathVariable(value = "id") String clusterId,
                                         @RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                        @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
+                                        @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) throws RevealException {
 
         MediaCluster cluster = clusterDAO.getCluster(clusterId);
+        if (cluster == null)
+            throw new RevealException("Cluster with id " + clusterId + " not found", null);
         int numMembers = cluster.getCount();
         if (offset > numMembers)
             return new ArrayList<>();
@@ -267,8 +269,10 @@ public class RevealController {
      */
     @RequestMapping(value = "/media/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public MediaItem mediaItemById(@PathVariable("id") String mediaItemId) {
+    public MediaItem mediaItemById(@PathVariable("id") String mediaItemId) throws RevealException {
         MediaItem mi = mediaDao.getItem(mediaItemId);
+        if (mi == null)
+            throw new RevealException("Media with id " + mediaItemId + " not found", null);
         return mi;
     }
 
@@ -300,6 +304,7 @@ public class RevealController {
     private List<Responses.SimilarityResponse> finallist;
     private String lastImageUrl;
     private double lastThreshold;
+    private boolean isBusy = false;
 
     @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
@@ -309,13 +314,14 @@ public class RevealController {
                                                                 @RequestParam(value = "count", required = false, defaultValue = "50") int count,
                                                                 @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
+            if (isBusy)
+                return new ArrayList<>();
             if (!imageurl.equals(lastImageUrl) || finallist == null || (finallist != null && offset + count > finallist.size()) || lastThreshold != threshold) {
-                int total = offset + count;
-                if (total < 100)
-                    total = 100;
+                isBusy = true;
+                int roundedToTheNextHundred = ((offset + count + 99) / 100) * 100;
                 lastThreshold = threshold;
                 lastImageUrl = imageurl;
-                Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
+                Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, roundedToTheNextHundred).getResults();
                 System.out.println("results size " + temp.length);
                 for (Result res : temp) {
                     System.out.println(res.getExternalId() + " " + res.getDistance() + " " + res.getInternalId());
@@ -325,7 +331,7 @@ public class RevealController {
                     if (r.getDistance() <= threshold) {
                         MediaItem found = mediaDao.getItem(r.getExternalId());
                         if (found != null)
-                            finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
+                            finallist.add( new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }
                 Collections.sort(finallist, new Comparator<Responses.SimilarityResponse>() {
@@ -335,11 +341,13 @@ public class RevealController {
                     }
                 });
             }
+            isBusy = false;
             if (finallist.size() < count)
                 return finallist;
             else
                 return finallist.subList(offset, offset + count);
         } catch (Exception e) {
+            isBusy = false;
             System.out.println(e);
             return new ArrayList<>();
         }
@@ -360,9 +368,10 @@ public class RevealController {
     @RequestMapping(value = "/collections/add", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public Responses.IndexResponse collectionsAdd(
-            @RequestParam(value = "name", required = true) String name) {
+            @RequestParam(value = "name", required = true) String name,
+            @RequestParam(value = "size", required = false, defaultValue = "100000") int numVectors) {
         try {
-            IndexingManager.getInstance().createIndex(name);
+            IndexingManager.getInstance().createIndex(name, numVectors);
             return new Responses.IndexResponse();
         } catch (Exception ex) {
             return new Responses.IndexResponse(false, ex.toString());

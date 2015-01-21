@@ -3,10 +3,13 @@ package gr.iti.mklab.reveal.web;
 import gr.iti.mklab.reveal.util.MediaItem;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Video;
+import org.bson.types.ObjectId;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by kandreadou on 1/9/15.
@@ -58,6 +61,31 @@ public class Responses {
             this.image = image;
             this.distance = distance;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SimilarityResponse that = (SimilarityResponse) o;
+
+            if (Double.compare(that.distance, distance) != 0) return false;
+            if (image != null ? !image.getObjectId().equals(that.image.getObjectId()) : that.image != null) return false;
+            if (item != null ? !item.getId().equals(that.item.getId()) : that.item != null) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result;
+            long temp;
+            temp = Double.doubleToLongBits(distance);
+            result = (int) (temp ^ (temp >>> 32));
+            result = 31 * result + (item != null ? item.hashCode() : 0);
+            result = 31 * result + (image != null ? image.hashCode() : 0);
+            return result;
+        }
     }
 
     public static class MediaResponse {
@@ -70,6 +98,21 @@ public class Responses {
         protected long numVideos;
 
         protected long offset;
+    }
+
+    public static void main(String[] args) throws Exception {
+        Image im = new Image();
+        im.setObjectId(new ObjectId("54b8f9d2e4b0daec5c5e5921"));
+        SimilarityResponse res = new SimilarityResponse(im, 1.2);
+        Image im2 = new Image();
+        im2.setObjectId(new ObjectId("54b8f9d2e4b0daec5c5e5921"));
+        SimilarityResponse res2 = new SimilarityResponse(im, 1.2);
+
+        List<SimilarityResponse> set = new ArrayList<>();
+        set.add(res);
+        boolean contains = set.contains(res2);
+
+        int m = 0;
     }
 
 }

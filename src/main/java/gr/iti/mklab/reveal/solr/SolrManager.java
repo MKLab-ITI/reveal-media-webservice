@@ -1,12 +1,7 @@
 package gr.iti.mklab.reveal.solr;
 
-import eu.socialsensor.framework.client.search.Bucket;
-import eu.socialsensor.framework.client.search.Facet;
 import eu.socialsensor.framework.client.search.SearchEngineResponse;
-import eu.socialsensor.framework.client.search.solr.SolrMediaItem;
-import eu.socialsensor.framework.client.search.solr.SolrMediaItemHandler;
 import eu.socialsensor.framework.client.search.solr.SolrWebPage;
-import eu.socialsensor.framework.common.domain.MediaItem;
 import eu.socialsensor.framework.common.domain.WebPage;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -14,11 +9,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.SolrPingResponse;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 
 import java.net.MalformedURLException;
 import java.util.*;

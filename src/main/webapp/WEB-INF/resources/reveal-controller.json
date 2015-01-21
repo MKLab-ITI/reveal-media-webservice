@@ -36,6 +36,14 @@
                         "description": "The name of the collection",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "size",
+                        "description": "The maximum number of vectors in the collection",
+                        "required": false,
+                        "type": "integer",
+                        "defaultValue": 100000
                     }
                 ],
                 "responses": {
@@ -393,7 +401,7 @@
                     {
                         "in": "query",
                         "name": "count",
-                        "description": "The number of clusters",
+                        "description": "The desired number of results",
                         "defaultValue": "10",
                         "required": false,
                         "type": "integer",
@@ -526,57 +534,6 @@
                         "schema": {
                             "$ref": "#/definitions/MediaItem"
                         }
-                    },
-                    "405": {
-                        "description": "Invalid input"
-                    }
-                }
-            }
-        },
-        "/crawls/{id}": {
-            "get": {
-                "tags": [
-                    "crawls"
-                ],
-                "summary": "Gets a collection of images from the specified collection",
-                "description": "",
-                "operationId": "crawl",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id",
-                        "description": "The crawl request id",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "count",
-                        "description": "The number of items",
-                        "defaultValue": "10",
-                        "required": false,
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    {
-                        "in": "query",
-                        "name": "offset",
-                        "description": "The offset",
-                        "defaultValue": "0",
-                        "required": false,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "successful operation"
                     },
                     "405": {
                         "description": "Invalid input"

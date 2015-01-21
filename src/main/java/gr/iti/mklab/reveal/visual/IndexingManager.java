@@ -75,9 +75,13 @@ public class IndexingManager {
         }
     }
 
+    public void createIndex(String name) throws Exception {
+        createIndex(name, 100000);
+    }
+
     //Use showcase for the snow dataset
     //The collection name for everything else
-    public void createIndex(String name) throws Exception {
+    public void createIndex(String name, int maximumNumVectors) throws Exception {
         //String ivfpqIndexFolder = "/home/kandreadou/webservice/reveal_indices/" + name + "_" + targetLengthMax;
         String ivfpqIndexFolder;
         if (name.equalsIgnoreCase("showcase"))
@@ -92,7 +96,6 @@ public class IndexingManager {
             jeLck.getParentFile().getParentFile().mkdirs();
         }
 
-        int maximumNumVectors = 100000;
         int m2 = 64;
         int k_c = 256;
         int numCoarseCentroids = 8192;
@@ -136,6 +139,14 @@ public class IndexingManager {
         if (vector == null || vector.length < 3)
             return false;
         return index.indexVector(url, vector);
+    }
+
+    public boolean isImageBlank(String url) throws Exception {
+        BufferedImage img = ImageIO.read(new URL(url));
+        ImageVectorization imvec = new ImageVectorization(url, img, targetLengthMax, maxNumPixels);
+        ImageVectorizationResult imvr = imvec.call();
+        double[] vector = imvr.getImageVector();
+        return vector ==null || vector.length <3;
     }
 
     public Answer findSimilar(String url, String collection, int neighbours) throws Exception {
