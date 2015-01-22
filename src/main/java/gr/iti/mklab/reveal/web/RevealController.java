@@ -57,6 +57,7 @@ public class RevealController {
         String mongoHost = "127.0.0.1";
         mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
         clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClusters");
+        MorphiaManager.setup(mongoHost);
         crawlerCtrler = new CrawlQueueController();
         nte = new NameThatEntity();
         nte.initPipeline(); //Should be called only once in the beggining
@@ -66,6 +67,7 @@ public class RevealController {
     @PreDestroy
     public void cleanUp() throws Exception {
         System.out.println("Spring Container destroy");
+        MorphiaManager.tearDown();
         if (crawlerCtrler != null)
             crawlerCtrler.shutdown();
         if (mediaDao != null)
@@ -128,7 +130,7 @@ public class RevealController {
     @ResponseBody
     public CrawlRequest submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) {
         String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
-        return crawlerCtrler.submit(request.isNew, rootCrawlerDir + request.collectionName, request.collectionName, request.keywords);
+        return crawlerCtrler.submit(request.isNew, rootCrawlerDir +"crawl_"+ request.collectionName, request.collectionName, request.keywords);
     }
 
     @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")
@@ -139,7 +141,7 @@ public class RevealController {
 
     @RequestMapping(value = "/crawls/{id}/status", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public CrawlRequest getCrawlingJobStatus(@PathVariable(value = "id") String id) {
+    public Responses.CrawlStatus getCrawlingJobStatus(@PathVariable(value = "id") String id) {
         return crawlerCtrler.getStatus(id);
     }
 
@@ -178,10 +180,8 @@ public class RevealController {
     @ResponseBody
     public List<NamedEntity> getRankedEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
                                                @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
-        MorphiaManager.setup("Showcase");
-        DAO<gr.iti.mklab.reveal.util.NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(gr.iti.mklab.reveal.util.NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB().getName());
+        DAO<gr.iti.mklab.reveal.util.NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(gr.iti.mklab.reveal.util.NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("Showcase").getName());
         List<NamedEntity> ne = rankedDAO.getDatastore().find(NamedEntity.class).offset(offset).limit(count).asList();
-        MorphiaManager.tearDown();
         return ne;
     }
 
@@ -469,20 +469,18 @@ public class RevealController {
                                                 @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                                 @RequestParam(value = "type", required = false) String type,
                                                 @PathVariable(value = "collection") String collection) {
-        MorphiaManager.setup(collection);
         Responses.MediaResponse response = new Responses.MediaResponse();
         if (type == null || type.equalsIgnoreCase("image")) {
-            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
             response.images = imageDAO.getItems(count, offset);
             response.numImages = imageDAO.count();
         }
         if (type == null || type.equalsIgnoreCase("video")) {
-            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class);
+            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
             response.videos = videoDAO.getItems(count, offset);
             response.numVideos = videoDAO.count();
         }
         response.offset = offset;
-        MorphiaManager.tearDown();
         return response;
     }
 
@@ -490,15 +488,13 @@ public class RevealController {
     @ResponseBody
     public Media mediaItemByIdV2(@PathVariable(value = "collection") String collection,
                                  @PathVariable("id") String id) {
-        MorphiaManager.setup(collection);
         Media result;
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
         result = imageDAO.get(new ObjectId(id));
         if (result == null) {
-            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class);
+            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
             result = videoDAO.get(new ObjectId(id));
         }
-        MorphiaManager.tearDown();
         return result;
     }
 
@@ -513,20 +509,18 @@ public class RevealController {
             @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(value = "type", required = false) String type) {
 
-        MorphiaManager.setup(collection);
         Responses.MediaResponse response = new Responses.MediaResponse();
         if (type == null || type.equalsIgnoreCase("image")) {
-            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
             response.images = imageDAO.search("lastModifiedDate", new Date(date), w, h, count, offset);
             response.numImages = imageDAO.count();
         }
         if (type == null || type.equalsIgnoreCase("video")) {
-            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class);
+            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
             response.videos = videoDAO.search("creationDate", new Date(date), w, h, count, offset);
             response.numVideos = videoDAO.count();
         }
         response.offset = offset;
-        MorphiaManager.tearDown();
         return response;
     }
 
@@ -547,8 +541,7 @@ public class RevealController {
                 return new ArrayList<>();
             if (!imageurl.equals(lastImageUrl2) || simList2 == null || (simList2 != null && offset + count > simList2.size()) || lastThreshold2 != threshold) {
                 isBusy2 = true;
-                MorphiaManager.setup(collectionName);
-                MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
+                MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collectionName);
                 int roundedToTheNextHundred = ((offset + count + 99) / 100) * 100;
                 lastThreshold2 = threshold;
                 lastImageUrl2 = imageurl;
@@ -562,8 +555,6 @@ public class RevealController {
                         simList2.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }
-
-                MorphiaManager.tearDown();
             }
             isBusy2 = false;
             if (simList2.size() < count)

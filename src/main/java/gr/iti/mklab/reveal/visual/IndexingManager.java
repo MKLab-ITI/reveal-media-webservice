@@ -145,7 +145,7 @@ public class IndexingManager {
         ImageVectorization imvec = new ImageVectorization(url, img, targetLengthMax, maxNumPixels);
         ImageVectorizationResult imvr = imvec.call();
         double[] vector = imvr.getImageVector();
-        return vector ==null || vector.length <3;
+        return vector == null || vector.length < 3;
     }
 
     public Answer findSimilar(String url, String collection, int neighbours) throws Exception {

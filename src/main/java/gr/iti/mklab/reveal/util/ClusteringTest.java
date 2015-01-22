@@ -1,5 +1,8 @@
 package gr.iti.mklab.reveal.util;
 
+import com.google.common.collect.ConcurrentHashMultiset;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multisets;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import gr.iti.mklab.reveal.visual.IndexingManager;
 import gr.iti.mklab.visual.vectorization.ImageVectorization;
@@ -21,6 +24,9 @@ public class ClusteringTest {
 
     private final static String CLUSTER_TEST_FOLDER = "/home/kandreadou/Pictures/clustertest/";
 
+    public static Multiset<Integer> DBSCAN_CLUSTERS = ConcurrentHashMultiset.create();
+    public static Multiset<Integer> KMEANS_CLUSTERS = ConcurrentHashMultiset.create();
+
     public static void main(String[] args) throws Exception {
         ClusteringTest t = new ClusteringTest();
         t.testDBSCANClusterer();
@@ -32,23 +38,29 @@ public class ClusteringTest {
         List<ClusterableItem> list = new ArrayList<>();
         List<MediaItem> items = mediaDao.getMediaItems(0, 10000, "image");
         for (MediaItem item : items) {
-            BufferedImage img = ImageIO.read(new URL(item.getUrl()));
-            ImageVectorization imvec = new ImageVectorization(item.getUrl(), img, 1024, 768 * 512);
-            ImageVectorizationResult imvr = imvec.call();
-            double[] vector = imvr.getImageVector();
-            list.add(new ClusterableItem(item, vector));
+            try {
+                BufferedImage img = ImageIO.read(new URL(item.getUrl()));
+                ImageVectorization imvec = new ImageVectorization(item.getUrl(), img, 1024, 768 * 512);
+                ImageVectorizationResult imvr = imvec.call();
+                double[] vector = imvr.getImageVector();
+                list.add(new ClusterableItem(item, vector));
+            } catch (Exception ex) {
+            }
         }
 
-        DBSCANClusterer<ClusterableItem> clusterer = new DBSCANClusterer(1.25, 5);
+        DBSCANClusterer<ClusterableItem> clusterer = new DBSCANClusterer(1.2, 5);
         List<Cluster<ClusterableItem>> centroids = clusterer.cluster(list);
-        System.out.println("NUMBER OF CLUSTERS " + centroids.size());
+        System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
         for (Cluster<ClusterableItem> c : centroids) {
             String dirName = CLUSTER_TEST_FOLDER + "dbscan/cluster" + c.getPoints().size() + "_" + System.currentTimeMillis();
             if (new File(dirName).mkdirs()) {
-                System.out.println("CLUSTER size " + c.getPoints().size());
+                DBSCAN_CLUSTERS.add(c.getPoints().size());
+                //System.out.println(c.getPoints().size());
                 for (ClusterableItem i : c.getPoints()) {
-                    BufferedImage img = ImageIO.read(new URL(i.item.getUrl()));
-                    ImageIO.write(img, "jpg", new File(dirName + '/' + i.item.getId()));
+                    String itemUrl = i.item.getUrl();
+                    String suffix = itemUrl.substring(itemUrl.lastIndexOf('.') + 1, itemUrl.length());
+                    BufferedImage img = ImageIO.read(new URL(itemUrl));
+                    ImageIO.write(img, suffix, new File(dirName + '/' + i.item.getId() + '.' + suffix));
                     //System.out.println(i.item.getUrl());
                 }
             }
@@ -56,17 +68,33 @@ public class ClusteringTest {
 
         KMeansPlusPlusClusterer kmeans = new KMeansPlusPlusClusterer(centroids.size());
         List<CentroidCluster<ClusterableItem>> kmeansCentroids = kmeans.cluster(list);
+
         for (CentroidCluster<ClusterableItem> c : kmeansCentroids) {
             String dirName = CLUSTER_TEST_FOLDER + "kmeans/cluster" + c.getPoints().size() + "_" + System.currentTimeMillis();
             if (new File(dirName).mkdirs()) {
-                System.out.println("CLUSTER size " + c.getPoints().size());
+                KMEANS_CLUSTERS.add(c.getPoints().size());
+                //System.out.println(c.getPoints().size());
                 for (ClusterableItem i : c.getPoints()) {
-                    BufferedImage img = ImageIO.read(new URL(i.item.getUrl()));
-                    ImageIO.write(img, "jpg", new File(dirName + '/' + i.item.getId()));
+                    String itemUrl = i.item.getUrl();
+                    String suffix = itemUrl.substring(itemUrl.lastIndexOf('.') + 1, itemUrl.length());
+                    BufferedImage img = ImageIO.read(new URL(itemUrl));
+                    ImageIO.write(img, suffix, new File(dirName + '/' + i.item.getId() + '.' + suffix));
                     //System.out.println(i.item.getUrl());
                 }
             }
 
+        }
+        System.out.println("DBSCAN element count");
+        Iterable<Multiset.Entry<Integer>> cases =
+                Multisets.copyHighestCountFirst(DBSCAN_CLUSTERS).entrySet();
+        for (Multiset.Entry<Integer> s : cases) {
+            System.out.println(s.getElement() + " " + s.getCount());
+        }
+        System.out.println("KMEANS element count");
+        cases =
+                Multisets.copyHighestCountFirst(KMEANS_CLUSTERS).entrySet();
+        for (Multiset.Entry<Integer> s : cases) {
+            System.out.println(s.getElement() + " " + s.getCount());
         }
     }
 

@@ -1,6 +1,9 @@
 package gr.iti.mklab.reveal.crawler;
 
+import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.items.Image;
+import gr.iti.mklab.simmo.items.Video;
+import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
@@ -39,17 +42,14 @@ public class CrawlQueueController {
     private final static Integer[] AVAILABLE_PORTS = {9995, 9997, 9999};
 
     public CrawlQueueController() {
-        // Sets up the Morphia Manager
-        MorphiaManager.setup(DB_NAME);
         // Creates a DAO object to persist submitted crawl requests
-        dao = new BasicDAO<>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB().getName());
+        dao = new BasicDAO<>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(DB_NAME).getName());
         // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();
     }
 
     public void shutdown() {
-        MorphiaManager.tearDown();
         poller.stopPolling();
     }
 
@@ -74,12 +74,15 @@ public class CrawlQueueController {
         return req;
     }
 
-    public synchronized  CrawlRequest getStatus(String id){
-        CrawlRequest req = getCrawlRequest(id).get(0);
-        //DAO<Image, ObjectId> images = new BasicDAO<>(Image.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), req.collectionName);
-        //req.numImages = (int) images.count();
-        //dao.save(req);
-        return req;
+    public synchronized Responses.CrawlStatus getStatus(String id){
+        Responses.CrawlStatus status = new Responses.CrawlStatus(getCrawlRequest(id).get(0));
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, status.collectionName);
+        MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, status.collectionName);
+        status.numImages = imageDAO.count();
+        status.numVideos = videoDAO.count();
+        status.image = imageDAO.getItems(1,0).get(0);
+        status.video = videoDAO.getItems(1,0).get(0);
+        return status;
     }
 
     public List<Image> getImages(String id, int count, int offset){

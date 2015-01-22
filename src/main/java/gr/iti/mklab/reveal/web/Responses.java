@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.web;
 
+import gr.iti.mklab.reveal.crawler.CrawlRequest;
 import gr.iti.mklab.reveal.util.MediaItem;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Video;
@@ -98,6 +99,28 @@ public class Responses {
         protected long numVideos;
 
         protected long offset;
+    }
+
+    public static class CrawlStatus extends CrawlRequest {
+
+        public CrawlStatus(CrawlRequest req){
+            this.keywords = req.keywords;
+            this.requestState = req.requestState;
+            this.collectionName = req.collectionName;
+            this.crawlDataPath = req.crawlDataPath;
+            this.creationDate = req.creationDate;
+            this.lastStateChange = req.lastStateChange;
+            this.id = req.id;
+            this.isNew = req.isNew;
+        }
+
+        public long numImages;
+
+        public long numVideos;
+
+        public Image image;
+
+        public Video video;
     }
 
     public static void main(String[] args) throws Exception {
