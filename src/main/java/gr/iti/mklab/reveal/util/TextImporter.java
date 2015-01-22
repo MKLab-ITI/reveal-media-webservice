@@ -33,11 +33,15 @@ public class TextImporter {
     private void deleteBlankImages() throws Exception {
         IndexingManager.getInstance();
         RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "Showcase", "MediaItems");
-        List<MediaItem> items = mediaDao.getMediaItems(1000, 34110, "image");
+        List<MediaItem> items = mediaDao.getMediaItems(10000, 34110, "image");
         for (MediaItem item : items) {
-            boolean isBlank = IndexingManager.getInstance().isImageBlank(item.getUrl());
-            if (isBlank)
-                System.out.println("Image " + item.getUrl() +"and id "+item.getId() + " is blank");
+            try {
+                boolean isBlank = IndexingManager.getInstance().isImageBlank(item.getUrl());
+                if (isBlank)
+                    System.out.println("Image " + item.getUrl() + "and id " + item.getId() + " is blank");
+            }catch(Exception ex){
+                System.out.println("Image " + item.getUrl() + "and id " + item.getId() + " is error");
+            }
         }
     }
 

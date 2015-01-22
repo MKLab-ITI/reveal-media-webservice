@@ -218,6 +218,7 @@ public class CrawlQueueController {
         q.or(
                 q.criteria("requestState").equal(CrawlRequest.STATE.RUNNING),
                 q.criteria("requestState").equal(CrawlRequest.STATE.WAITING),
+                q.criteria("requestState").equal(CrawlRequest.STATE.STOPPING),
                 q.criteria("requestState").equal(CrawlRequest.STATE.FINISHED)
         );
         return q.asList();

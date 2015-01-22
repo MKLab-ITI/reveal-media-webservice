@@ -1,6 +1,5 @@
 package gr.iti.mklab.reveal.visual;
 
-import com.google.common.base.Strings;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.reveal.web.RevealException;
 import gr.iti.mklab.visual.aggregation.AbstractFeatureAggregator;

@@ -128,7 +128,7 @@ public class RevealController {
     @ResponseBody
     public CrawlRequest submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) {
         String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
-        return crawlerCtrler.submit(request.isNew, rootCrawlerDir + "crawl_" + request.collectionName, request.collectionName, request.keywords);
+        return crawlerCtrler.submit(request.isNew, rootCrawlerDir + request.collectionName, request.collectionName, request.keywords);
     }
 
     @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")
@@ -331,7 +331,7 @@ public class RevealController {
                     if (r.getDistance() <= threshold) {
                         MediaItem found = mediaDao.getItem(r.getExternalId());
                         if (found != null)
-                            finallist.add( new Responses.SimilarityResponse(found, r.getDistance()));
+                            finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }
                 Collections.sort(finallist, new Comparator<Responses.SimilarityResponse>() {
@@ -533,6 +533,7 @@ public class RevealController {
     private List<Responses.SimilarityResponse> simList2;
     private String lastImageUrl2;
     private double lastThreshold2;
+    private boolean isBusy2 = false;
 
     @RequestMapping(value = "/media/v2/{collection}/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
@@ -542,15 +543,16 @@ public class RevealController {
                                                                   @RequestParam(value = "count", required = false, defaultValue = "50") int count,
                                                                   @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
+            if (isBusy2)
+                return new ArrayList<>();
             if (!imageurl.equals(lastImageUrl2) || simList2 == null || (simList2 != null && offset + count > simList2.size()) || lastThreshold2 != threshold) {
+                isBusy2 = true;
                 MorphiaManager.setup(collectionName);
                 MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class);
-                int total = offset + count;
-                if (total < 100)
-                    total = 100;
+                int roundedToTheNextHundred = ((offset + count + 99) / 100) * 100;
                 lastThreshold2 = threshold;
                 lastImageUrl2 = imageurl;
-                Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, total).getResults();
+                Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, roundedToTheNextHundred).getResults();
                 System.out.println("results size " + temp.length);
                 simList2 = new ArrayList<>(temp.length);
                 for (Result r : temp) {
@@ -563,12 +565,14 @@ public class RevealController {
 
                 MorphiaManager.tearDown();
             }
+            isBusy2 = false;
             if (simList2.size() < count)
                 return simList2;
             else
                 return simList2.subList(offset, offset + count);
 
         } catch (Exception e) {
+            isBusy2 = false;
             System.out.println(e);
             return new ArrayList<>();
         }
