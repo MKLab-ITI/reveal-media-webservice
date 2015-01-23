@@ -130,7 +130,18 @@ public class RevealController {
     @ResponseBody
     public CrawlRequest submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) {
         String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
-        return crawlerCtrler.submit(request.isNew, rootCrawlerDir +"crawl_"+ request.collectionName, request.collectionName, request.keywords);
+        return crawlerCtrler.submit(request.isNew, rootCrawlerDir + "crawl_" + request.collectionName, request.collectionName, request.keywords);
+    }
+
+    @RequestMapping(value = "/crawls/{id}/delete", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public boolean deleteCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
+        try {
+            crawlerCtrler.delete(id);
+            return true;
+        } catch (Exception ex) {
+            throw new RevealException("Error when deleting", ex);
+        }
     }
 
     @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")

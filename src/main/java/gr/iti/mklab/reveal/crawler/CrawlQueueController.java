@@ -1,10 +1,12 @@
 package gr.iti.mklab.reveal.crawler;
 
+import com.mongodb.WriteResult;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Video;
 import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
@@ -17,6 +19,7 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -72,6 +75,22 @@ public class CrawlQueueController {
         dao.save(req);
         cancelForPort(req.portNumber);
         return req;
+    }
+
+    public synchronized void delete(String id) throws Exception {
+        CrawlRequest req = getCrawlRequest(id).get(0);
+        if(req!=null) {
+            //If it is running, cancel the job
+            if (req.requestState == CrawlRequest.STATE.RUNNING)
+                cancel(id);
+            //Delete the request from the request DB
+            dao.delete(req);
+            //Delete the collection DB
+            MorphiaManager.getDB(req.collectionName).dropDatabase();
+            //Delete the crawl and index folders
+            FileUtils.deleteDirectory(new File(req.crawlDataPath));
+            FileUtils.deleteDirectory(new File("/home/iti-310/VisualIndex/data/" + req.collectionName));
+        }
     }
 
     public List<Image> getImages(String id, int count, int offset) {
