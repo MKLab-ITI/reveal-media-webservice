@@ -74,21 +74,6 @@ public class CrawlQueueController {
         return req;
     }
 
-    public synchronized Responses.CrawlStatus getStatus(String id) {
-        Responses.CrawlStatus status = new Responses.CrawlStatus(getCrawlRequest(id).get(0));
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, status.collectionName);
-        MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, status.collectionName);
-        if (imageDAO != null && imageDAO.count() > 0) {
-            status.numImages = imageDAO.count();
-            status.image = getRepresentativeImage(imageDAO, status.keywords);
-        }
-        if (videoDAO != null && videoDAO.count() > 0) {
-            status.numVideos = videoDAO.count();
-            status.video = videoDAO.getItems(1, 0).get(0);
-        }
-        return status;
-    }
-
     public List<Image> getImages(String id, int count, int offset) {
         CrawlRequest req = getCrawlRequest(id).get(0);
         Datastore ds = MorphiaManager.getMorphia().createDatastore(MorphiaManager.getMongoClient(), req.collectionName);
@@ -231,20 +216,48 @@ public class CrawlQueueController {
         );
         List<Responses.CrawlStatus> result = new ArrayList<>();
         for (CrawlRequest req : q.asList()) {
-            Responses.CrawlStatus status = new Responses.CrawlStatus(req);
-            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, status.collectionName);
-            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, status.collectionName);
-            if (imageDAO != null && imageDAO.count() > 0) {
-                status.numImages = imageDAO.count();
-                status.image = getRepresentativeImage(imageDAO, status.keywords);
-            }
-            if (videoDAO != null && videoDAO.count() > 0) {
-                status.numVideos = videoDAO.count();
-                status.video = videoDAO.getItems(1, 0).get(0);
-            }
-            result.add(status);
+            result.add(getStatusFromCrawlRequest(req));
         }
         return result;
+    }
+
+    public synchronized Responses.CrawlStatus getStatus(String id) {
+        return getStatusFromCrawlRequest(getCrawlRequest(id).get(0));
+    }
+
+    private Responses.CrawlStatus getStatusFromCrawlRequest(CrawlRequest req) {
+        Responses.CrawlStatus status = new Responses.CrawlStatus(req);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, status.collectionName);
+        MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, status.collectionName);
+        Date lastImageInserted = new Date(0);
+        Date lastVideoInserted = new Date(0);
+        if (imageDAO != null && imageDAO.count() > 0) {
+            status.numImages = imageDAO.count();
+            status.image = getRepresentativeImage(imageDAO, status.keywords);
+            List<Image> imgs = imageDAO.crawledBefore(new Date());
+            if (imgs != null && imgs.size() > 0)
+                lastImageInserted = imgs.get(0).getCrawlDate();
+        }
+        if (videoDAO != null && videoDAO.count() > 0) {
+            status.numVideos = videoDAO.count();
+            status.video = videoDAO.getItems(1, 0).get(0);
+            List<Video> vds = videoDAO.crawledBefore(new Date());
+            if (vds != null && vds.size() > 0)
+                lastVideoInserted = vds.get(0).getCrawlDate();
+        }
+        switch (status.requestState) {
+            case WAITING:
+                status.duration = 0;
+                break;
+            case RUNNING:
+                status.duration = new Date().getTime() - status.creationDate.getTime();
+                break;
+            default:
+                status.duration = status.lastStateChange.getTime() - status.creationDate.getTime();
+                break;
+        }
+        status.lastItemInserted = lastImageInserted.after(lastVideoInserted) ? lastImageInserted : lastVideoInserted;
+        return status;
     }
 
     private Image getRepresentativeImage(MediaDAO<Image> images, Set<String> keywords) {

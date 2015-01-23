@@ -1,4 +1,4 @@
-package gr.iti.mklab.reveal.crawler;
+package gr.iti.mklab.retrieve;
 
 import gr.iti.mklab.simmo.items.Video;
 import org.mongodb.morphia.annotations.Entity;

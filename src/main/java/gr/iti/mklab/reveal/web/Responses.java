@@ -7,10 +7,7 @@ import gr.iti.mklab.simmo.items.Video;
 import org.bson.types.ObjectId;
 
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by kandreadou on 1/9/15.
@@ -121,6 +118,10 @@ public class Responses {
         public Image image;
 
         public Video video;
+
+        public long duration;
+
+        public Date lastItemInserted;
     }
 
     public static void main(String[] args) throws Exception {
