@@ -60,7 +60,7 @@ public class CrawlQueueController {
      * @param collectionName
      */
     public synchronized CrawlRequest submit(boolean isNew, String crawlDir, String collectionName, Set<String> keywords) {
-        System.out.println("submit event "+ ArrayUtils.toString(keywords));
+        System.out.println("submit event " + ArrayUtils.toString(keywords));
         CrawlRequest r = enqueue(isNew, crawlDir, collectionName, keywords);
         tryLaunch();
         return r;
@@ -74,20 +74,24 @@ public class CrawlQueueController {
         return req;
     }
 
-    public synchronized Responses.CrawlStatus getStatus(String id){
+    public synchronized Responses.CrawlStatus getStatus(String id) {
         Responses.CrawlStatus status = new Responses.CrawlStatus(getCrawlRequest(id).get(0));
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, status.collectionName);
         MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, status.collectionName);
-        status.numImages = imageDAO.count();
-        status.numVideos = videoDAO.count();
-        status.image = imageDAO.getItems(1,0).get(0);
-        status.video = videoDAO.getItems(1,0).get(0);
+        if (imageDAO != null && imageDAO.count() > 0) {
+            status.numImages = imageDAO.count();
+            status.image = getRepresentativeImage(imageDAO, status.keywords);
+        }
+        if (videoDAO != null && videoDAO.count() > 0) {
+            status.numVideos = videoDAO.count();
+            status.video = videoDAO.getItems(1, 0).get(0);
+        }
         return status;
     }
 
-    public List<Image> getImages(String id, int count, int offset){
+    public List<Image> getImages(String id, int count, int offset) {
         CrawlRequest req = getCrawlRequest(id).get(0);
-        Datastore ds = MorphiaManager.getMorphia().createDatastore(MorphiaManager.getMongoClient(),req.collectionName);
+        Datastore ds = MorphiaManager.getMorphia().createDatastore(MorphiaManager.getMongoClient(), req.collectionName);
         return ds.find(Image.class).offset(offset).limit(count).asList();
     }
 
@@ -152,7 +156,7 @@ public class CrawlQueueController {
             }
         }
         List<CrawlRequest> waitingList = getWaitingCrawls();
-        if(waitingList.isEmpty())
+        if (waitingList.isEmpty())
             return;
         for (Integer i : ports) {
             System.out.println("Try launch crawl for port " + i);
@@ -214,9 +218,10 @@ public class CrawlQueueController {
 
     /**
      * WAITING and RUNNING crawls
+     *
      * @return
      */
-    public List<CrawlRequest> getActiveCrawls(){
+    public List<Responses.CrawlStatus> getActiveCrawls() {
         Query<CrawlRequest> q = dao.createQuery();
         q.or(
                 q.criteria("requestState").equal(CrawlRequest.STATE.RUNNING),
@@ -224,7 +229,33 @@ public class CrawlQueueController {
                 q.criteria("requestState").equal(CrawlRequest.STATE.STOPPING),
                 q.criteria("requestState").equal(CrawlRequest.STATE.FINISHED)
         );
-        return q.asList();
+        List<Responses.CrawlStatus> result = new ArrayList<>();
+        for (CrawlRequest req : q.asList()) {
+            Responses.CrawlStatus status = new Responses.CrawlStatus(req);
+            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, status.collectionName);
+            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, status.collectionName);
+            if (imageDAO != null && imageDAO.count() > 0) {
+                status.numImages = imageDAO.count();
+                status.image = getRepresentativeImage(imageDAO, status.keywords);
+            }
+            if (videoDAO != null && videoDAO.count() > 0) {
+                status.numVideos = videoDAO.count();
+                status.video = videoDAO.getItems(1, 0).get(0);
+            }
+            result.add(status);
+        }
+        return result;
+    }
+
+    private Image getRepresentativeImage(MediaDAO<Image> images, Set<String> keywords) {
+        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 300, 100, 0);
+        for (Image i : res) {
+            for (String keyword : keywords) {
+                if ((i.getTitle() != null && i.getTitle().contains(keyword)) || (i.getDescription() != null && i.getDescription().contains(keyword)))
+                    return i;
+            }
+        }
+        return res.get(0);
     }
 
     private boolean isPortAvailable(int port) {

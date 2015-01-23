@@ -31,11 +31,11 @@ public class NamedEntityRanker {
     }
 
     private void test() throws Exception {
-        MorphiaManager.setup("Showcase", "160.40.51.20");
+        MorphiaManager.setup("160.40.51.20");
         RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("localhost", "Showcase", "MediaItems");
         int index = 0;
         List<MediaItem> list = new ArrayList<>();
-        DAO<NamedEntities, ObjectId> rankedDAO = new BasicDAO<>(NamedEntities.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB().getName());
+        DAO<NamedEntities, ObjectId> rankedDAO = new BasicDAO<>(NamedEntities.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("Showcase").getName());
         Iterator<NamedEntities> ne = rankedDAO.find().iterator();
         while (ne.hasNext()) {
             index++;
@@ -59,9 +59,9 @@ public class NamedEntityRanker {
 
     private void rankThem() throws Exception {
         int counter = 0;
-        MorphiaManager.setup("Showcase", "160.40.51.20");
-        DAO<NamedEntities, ObjectId> dao = new BasicDAO<>(NamedEntities.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB().getName());
-        DAO<NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB().getName());
+        MorphiaManager.setup("160.40.51.20");
+        DAO<NamedEntities, ObjectId> dao = new BasicDAO<>(NamedEntities.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("Showcase").getName());
+        DAO<NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("Showcase").getName());
         Iterator<NamedEntities> it = dao.find().iterator();
         while (it.hasNext()) {
             counter++;

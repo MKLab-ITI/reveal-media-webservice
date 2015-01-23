@@ -36,7 +36,7 @@ public class ClusteringTest {
         IndexingManager.getInstance();
         RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "Showcase", "MediaItems");
         List<ClusterableItem> list = new ArrayList<>();
-        List<MediaItem> items = mediaDao.getMediaItems(0, 10000, "image");
+        List<MediaItem> items = mediaDao.getMediaItems(0, 34000, "image");
         for (MediaItem item : items) {
             try {
                 BufferedImage img = ImageIO.read(new URL(item.getUrl()));

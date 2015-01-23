@@ -150,7 +150,7 @@ public class RevealController {
      */
     @RequestMapping(value = "/crawls/status", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<CrawlRequest> getCrawlerStatus() {
+    public List<Responses.CrawlStatus> getCrawlerStatus() {
         return crawlerCtrler.getActiveCrawls();
     }
 
