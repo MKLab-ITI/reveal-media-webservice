@@ -79,7 +79,7 @@ public class CrawlQueueController {
 
     public synchronized void delete(String id) throws Exception {
         CrawlRequest req = getCrawlRequest(id).get(0);
-        if(req!=null) {
+        if (req != null) {
             //If it is running, cancel the job
             if (req.requestState == CrawlRequest.STATE.RUNNING)
                 cancel(id);
@@ -253,14 +253,14 @@ public class CrawlQueueController {
         if (imageDAO != null && imageDAO.count() > 0) {
             status.numImages = imageDAO.count();
             status.image = getRepresentativeImage(imageDAO, status.keywords);
-            List<Image> imgs = imageDAO.crawledBefore(new Date());
+            List<Image> imgs = imageDAO.getDatastore().find(Image.class).order("-crawlDate").limit(100).asList();
             if (imgs != null && imgs.size() > 0)
                 lastImageInserted = imgs.get(0).getCrawlDate();
         }
         if (videoDAO != null && videoDAO.count() > 0) {
             status.numVideos = videoDAO.count();
             status.video = videoDAO.getItems(1, 0).get(0);
-            List<Video> vds = videoDAO.crawledBefore(new Date());
+            List<Video> vds = videoDAO.getDatastore().find(Video.class).order("-crawlDate").limit(100).asList();
             if (vds != null && vds.size() > 0)
                 lastVideoInserted = vds.get(0).getCrawlDate();
         }
@@ -269,6 +269,7 @@ public class CrawlQueueController {
                 status.duration = 0;
                 break;
             case RUNNING:
+            case STOPPING:
                 status.duration = new Date().getTime() - status.creationDate.getTime();
                 break;
             default:

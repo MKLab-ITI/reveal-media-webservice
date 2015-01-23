@@ -56,7 +56,7 @@ public class RevealController {
     public RevealController() throws Exception {
         String mongoHost = "127.0.0.1";
         mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
-        clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClusters");
+        clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClustersDBSCAN");
         MorphiaManager.setup(mongoHost);
         crawlerCtrler = new CrawlQueueController();
         nte = new NameThatEntity();

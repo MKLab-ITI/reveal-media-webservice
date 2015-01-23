@@ -13,6 +13,7 @@ import gr.iti.mklab.reveal.visual.IndexingManager;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.util.DateUtil;
 import org.bson.BSONObject;
+import org.bson.types.ObjectId;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -27,8 +28,29 @@ public class TextImporter {
 
     public static void main(String[] args) throws Exception {
         TextImporter ti = new TextImporter();
-        ti.deleteBlankImages();
+        ti.importClustersFromDBSCAN();
     }
+
+    private void importClustersFromDBSCAN() throws Exception {
+        RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", "Showcase", "MediaClustersDBSCAN");
+        String rootFolder = "/home/kandreadou/Pictures/clustertest_10000/dbscan";
+        for(File f:new File(rootFolder).listFiles()){
+            if(f.isDirectory() && f.listFiles().length<1500) {
+                MediaCluster c = new MediaCluster(new ObjectId().toString());
+                for (File image : f.listFiles()) {
+                    String id = image.getName().substring(0, image.getName().lastIndexOf('.'));
+                    c.addMember(id);
+                }
+                c.setCount(c.getMembers().size());
+                clusterDao.saveCluster(c);
+            }
+        }
+        /*List<MediaCluster> clusters = clusterDao.getSortedClusters(0, 7278);
+        for (MediaCluster c : clusters) {
+            clusterDao.updateCluster(c.getId(), c.getMembers().size());
+        }*/
+    }
+
 
     private void deleteBlankImages() throws Exception {
         IndexingManager.getInstance();

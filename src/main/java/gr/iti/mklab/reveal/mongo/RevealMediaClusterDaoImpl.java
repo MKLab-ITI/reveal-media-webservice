@@ -42,6 +42,11 @@ public class RevealMediaClusterDaoImpl extends MediaClusterDAOImpl {
         dbCollection = (DBCollection) collectionPrivateField.get(mongoHandler);
     }
 
+    public void saveCluster(MediaCluster cluster){
+        DBObject dbObject = (DBObject) JSON.parse(cluster.toJSONString());
+        dbCollection.insert(dbObject);
+    }
+
     public void teardown(){
         // DO NOT DO CLEAN. It drops the collection
         mongoHandler.close();
