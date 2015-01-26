@@ -121,7 +121,7 @@ public class Responses {
 
         public long duration;
 
-        public Date lastItemInserted;
+        public String lastItemInserted;
     }
 
     public static void main(String[] args) throws Exception {

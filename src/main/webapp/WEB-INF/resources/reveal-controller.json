@@ -948,6 +948,13 @@
                         "description": "The type, image, video or nothing (for all)",
                         "required": false,
                         "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "query",
+                        "description": "A text query",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {

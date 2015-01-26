@@ -1,6 +1,5 @@
 package gr.iti.mklab.reveal.crawler;
 
-import com.mongodb.WriteResult;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Video;
@@ -62,15 +61,19 @@ public class CrawlQueueController {
      * @param crawlDir
      * @param collectionName
      */
-    public synchronized CrawlRequest submit(boolean isNew, String crawlDir, String collectionName, Set<String> keywords) {
+    public synchronized CrawlRequest submit(boolean isNew, String crawlDir, String collectionName, Set<String> keywords) throws Exception {
         System.out.println("submit event " + ArrayUtils.toString(keywords));
-        CrawlRequest r = enqueue(isNew, crawlDir, collectionName, keywords);
+        if (!isNew && new File(crawlDir).exists())
+            throw new Exception("The collection " + collectionName + " already exists. Choose a different name");
+        CrawlRequest r = enqueue(isNew, crawlDir, collectionName.toLowerCase(), keywords);
         tryLaunch();
         return r;
     }
 
     public synchronized CrawlRequest cancel(String id) {
-        CrawlRequest req = getCrawlRequest(id).get(0);
+        System.out.println("CRAWL: Cancel for id "+id);
+        CrawlRequest req = getCrawlRequest(id);
+        System.out.println("CrawlRequest "+req.collectionName+ " "+req.requestState);
         req.requestState = CrawlRequest.STATE.STOPPING;
         dao.save(req);
         cancelForPort(req.portNumber);
@@ -78,23 +81,28 @@ public class CrawlQueueController {
     }
 
     public synchronized void delete(String id) throws Exception {
-        CrawlRequest req = getCrawlRequest(id).get(0);
+        System.out.println("CRAWL: Delete for id "+id);
+        CrawlRequest req = getCrawlRequest(id);
+        System.out.println("CrawlRequest "+req.collectionName+ " "+req.requestState);
         if (req != null) {
-            //If it is running, cancel the job
-            if (req.requestState == CrawlRequest.STATE.RUNNING)
-                cancel(id);
-            //Delete the request from the request DB
-            dao.delete(req);
-            //Delete the collection DB
-            MorphiaManager.getDB(req.collectionName).dropDatabase();
-            //Delete the crawl and index folders
-            FileUtils.deleteDirectory(new File(req.crawlDataPath));
-            FileUtils.deleteDirectory(new File("/home/iti-310/VisualIndex/data/" + req.collectionName));
+            if (req.requestState != CrawlRequest.STATE.RUNNING) {
+                //Delete the request from the request DB
+                dao.delete(req);
+                //Delete the collection DB
+                MorphiaManager.getDB(req.collectionName).dropDatabase();
+                //Delete the crawl and index folders
+                FileUtils.deleteDirectory(new File(req.crawlDataPath));
+                FileUtils.deleteDirectory(new File("/home/iti-310/VisualIndex/data/" + req.collectionName));
+            } else {
+                req.requestState = CrawlRequest.STATE.DELETING;
+                dao.save(req);
+                cancelForPort(req.portNumber);
+            }
         }
     }
 
     public List<Image> getImages(String id, int count, int offset) {
-        CrawlRequest req = getCrawlRequest(id).get(0);
+        CrawlRequest req = getCrawlRequest(id);
         Datastore ds = MorphiaManager.getMorphia().createDatastore(MorphiaManager.getMongoClient(), req.collectionName);
         return ds.find(Image.class).offset(offset).limit(count).asList();
     }
@@ -106,6 +114,7 @@ public class CrawlQueueController {
      */
     private void cancelForPort(int portNumber) {
         try {
+            System.out.println("Canceling for port "+portNumber);
             //JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
             JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:" + portNumber + "/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
@@ -208,8 +217,8 @@ public class CrawlQueueController {
         }
     }
 
-    private List<CrawlRequest> getCrawlRequest(String id) {
-        return dao.getDatastore().find(CrawlRequest.class).filter("id", id).asList();
+    private CrawlRequest getCrawlRequest(String id) {
+        return dao.findOne("_id", id);
     }
 
     private List<CrawlRequest> getRunningCrawls() {
@@ -231,7 +240,8 @@ public class CrawlQueueController {
                 q.criteria("requestState").equal(CrawlRequest.STATE.RUNNING),
                 q.criteria("requestState").equal(CrawlRequest.STATE.WAITING),
                 q.criteria("requestState").equal(CrawlRequest.STATE.STOPPING),
-                q.criteria("requestState").equal(CrawlRequest.STATE.FINISHED)
+                q.criteria("requestState").equal(CrawlRequest.STATE.FINISHED),
+                q.criteria("requestState").equal(CrawlRequest.STATE.DELETING)
         );
         List<Responses.CrawlStatus> result = new ArrayList<>();
         for (CrawlRequest req : q.asList()) {
@@ -241,15 +251,15 @@ public class CrawlQueueController {
     }
 
     public synchronized Responses.CrawlStatus getStatus(String id) {
-        return getStatusFromCrawlRequest(getCrawlRequest(id).get(0));
+        return getStatusFromCrawlRequest(getCrawlRequest(id));
     }
 
     private Responses.CrawlStatus getStatusFromCrawlRequest(CrawlRequest req) {
         Responses.CrawlStatus status = new Responses.CrawlStatus(req);
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, status.collectionName);
         MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, status.collectionName);
-        Date lastImageInserted = new Date(0);
-        Date lastVideoInserted = new Date(0);
+        Date lastImageInserted = null;
+        Date lastVideoInserted = null;
         if (imageDAO != null && imageDAO.count() > 0) {
             status.numImages = imageDAO.count();
             status.image = getRepresentativeImage(imageDAO, status.keywords);
@@ -276,7 +286,14 @@ public class CrawlQueueController {
                 status.duration = status.lastStateChange.getTime() - status.creationDate.getTime();
                 break;
         }
-        status.lastItemInserted = lastImageInserted.after(lastVideoInserted) ? lastImageInserted : lastVideoInserted;
+        if (lastImageInserted == null) {
+            if (lastVideoInserted == null)
+                status.lastItemInserted = "-";
+        } else if (lastVideoInserted == null) {
+            status.lastItemInserted = lastImageInserted.toString();
+        } else {
+            status.lastItemInserted = (lastImageInserted.after(lastVideoInserted) ? lastImageInserted : lastVideoInserted).toString();
+        }
         return status;
     }
 
@@ -328,5 +345,15 @@ public class CrawlQueueController {
                 }
             }
         }).start();
+    }
+
+    public static void main(String[] args) throws Exception {
+        MorphiaManager.setup("160.40.51.20");
+        CrawlQueueController cr = new CrawlQueueController();
+        CrawlRequest req = cr.dao.findOne("_id", "54c61590e4b0497943bc7c88");
+        //cr.delete("54c61590e4b0497943bc7c88");
+        //List<Responses.CrawlStatus> s = cr.getActiveCrawls();
+        MorphiaManager.tearDown();
+
     }
 }

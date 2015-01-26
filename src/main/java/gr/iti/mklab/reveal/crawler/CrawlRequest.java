@@ -17,7 +17,7 @@ import java.util.Set;
 public class CrawlRequest {
 
     public enum STATE {
-        WAITING, STOPPING, PAUSED, RUNNING, FINISHED
+        WAITING, STOPPING, PAUSED, RUNNING, FINISHED, DELETING
     }
 
     /**

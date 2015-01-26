@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.util;
 
+import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mongodb.BasicDBObject;
@@ -16,10 +17,7 @@ import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by kandreadou on 10/6/14.
@@ -32,15 +30,21 @@ public class TextImporter {
     }
 
     private void importClustersFromDBSCAN() throws Exception {
-        RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", "Showcase", "MediaClustersDBSCAN");
+        RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", "Showcase", "MediaClustersDBSCAN1");
         String rootFolder = "/home/kandreadou/Pictures/clustertest_10000/dbscan";
-        for(File f:new File(rootFolder).listFiles()){
-            if(f.isDirectory() && f.listFiles().length<1500) {
+
+        for (File f : new File(rootFolder).listFiles()) {
+            List<String> myList = new ArrayList<>();
+            if (f.isDirectory() && f.listFiles().length < 1500) {
                 MediaCluster c = new MediaCluster(new ObjectId().toString());
                 for (File image : f.listFiles()) {
                     String id = image.getName().substring(0, image.getName().lastIndexOf('.'));
-                    c.addMember(id);
+                    myList.add(id);
+                    //c.addMember(id);
                 }
+                List<String> newList = Lists.reverse(myList);
+                for (String s : newList)
+                    c.addMember(s);
                 c.setCount(c.getMembers().size());
                 clusterDao.saveCluster(c);
             }
@@ -61,7 +65,7 @@ public class TextImporter {
                 boolean isBlank = IndexingManager.getInstance().isImageBlank(item.getUrl());
                 if (isBlank)
                     System.out.println("Image " + item.getUrl() + "and id " + item.getId() + " is blank");
-            }catch(Exception ex){
+            } catch (Exception ex) {
                 System.out.println("Image " + item.getUrl() + "and id " + item.getId() + " is error");
             }
         }

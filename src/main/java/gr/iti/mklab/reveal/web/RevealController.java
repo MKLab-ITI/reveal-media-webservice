@@ -25,6 +25,7 @@ import gr.iti.mklab.visual.utilities.Result;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
+import org.mongodb.morphia.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PreDestroy;
 import java.util.*;
+import java.util.regex.Pattern;
 
 
 @Controller
@@ -128,9 +130,13 @@ public class RevealController {
 
     @RequestMapping(value = "/crawls/add", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
     @ResponseBody
-    public CrawlRequest submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) {
-        String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
-        return crawlerCtrler.submit(request.isNew, rootCrawlerDir + "crawl_" + request.collectionName, request.collectionName, request.keywords);
+    public CrawlRequest submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) throws RevealException {
+        try {
+            String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
+            return crawlerCtrler.submit(request.isNew, rootCrawlerDir + "crawl_" + request.collectionName, request.collectionName, request.keywords);
+        }catch(Exception ex){
+            throw new RevealException(ex.getMessage(), ex);
+        }
     }
 
     @RequestMapping(value = "/crawls/{id}/delete", method = RequestMethod.GET, produces = "application/json")
@@ -237,6 +243,9 @@ public class RevealController {
         return clusters;
     }
 
+    private List<MediaItem> clusterItems;
+    private String previousClusterId;
+
     /**
      * Returns by default the last 10 media items or the number specified by count
      * <p>
@@ -251,23 +260,38 @@ public class RevealController {
                                         @RequestParam(value = "count", required = false, defaultValue = "10") int count,
                                         @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) throws RevealException {
 
-        MediaCluster cluster = clusterDAO.getCluster(clusterId);
-        if (cluster == null)
-            throw new RevealException("Cluster with id " + clusterId + " not found", null);
-        int numMembers = cluster.getCount();
-        if (offset > numMembers)
-            return new ArrayList<>();
-        if (offset + count > numMembers)
-            count = numMembers - offset;
-        int total = offset + count;
-        String[] members = cluster.getMembers().toArray(new String[cluster.getCount()]);
-        List<MediaItem> items = new ArrayList<>(count);
+        if (!(previousClusterId == clusterId && clusterItems != null && clusterItems.size() >= offset + count)) {
+            previousClusterId = clusterId;
+            MediaCluster cluster = clusterDAO.getCluster(clusterId);
+            if (cluster == null)
+                return new ArrayList<>();
+            int numMembers = cluster.getCount();
+            if (offset > numMembers)
+                return new ArrayList<>();
+            if (offset + count > numMembers)
+                count = numMembers - offset;
+            int total = offset + count;
+            String[] members = cluster.getMembers().toArray(new String[cluster.getCount()]);
+        /*List<MediaItem> items = new ArrayList<>(count);
         for (int i = offset; i < total; i++) {
             MediaItem mi = mediaDao.getItem(members[i]);
             if (mi != null)
                 items.add(mi);
+        }*/
+            clusterItems = new ArrayList<>(cluster.getCount());
+            for (int i = 0; i < cluster.getCount(); i++) {
+                MediaItem mi = mediaDao.getItem(members[i]);
+                if (mi != null)
+                    clusterItems.add(mi);
+            }
+            clusterItems.sort(new Comparator<MediaItem>() {
+                @Override
+                public int compare(MediaItem o1, MediaItem o2) {
+                    return (int) (o1.getPublicationTime() - o2.getPublicationTime());
+                }
+            });
         }
-        return items;
+        return clusterItems.subList(offset, offset + count);
     }
 
     /**
@@ -518,17 +542,47 @@ public class RevealController {
             @RequestParam(value = "h", required = false, defaultValue = "0") int h,
             @RequestParam(value = "count", required = false, defaultValue = "10") int count,
             @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+            @RequestParam(value = "query", required = false) String query,
             @RequestParam(value = "type", required = false) String type) {
+
 
         Responses.MediaResponse response = new Responses.MediaResponse();
         if (type == null || type.equalsIgnoreCase("image")) {
             MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-            response.images = imageDAO.search("lastModifiedDate", new Date(date), w, h, count, offset);
+            if (query != null) {
+                Pattern p = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
+                Query<Image> q = imageDAO.createQuery();
+                q.and(
+                        q.criteria("lastModifiedDate").greaterThanOrEq(new Date(date)),
+                        q.criteria("width").greaterThanOrEq(w),
+                        q.criteria("height").greaterThanOrEq(h),
+                        q.or(
+                                q.criteria("title").equal(p),
+                                q.criteria("description").equal(p)
+                        )
+                );
+                response.images = q.offset(offset).limit(count).asList();
+            } else
+                response.images = imageDAO.search("lastModifiedDate", new Date(date), w, h, count, offset);
             response.numImages = imageDAO.count();
         }
         if (type == null || type.equalsIgnoreCase("video")) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
-            response.videos = videoDAO.search("creationDate", new Date(date), w, h, count, offset);
+            if (query != null) {
+                Pattern p = Pattern.compile(query);
+                Query<Video> q = videoDAO.createQuery();
+                q.and(
+                        q.criteria("lastModifiedDate").greaterThanOrEq(new Date(date)),
+                        q.criteria("width").greaterThanOrEq(w),
+                        q.criteria("height").greaterThanOrEq(h),
+                        q.or(
+                                q.criteria("title").equal(p),
+                                q.criteria("description").equal(p)
+                        )
+                );
+                response.videos = q.offset(offset).limit(count).asList();
+            } else
+                response.videos = videoDAO.search("creationDate", new Date(date), w, h, count, offset);
             response.numVideos = videoDAO.count();
         }
         response.offset = offset;
@@ -562,7 +616,7 @@ public class RevealController {
                 for (Result r : temp) {
                     if (r.getDistance() <= threshold) {
                         System.out.println("r.getExternalId " + r.getExternalId());
-                        Image found = imageDAO.getDatastore().find(Image.class).field("url").equal(r.getExternalId()).get();
+                        Image found = imageDAO.getDatastore().find(Image.class).field("_id").equal(new ObjectId(r.getExternalId())).get();
                         simList2.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
                 }
@@ -614,9 +668,28 @@ public class RevealController {
             System.out.println(i);
             //items.add(new SimilarityResult(mediaDao.getItem(r.getExternalId()), r.getDistance()));
         }*/
-        String[] command = {"/bin/bash", "crawl9995.sh"};
-        ProcessBuilder p = new ProcessBuilder(command);
-        Process pr = p.start();
+        Responses.MediaResponse response = new Responses.MediaResponse();
+        MorphiaManager.setup("160.40.51.20");
+        Pattern p = Pattern.compile("Foto");
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "ebola");
+
+        Query<Image> q = imageDAO.createQuery();
+        q.and(
+                q.criteria("lastModifiedDate").greaterThanOrEq(new Date(0)),
+                q.criteria("width").greaterThanOrEq(200),
+                q.criteria("height").greaterThanOrEq(200),
+                q.or(
+                        q.criteria("title").equal(p),
+                        q.criteria("description").equal(p)
+                )
+        );
+        response.images = q.offset(0).limit(50).asList();
+        //response.images = imageDAO.getDatastore().find(Image.class).filter("title", p).filter("lastModifiedDate" + " >", new Date(0)).filter("width" + " >", 200).
+        //       filter("height" + " >", 200).offset(0).limit(50).asList();
+        MorphiaManager.tearDown();
+        //String[] command = {"/bin/bash", "crawl9995.sh"};
+        //ProcessBuilder p = new ProcessBuilder(command);
+        // Process pr = p.start();
     }
 
     /*private List<SimilarityResult> finallist;
