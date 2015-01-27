@@ -100,6 +100,10 @@ public class Responses {
 
     public static class CrawlStatus extends CrawlRequest {
 
+        public CrawlStatus(){
+
+        }
+
         public CrawlStatus(CrawlRequest req){
             this.keywords = req.keywords;
             this.requestState = req.requestState;

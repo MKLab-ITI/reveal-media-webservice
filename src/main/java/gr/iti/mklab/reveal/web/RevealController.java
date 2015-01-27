@@ -168,7 +168,44 @@ public class RevealController {
     @RequestMapping(value = "/crawls/status", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<Responses.CrawlStatus> getCrawlerStatus() {
-        return crawlerCtrler.getActiveCrawls();
+        List<Responses.CrawlStatus> s = crawlerCtrler.getActiveCrawls();
+        s.add(0, getStaticSnowStatus());
+        return s;
+    }
+
+    private Responses.CrawlStatus getStaticSnowStatus(){
+        Responses.CrawlStatus st = new Responses.CrawlStatus();
+        st.id= "4523hb289gl234jhb";
+        st.requestState = CrawlRequest.STATE.FINISHED;
+        Set<String> keywords = new HashSet<>();
+        keywords.add("-");
+        st.keywords = keywords;
+        st.duration = 0;
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(0);
+        cal.set(2014, 1, 26, 15, 45, 3);
+        st.creationDate = cal.getTime();
+        cal.set(2014, 1, 27, 20, 17, 9);
+        st.lastStateChange = cal.getTime();
+        cal.set(2014, 1, 27, 20, 10, 54);
+        Date crawlDate  = cal.getTime();
+        st.lastItemInserted = crawlDate.toString();
+        st.collectionName = "snow";
+        st.crawlDataPath = "/home/snow";
+        st.numImages = 33840;
+        st.numVideos = 267;
+        MediaItem i =  mediaDao.getMediaItems(500,1,"image").get(0);
+        Image img = new Image();
+        img.setObjectId(new ObjectId());
+        img.setHeight(i.getHeight());
+        img.setWidth(i.getWidth());
+        img.setCrawlDate(crawlDate);
+        img.setDescription(i.getDescription());
+        img.setTitle(i.getTitle());
+        img.setWebPageUrl(i.getPageUrl());
+        img.setUrl(i.getUrl());
+        st.image = img;
+        return st;
     }
 
     ////////////////////////////////////////////////////////

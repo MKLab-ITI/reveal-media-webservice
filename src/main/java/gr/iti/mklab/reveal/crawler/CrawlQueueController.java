@@ -71,9 +71,11 @@ public class CrawlQueueController {
     }
 
     public synchronized CrawlRequest cancel(String id) {
-        System.out.println("CRAWL: Cancel for id "+id);
+        System.out.println("CRAWL: Cancel for id " + id);
         CrawlRequest req = getCrawlRequest(id);
-        System.out.println("CrawlRequest "+req.collectionName+ " "+req.requestState);
+        if("showcase".equalsIgnoreCase(req.collectionName))
+            return null;
+        System.out.println("CrawlRequest " + req.collectionName + " " + req.requestState);
         req.requestState = CrawlRequest.STATE.STOPPING;
         dao.save(req);
         cancelForPort(req.portNumber);
@@ -81,9 +83,11 @@ public class CrawlQueueController {
     }
 
     public synchronized void delete(String id) throws Exception {
-        System.out.println("CRAWL: Delete for id "+id);
+        System.out.println("CRAWL: Delete for id " + id);
         CrawlRequest req = getCrawlRequest(id);
-        System.out.println("CrawlRequest "+req.collectionName+ " "+req.requestState);
+        if("showcase".equalsIgnoreCase(req.collectionName))
+            return;
+        System.out.println("CrawlRequest " + req.collectionName + " " + req.requestState);
         if (req != null) {
             if (req.requestState != CrawlRequest.STATE.RUNNING) {
                 //Delete the request from the request DB
@@ -94,9 +98,9 @@ public class CrawlQueueController {
                 FileUtils.deleteDirectory(new File(req.crawlDataPath));
                 FileUtils.deleteDirectory(new File("/home/iti-310/VisualIndex/data/" + req.collectionName));
             } else {
+                cancelForPort(req.portNumber);
                 req.requestState = CrawlRequest.STATE.DELETING;
                 dao.save(req);
-                cancelForPort(req.portNumber);
             }
         }
     }
@@ -114,7 +118,7 @@ public class CrawlQueueController {
      */
     private void cancelForPort(int portNumber) {
         try {
-            System.out.println("Canceling for port "+portNumber);
+            System.out.println("Canceling for port " + portNumber);
             //JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
             JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:" + portNumber + "/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
@@ -222,7 +226,13 @@ public class CrawlQueueController {
     }
 
     private List<CrawlRequest> getRunningCrawls() {
-        return dao.getDatastore().find(CrawlRequest.class).filter("requestState", CrawlRequest.STATE.RUNNING).asList();
+        Query<CrawlRequest> q = dao.createQuery();
+        q.or(
+                q.criteria("requestState").equal(CrawlRequest.STATE.RUNNING),
+                q.criteria("requestState").equal(CrawlRequest.STATE.STOPPING),
+                q.criteria("requestState").equal(CrawlRequest.STATE.DELETING)
+        );
+        return q.asList();
     }
 
     private List<CrawlRequest> getWaitingCrawls() {

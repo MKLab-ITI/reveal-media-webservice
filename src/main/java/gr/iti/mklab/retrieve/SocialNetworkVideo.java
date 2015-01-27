@@ -1,6 +1,7 @@
 package gr.iti.mklab.retrieve;
 
 import gr.iti.mklab.simmo.items.Video;
+import org.mongodb.morphia.annotations.Embedded;
 import org.mongodb.morphia.annotations.Entity;
 
 /**
@@ -18,6 +19,9 @@ public class SocialNetworkVideo extends Video {
     protected long numViews;
 
     protected float rating;
+
+    @Embedded
+    public SocialNetworkUser user;
 
     public SocialNetworkVideo() {
     }
