@@ -59,38 +59,44 @@ public class ClusteringTest {
         List<Cluster<ClusterableItem>> centroids = clusterer.cluster(list);
         System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
         for (Cluster<ClusterableItem> c : centroids) {
-            String dirName = CLUSTER_TEST_FOLDER + "dbscan/cluster" + c.getPoints().size() + "_" + System.currentTimeMillis();
-            if (new File(dirName).mkdirs()) {
-                DBSCAN_CLUSTERS.add(c.getPoints().size());
-                //System.out.println(c.getPoints().size());
-                for (ClusterableItem i : c.getPoints()) {
-                    try {
-                        String itemUrl = i.image.getUrl();
-                        String suffix = itemUrl.substring(itemUrl.lastIndexOf('.') + 1, itemUrl.length());
-                        BufferedImage img = ImageIO.read(new URL(itemUrl));
-                        ImageIO.write(img, suffix, new File(dirName + '/' + i.image.getObjectId().toString() + '.' + suffix));
-                        //System.out.println(i.item.getUrl());
-                    }catch(Exception ex){}
+            if (c.getPoints().size() < 300) {
+                String dirName = CLUSTER_TEST_FOLDER + "dbscan/cluster" + c.getPoints().size() + "_" + System.currentTimeMillis();
+                if (new File(dirName).mkdirs()) {
+                    DBSCAN_CLUSTERS.add(c.getPoints().size());
+                    //System.out.println(c.getPoints().size());
+                    for (ClusterableItem i : c.getPoints()) {
+                        try {
+                            String itemUrl = i.image.getUrl();
+                            String suffix = itemUrl.substring(itemUrl.lastIndexOf('.') + 1, itemUrl.length());
+                            BufferedImage img = ImageIO.read(new URL(itemUrl));
+                            ImageIO.write(img, suffix, new File(dirName + '/' + i.image.getObjectId().toString() + '.' + suffix));
+                            //System.out.println(i.item.getUrl());
+                        } catch (Exception ex) {
+                        }
+                    }
                 }
             }
         }
 
-        KMeansPlusPlusClusterer kmeans = new KMeansPlusPlusClusterer(centroids.size()>100?centroids.size():100);
+        KMeansPlusPlusClusterer kmeans = new KMeansPlusPlusClusterer(centroids.size() > 100 ? centroids.size() : 100);
         List<CentroidCluster<ClusterableItem>> kmeansCentroids = kmeans.cluster(list);
 
         for (CentroidCluster<ClusterableItem> c : kmeansCentroids) {
-            String dirName = CLUSTER_TEST_FOLDER + "kmeans/cluster" + c.getPoints().size() + "_" + System.currentTimeMillis();
-            if (new File(dirName).mkdirs()) {
-                KMEANS_CLUSTERS.add(c.getPoints().size());
-                //System.out.println(c.getPoints().size());
-                for (ClusterableItem i : c.getPoints()) {
-                    try {
-                        String itemUrl = i.image.getUrl();
-                        String suffix = itemUrl.substring(itemUrl.lastIndexOf('.') + 1, itemUrl.length());
-                        BufferedImage img = ImageIO.read(new URL(itemUrl));
-                        ImageIO.write(img, suffix, new File(dirName + '/' + i.image.getObjectId().toString() + '.' + suffix));
-                    }catch(Exception e){}
-                    //System.out.println(i.item.getUrl());
+            if (c.getPoints().size() < 300) {
+                String dirName = CLUSTER_TEST_FOLDER + "kmeans/cluster" + c.getPoints().size() + "_" + System.currentTimeMillis();
+                if (new File(dirName).mkdirs()) {
+                    KMEANS_CLUSTERS.add(c.getPoints().size());
+                    //System.out.println(c.getPoints().size());
+                    for (ClusterableItem i : c.getPoints()) {
+                        try {
+                            String itemUrl = i.image.getUrl();
+                            String suffix = itemUrl.substring(itemUrl.lastIndexOf('.') + 1, itemUrl.length());
+                            BufferedImage img = ImageIO.read(new URL(itemUrl));
+                            ImageIO.write(img, suffix, new File(dirName + '/' + i.image.getObjectId().toString() + '.' + suffix));
+                        } catch (Exception e) {
+                        }
+                        //System.out.println(i.item.getUrl());
+                    }
                 }
             }
 

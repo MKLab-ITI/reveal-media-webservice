@@ -73,7 +73,7 @@ public class CrawlQueueController {
     public synchronized CrawlRequest cancel(String id) {
         System.out.println("CRAWL: Cancel for id " + id);
         CrawlRequest req = getCrawlRequest(id);
-        if("showcase".equalsIgnoreCase(req.collectionName))
+        if ("showcase".equalsIgnoreCase(req.collectionName))
             return null;
         System.out.println("CrawlRequest " + req.collectionName + " " + req.requestState);
         req.requestState = CrawlRequest.STATE.STOPPING;
@@ -85,7 +85,7 @@ public class CrawlQueueController {
     public synchronized void delete(String id) throws Exception {
         System.out.println("CRAWL: Delete for id " + id);
         CrawlRequest req = getCrawlRequest(id);
-        if("showcase".equalsIgnoreCase(req.collectionName))
+        if ("showcase".equalsIgnoreCase(req.collectionName))
             return;
         System.out.println("CrawlRequest " + req.collectionName + " " + req.requestState);
         if (req != null) {
@@ -164,18 +164,27 @@ public class CrawlQueueController {
                     r.requestState = CrawlRequest.STATE.FINISHED;
                     r.lastStateChange = new Date();
                     dao.save(r);
-                }
-                // The port is really busy so remove it from the list of available ports
-                else {
+                } else {
+
+                    if (r.requestState == CrawlRequest.STATE.STOPPING || r.requestState == CrawlRequest.STATE.DELETING) {
+                        System.out.println("Crawl " + r.id + "  with name " + r.collectionName + "and state " + r.requestState + " has not stopped yet. Trying again");
+                        cancelForPort(r.portNumber);
+                    }
+                    // The port is really busy so remove it from the list of available ports
                     System.out.println("Not available");
                     ports.remove(new Integer(r.portNumber));
                 }
             }
         }
+
         List<CrawlRequest> waitingList = getWaitingCrawls();
         if (waitingList.isEmpty())
             return;
-        for (Integer i : ports) {
+        for (
+                Integer i
+                : ports)
+
+        {
             System.out.println("Try launch crawl for port " + i);
             // Check if port is really available, if it is launch the respective script
             if (isPortAvailable(i)) {
@@ -219,6 +228,7 @@ public class CrawlQueueController {
                 future.cancel(true);
             exec.shutdownNow();
         }
+
     }
 
     private CrawlRequest getCrawlRequest(String id) {
@@ -296,19 +306,22 @@ public class CrawlQueueController {
                 status.duration = status.lastStateChange.getTime() - status.creationDate.getTime();
                 break;
         }
-        if (lastImageInserted == null) {
-            if (lastVideoInserted == null)
-                status.lastItemInserted = "-";
-        } else if (lastVideoInserted == null) {
-            status.lastItemInserted = lastImageInserted.toString();
-        } else {
+        if (lastImageInserted == null && lastVideoInserted == null) {
+            status.lastItemInserted = "-";
+        } else if (lastImageInserted != null && lastVideoInserted != null) {
             status.lastItemInserted = (lastImageInserted.after(lastVideoInserted) ? lastImageInserted : lastVideoInserted).toString();
+        } else if (lastImageInserted != null) {
+            status.lastItemInserted = lastImageInserted.toString();
+        } else if (lastVideoInserted != null) {
+            status.lastItemInserted = lastVideoInserted.toString();
         }
         return status;
     }
 
     private Image getRepresentativeImage(MediaDAO<Image> images, Set<String> keywords) {
-        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 300, 100, 0);
+        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 300, 2000, 500);
+        if (res == null || res.size() == 0)
+            return null;
         for (Image i : res) {
             for (String keyword : keywords) {
                 if ((i.getTitle() != null && i.getTitle().contains(keyword)) || (i.getDescription() != null && i.getDescription().contains(keyword)))

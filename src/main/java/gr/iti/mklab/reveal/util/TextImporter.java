@@ -1,16 +1,22 @@
 package gr.iti.mklab.reveal.util;
 
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 import eu.socialsensor.framework.client.dao.StreamUserDAO;
 import eu.socialsensor.framework.client.dao.impl.StreamUserDAOImpl;
 import eu.socialsensor.framework.common.domain.StreamUser;
 import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import gr.iti.mklab.reveal.visual.IndexingManager;
+import gr.iti.mklab.simmo.items.Image;
+import gr.iti.mklab.simmo.morphia.MediaDAO;
+import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.util.DateUtil;
 import org.bson.BSONObject;
@@ -26,7 +32,29 @@ public class TextImporter {
 
     public static void main(String[] args) throws Exception {
         TextImporter ti = new TextImporter();
-        ti.importClustersFromDBSCAN();
+        ti.exportMetaDataFromClusters();
+    }
+
+    private void exportMetaDataFromClusters() throws Exception {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        MorphiaManager.setup("160.40.51.20");
+        MediaDAO<Image> mediaDao = new MediaDAO<>(Image.class, "syriza");
+        String rootFolder = "/home/kandreadou/Dropbox/reveal/clusters";
+        //String rootFolder = "/home/kandreadou/Videos/clusters";
+        for (File f : new File(rootFolder).listFiles()) {
+            List<String> myList = new ArrayList<>();
+            if (f.isDirectory()) {
+
+                for (File image : f.listFiles()) {
+                    String id = image.getName().substring(0, image.getName().lastIndexOf('.'));
+                    Image m = mediaDao.findOne("_id", new ObjectId(id) );
+                    PrintWriter printWriter = new PrintWriter (f.getPath()+"/"+id+".json");
+                    printWriter.write(gson.toJson(m, Image.class));
+                    printWriter.close();
+                }
+            }
+        }
+        MorphiaManager.tearDown();
     }
 
     private void importClustersFromDBSCAN() throws Exception {
