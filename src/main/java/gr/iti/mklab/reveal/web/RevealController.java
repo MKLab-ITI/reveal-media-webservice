@@ -544,12 +544,14 @@ public class RevealController {
         Responses.MediaResponse response = new Responses.MediaResponse();
         if (type == null || type.equalsIgnoreCase("image")) {
             MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
+            //response.images = imageDAO.getDatastore().find(Image.class).order("lastModifiedDate").offset(offset).limit(count).asList();
             response.images = imageDAO.getItems(count, offset);
             response.numImages = imageDAO.count();
         }
         if (type == null || type.equalsIgnoreCase("video")) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
             response.videos = videoDAO.getItems(count, offset);
+            //response.images = videoDAO.getDatastore().find(Image.class).order("lastModifiedDate").offset(offset).limit(count).asList();
             response.numVideos = videoDAO.count();
         }
         response.offset = offset;

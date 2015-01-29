@@ -319,10 +319,19 @@ public class CrawlQueueController {
     }
 
     private Image getRepresentativeImage(MediaDAO<Image> images, Set<String> keywords) {
-        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 300, 2000, 500);
+
+        int offset = 0;
+        int count = (int) images.count();
+        if (images.count() > 2501) {
+            offset = 500;
+            count = 2000;
+        }
+
+        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 400, count, offset);
         if (res == null || res.size() == 0)
             return null;
         for (Image i : res) {
+
             for (String keyword : keywords) {
                 if ((i.getTitle() != null && i.getTitle().contains(keyword)) || (i.getDescription() != null && i.getDescription().contains(keyword)))
                     return i;
