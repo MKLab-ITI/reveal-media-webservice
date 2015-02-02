@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.visual;
 
+import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.reveal.web.RevealException;
 import gr.iti.mklab.visual.aggregation.AbstractFeatureAggregator;
@@ -30,7 +31,6 @@ public class IndexingManager {
     protected static int targetLengthMax = 1024;
     protected static PCA pca;
     //protected static String learningFolder = "/home/kandreadou/webservice/learning_files/";
-    protected static String learningFolder = "/home/iti-310/VisualIndex/learning_files/";
     private static Map<String, AbstractSearchStructure> indices = new HashMap<String, AbstractSearchStructure>();
     private static IndexingManager singletonInstance;
 
@@ -47,13 +47,13 @@ public class IndexingManager {
             int initialLength = numCentroids.length * numCentroids[0] * AbstractFeatureExtractor.SURFLength;
 
             String[] codebookFiles = {
-                    learningFolder + "surf_l2_128c_0.csv",
-                    learningFolder + "surf_l2_128c_1.csv",
-                    learningFolder + "surf_l2_128c_2.csv",
-                    learningFolder + "surf_l2_128c_3.csv"
+                    Configuration.LEARNING_FOLDER + "surf_l2_128c_0.csv",
+                    Configuration.LEARNING_FOLDER + "surf_l2_128c_1.csv",
+                    Configuration.LEARNING_FOLDER + "surf_l2_128c_2.csv",
+                    Configuration.LEARNING_FOLDER + "surf_l2_128c_3.csv"
             };
 
-            String pcaFile = learningFolder + "pca_surf_4x128_32768to1024.txt";
+            String pcaFile = Configuration.LEARNING_FOLDER + "pca_surf_4x128_32768to1024.txt";
 
 
             //visualIndex = new Linear(targetLengthMax, 10000000, false, BDBEnvHome, false, false, 0);
@@ -84,9 +84,9 @@ public class IndexingManager {
         //String ivfpqIndexFolder = "/home/kandreadou/webservice/reveal_indices/" + name + "_" + targetLengthMax;
         String ivfpqIndexFolder;
         if (name.equalsIgnoreCase("showcase"))
-            ivfpqIndexFolder = "/home/iti-310/VisualIndex/data/" + name + "/ivfpq";
+            ivfpqIndexFolder = Configuration.INDEX_FOLDER + name + "/ivfpq";
         else
-            ivfpqIndexFolder = "/home/iti-310/VisualIndex/data/" + name;
+            ivfpqIndexFolder =  Configuration.INDEX_FOLDER + name;
         System.out.println("Loading index " + ivfpqIndexFolder);
         File jeLck = new File(ivfpqIndexFolder, "je.lck");
         if (jeLck.exists()) {
@@ -98,8 +98,8 @@ public class IndexingManager {
         int m2 = 64;
         int k_c = 256;
         int numCoarseCentroids = 8192;
-        String coarseQuantizerFile2 = learningFolder + "qcoarse_1024d_8192k.csv";
-        String productQuantizerFile2 = learningFolder + "pq_1024_64x8_rp_ivf_8192k.csv";
+        String coarseQuantizerFile2 = Configuration.LEARNING_FOLDER + "qcoarse_1024d_8192k.csv";
+        String productQuantizerFile2 = Configuration.LEARNING_FOLDER + "pq_1024_64x8_rp_ivf_8192k.csv";
 
         IVFPQ index = new IVFPQ(targetLengthMax, maximumNumVectors, false, ivfpqIndexFolder, m2, k_c, PQ.TransformationType.RandomPermutation, numCoarseCentroids, true, 0);
         index.loadCoarseQuantizer(coarseQuantizerFile2);

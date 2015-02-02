@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.web;
 
 import eu.socialsensor.framework.common.domain.WebPage;
+import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.crawler.CrawlRequest;
 import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
@@ -56,6 +57,7 @@ public class RevealController {
     //protected MongoManager mgr = new MongoManager("127.0.0.1", "Linear", "MediaItems");
 
     public RevealController() throws Exception {
+        Configuration.loadConfiguration(Configuration.CONF.DOCKER);
         String mongoHost = "127.0.0.1";
         mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
         clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClustersDBSCAN");
@@ -132,9 +134,9 @@ public class RevealController {
     @ResponseBody
     public CrawlRequest submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) throws RevealException {
         try {
-            String rootCrawlerDir = "/home/iti-310/VisualIndex/data/";
+            String rootCrawlerDir = Configuration.CRAWLS_FOLDER;
             return crawlerCtrler.submit(request.isNew, rootCrawlerDir + "crawl_" + request.collectionName, request.collectionName, request.keywords);
-        }catch(Exception ex){
+        } catch (Exception ex) {
             throw new RevealException(ex.getMessage(), ex);
         }
     }
@@ -173,9 +175,9 @@ public class RevealController {
         return s;
     }
 
-    private Responses.CrawlStatus getStaticSnowStatus(){
+    private Responses.CrawlStatus getStaticSnowStatus() {
         Responses.CrawlStatus st = new Responses.CrawlStatus();
-        st.id= "4523hb289gl234jhb";
+        st.id = "4523hb289gl234jhb";
         st.requestState = CrawlRequest.STATE.FINISHED;
         Set<String> keywords = new HashSet<>();
         keywords.add("-");
@@ -188,13 +190,13 @@ public class RevealController {
         cal.set(2014, 1, 27, 20, 17, 9);
         st.lastStateChange = cal.getTime();
         cal.set(2014, 1, 27, 20, 10, 54);
-        Date crawlDate  = cal.getTime();
+        Date crawlDate = cal.getTime();
         st.lastItemInserted = crawlDate.toString();
         st.collectionName = "snow";
         st.crawlDataPath = "/home/snow";
         st.numImages = 33840;
         st.numVideos = 267;
-        MediaItem i =  mediaDao.getMediaItems(500,1,"image").get(0);
+        MediaItem i = mediaDao.getMediaItems(500, 1, "image").get(0);
         Image img = new Image();
         img.setObjectId(new ObjectId());
         img.setHeight(i.getHeight());

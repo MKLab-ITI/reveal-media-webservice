@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.crawler;
 
+import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Video;
@@ -96,7 +97,7 @@ public class CrawlQueueController {
                 MorphiaManager.getDB(req.collectionName).dropDatabase();
                 //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(req.crawlDataPath));
-                FileUtils.deleteDirectory(new File("/home/iti-310/VisualIndex/data/" + req.collectionName));
+                FileUtils.deleteDirectory(new File(Configuration.INDEX_FOLDER + req.collectionName));
             } else {
                 cancelForPort(req.portNumber);
                 req.requestState = CrawlRequest.STATE.DELETING;
@@ -198,7 +199,7 @@ public class CrawlQueueController {
     private void launch(String scriptName) {
 
         try {
-            String path = "/home/iti-310/vdata/" + scriptName;
+            String path = Configuration.SCRIPTS_FOLDER + scriptName;
             String[] command = {path};
             ProcessBuilder p = new ProcessBuilder(command);
             Process pr = p.start();
