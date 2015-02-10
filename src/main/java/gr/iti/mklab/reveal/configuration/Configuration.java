@@ -1,6 +1,9 @@
 package gr.iti.mklab.reveal.configuration;
 
 
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+
 /**
  * Created by kandreadou on 2/2/15.
  */
@@ -10,7 +13,7 @@ public class Configuration {
         LOCAL, ITI310, DOCKER
     }
 
-    public static String LEARNING_FOLDER;
+
     public static String INDEX_FOLDER;
     public static String SCRIPTS_FOLDER;
     public static String CRAWLS_FOLDER;
@@ -18,6 +21,19 @@ public class Configuration {
     public static void main(String[] args) throws Exception {
         Configuration c = new Configuration();
         c.loadConfiguration(CONF.ITI310);
+    }
+
+    public static String CRAWLS_DIR;
+    public static String VISUAL_DIR;
+    public static String LEARNING_FOLDER;
+    public static String INDEX_SERVICE_HOST;
+
+    public static void load(String file) throws ConfigurationException {
+        PropertiesConfiguration conf = new PropertiesConfiguration(file);
+        CRAWLS_DIR = conf.getString("crawlsDir");
+        VISUAL_DIR = conf.getString("visualDir");
+        LEARNING_FOLDER = conf.getString("learningFolder");
+        INDEX_SERVICE_HOST = conf.getString("indexServiceHost");
     }
 
     public static void loadConfiguration(CONF conf) {

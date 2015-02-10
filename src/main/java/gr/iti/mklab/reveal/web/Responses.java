@@ -1,7 +1,7 @@
 package gr.iti.mklab.reveal.web;
 
+import gr.iti.mklab.framework.common.domain.MediaItem;
 import gr.iti.mklab.reveal.crawler.CrawlRequest;
-import gr.iti.mklab.reveal.util.MediaItem;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Video;
 import org.bson.types.ObjectId;
@@ -68,7 +68,7 @@ public class Responses {
             SimilarityResponse that = (SimilarityResponse) o;
 
             if (Double.compare(that.distance, distance) != 0) return false;
-            if (image != null ? !image.getObjectId().equals(that.image.getObjectId()) : that.image != null) return false;
+            if (image != null ? !image.getId().equals(that.image.getId()) : that.image != null) return false;
             if (item != null ? !item.getId().equals(that.item.getId()) : that.item != null) return false;
 
             return true;
@@ -130,10 +130,10 @@ public class Responses {
 
     public static void main(String[] args) throws Exception {
         Image im = new Image();
-        im.setObjectId(new ObjectId("54b8f9d2e4b0daec5c5e5921"));
+        im.setId(new ObjectId("54b8f9d2e4b0daec5c5e5921").toString());
         SimilarityResponse res = new SimilarityResponse(im, 1.2);
         Image im2 = new Image();
-        im2.setObjectId(new ObjectId("54b8f9d2e4b0daec5c5e5921"));
+        im2.setId(new ObjectId("54b8f9d2e4b0daec5c5e5921").toString());
         SimilarityResponse res2 = new SimilarityResponse(im, 1.2);
 
         List<SimilarityResponse> set = new ArrayList<>();

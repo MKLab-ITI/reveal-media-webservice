@@ -1,20 +1,13 @@
 package gr.iti.mklab.reveal.web;
 
-import eu.socialsensor.framework.common.domain.WebPage;
 import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.crawler.CrawlRequest;
-import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
-import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
-import gr.iti.mklab.reveal.solr.SolrManager;
 import gr.iti.mklab.reveal.text.NameThatEntity;
 import gr.iti.mklab.reveal.text.TextPreprocessing;
 import gr.iti.mklab.reveal.text.htmlsegmentation.BoilerpipeContentExtraction;
 import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
-import gr.iti.mklab.reveal.util.NamedEntities;
-import gr.iti.mklab.reveal.util.MediaCluster;
-import gr.iti.mklab.reveal.util.MediaItem;
-import gr.iti.mklab.reveal.util.NamedEntityDAO;
+
 import gr.iti.mklab.reveal.visual.IndexingManager;
 import gr.iti.mklab.simmo.annotations.NamedEntity;
 import gr.iti.mklab.simmo.items.Image;
@@ -25,7 +18,6 @@ import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import gr.iti.mklab.visual.utilities.Result;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
-import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +35,9 @@ import java.util.regex.Pattern;
 public class RevealController {
 
 
-    protected RevealMediaItemDaoImpl mediaDao;
-    protected RevealMediaClusterDaoImpl clusterDAO;
 
     private static final Logger logger = LoggerFactory.getLogger(RevealController.class);
 
-    protected SolrManager solr;
 
     protected CrawlQueueController crawlerCtrler;
 
@@ -59,8 +48,6 @@ public class RevealController {
     public RevealController() throws Exception {
         Configuration.loadConfiguration(Configuration.CONF.DOCKER);
         String mongoHost = "127.0.0.1";
-        mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
-        clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClustersDBSCAN");
         MorphiaManager.setup(mongoHost);
         crawlerCtrler = new CrawlQueueController();
         nte = new NameThatEntity();
@@ -74,10 +61,6 @@ public class RevealController {
         MorphiaManager.tearDown();
         if (crawlerCtrler != null)
             crawlerCtrler.shutdown();
-        if (mediaDao != null)
-            mediaDao.teardown();
-        if (clusterDAO != null)
-            clusterDAO.teardown();
     }
 
     ////////////////////////////////////////////////////////
@@ -171,260 +154,7 @@ public class RevealController {
     @ResponseBody
     public List<Responses.CrawlStatus> getCrawlerStatus() {
         List<Responses.CrawlStatus> s = crawlerCtrler.getActiveCrawls();
-        s.add(0, getStaticSnowStatus());
         return s;
-    }
-
-    private Responses.CrawlStatus getStaticSnowStatus() {
-        Responses.CrawlStatus st = new Responses.CrawlStatus();
-        st.id = "4523hb289gl234jhb";
-        st.requestState = CrawlRequest.STATE.FINISHED;
-        Set<String> keywords = new HashSet<>();
-        keywords.add("-");
-        st.keywords = keywords;
-        st.duration = 0;
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(0);
-        cal.set(2014, 1, 26, 15, 45, 3);
-        st.creationDate = cal.getTime();
-        cal.set(2014, 1, 27, 20, 17, 9);
-        st.lastStateChange = cal.getTime();
-        cal.set(2014, 1, 27, 20, 10, 54);
-        Date crawlDate = cal.getTime();
-        st.lastItemInserted = crawlDate.toString();
-        st.collectionName = "snow";
-        st.crawlDataPath = "/home/snow";
-        st.numImages = 33840;
-        st.numVideos = 267;
-        MediaItem i = mediaDao.getMediaItems(500, 1, "image").get(0);
-        Image img = new Image();
-        img.setObjectId(new ObjectId());
-        img.setHeight(i.getHeight());
-        img.setWidth(i.getWidth());
-        img.setCrawlDate(crawlDate);
-        img.setDescription(i.getDescription());
-        img.setTitle(i.getTitle());
-        img.setWebPageUrl(i.getPageUrl());
-        img.setUrl(i.getUrl());
-        st.image = img;
-        return st;
-    }
-
-    ////////////////////////////////////////////////////////
-    ///////// MEDIA OLD API FROM SOCIAL SENSOR /////////////
-    ///////////////////////////////////////////////////////
-
-    /**
-     * Returns by default the last 10 media items or the number specified by count
-     * <p>
-     * Example: http://localhost:8090/reveal/mmapi/media?count=20
-     *
-     * @param count
-     * @param offset
-     * @return
-     */
-    @RequestMapping(value = "/media", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<MediaItem> mediaItems(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                      @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                      @RequestParam(value = "type", required = false) String type) {
-        List<MediaItem> list = mediaDao.getMediaItems(offset, count, type);
-        return list;
-    }
-
-    @RequestMapping(value = "/media/text/entities", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<NamedEntity> getRankedEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                               @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
-        DAO<gr.iti.mklab.reveal.util.NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(gr.iti.mklab.reveal.util.NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("Showcase").getName());
-        List<NamedEntity> ne = rankedDAO.getDatastore().find(NamedEntity.class).offset(offset).limit(count).asList();
-        return ne;
-    }
-
-    /**
-     * Returns by default the last 10 media items or the number specified by count
-     * <p>
-     * Example: http://localhost:8090/reveal/mmapi/media?count=20
-     *
-     * @param num
-     * @return
-     */
-    @RequestMapping(value = "/mediaWithEntities", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<EntityResult> mediaItemsWithEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int num) throws Exception {
-        List<MediaItem> list = mediaDao.getMediaItems(num, 0, null);
-        List<EntityResult> result = new ArrayList<EntityResult>(list.size());
-        NamedEntityDAO dao = new NamedEntityDAO("160.40.51.20", "Showcase", "NamedEntities");
-        for (MediaItem item : list) {
-            NamedEntities eft = dao.getItemForTweetId(item.getId());
-            if (eft != null) {
-                result.add(new EntityResult(item, eft.namedEntities));
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns by default the last 10 media items or the number specified by count
-     * <p>
-     * Example: http://localhost:8090/reveal/mmapi/media?count=20
-     *
-     * @return
-     */
-    @RequestMapping(value = "/media/clusters", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<MediaCluster> mediaClusters(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
-        List<MediaCluster> clusters = clusterDAO.getSortedClusters(offset, count);
-        for (MediaCluster c : clusters) {
-            c.item = mediaDao.getItem(c.getMembers().iterator().next());
-        }
-        return clusters;
-    }
-
-    private List<MediaItem> clusterItems;
-    private String previousClusterId;
-
-    /**
-     * Returns by default the last 10 media items or the number specified by count
-     * <p>
-     * Example: http://localhost:8090/reveal/mmapi/media?count=20
-     *
-     * @param clusterId
-     * @return
-     */
-    @RequestMapping(value = "/media/cluster/{id}", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<MediaItem> mediaCluster(@PathVariable(value = "id") String clusterId,
-                                        @RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                        @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) throws RevealException {
-
-        if (!(previousClusterId == clusterId && clusterItems != null && clusterItems.size() >= offset + count)) {
-            previousClusterId = clusterId;
-            MediaCluster cluster = clusterDAO.getCluster(clusterId);
-            if (cluster == null)
-                return new ArrayList<>();
-            int numMembers = cluster.getCount();
-            if (offset > numMembers)
-                return new ArrayList<>();
-            if (offset + count > numMembers)
-                count = numMembers - offset;
-            int total = offset + count;
-            String[] members = cluster.getMembers().toArray(new String[cluster.getCount()]);
-        /*List<MediaItem> items = new ArrayList<>(count);
-        for (int i = offset; i < total; i++) {
-            MediaItem mi = mediaDao.getItem(members[i]);
-            if (mi != null)
-                items.add(mi);
-        }*/
-            clusterItems = new ArrayList<>(cluster.getCount());
-            for (int i = 0; i < cluster.getCount(); i++) {
-                MediaItem mi = mediaDao.getItem(members[i]);
-                if (mi != null)
-                    clusterItems.add(mi);
-            }
-            clusterItems.sort(new Comparator<MediaItem>() {
-                @Override
-                public int compare(MediaItem o1, MediaItem o2) {
-                    return (int) (o1.getPublicationTime() - o2.getPublicationTime());
-                }
-            });
-        }
-        return clusterItems.subList(offset, offset + count);
-    }
-
-    /**
-     * Returns the image with the specified id
-     * <p>
-     * Example: http://localhost:8090/reveal/mmapi/media/image/6f1d874534e126dcf9296c9b050cef23
-     *
-     * @param mediaItemId
-     * @return
-     */
-    @RequestMapping(value = "/media/{id}", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public MediaItem mediaItemById(@PathVariable("id") String mediaItemId) throws RevealException {
-        MediaItem mi = mediaDao.getItem(mediaItemId);
-        if (mi == null)
-            throw new RevealException("Media with id " + mediaItemId + " not found", null);
-        return mi;
-    }
-
-    /**
-     * Searches for images with publicationTime, width and height GREATER than the provided values
-     * Example: http://localhost:8090/reveal/mmapi/media/image/search?h=1000&w=2000
-     *
-     * @param date
-     * @param w
-     * @param h
-     * @return
-     */
-    @RequestMapping(value = "/media/image/search", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<MediaItem> mediaItemsSearch(
-            @RequestParam(value = "date", required = false, defaultValue = "-1") long date,
-            @RequestParam(value = "w", required = false, defaultValue = "0") int w,
-            @RequestParam(value = "h", required = false, defaultValue = "0") int h,
-            @RequestParam(value = "query", required = false) String text,
-            @RequestParam(value = "user", required = false) String username,
-            @RequestParam(value = "type", required = false) String type,
-            @RequestParam(value = "count", required = false, defaultValue = "10") int count,
-            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
-
-        List<MediaItem> list = mediaDao.search(username, text, w, h, date, count, offset, type);
-        return list;
-    }
-
-    private List<Responses.SimilarityResponse> finallist;
-    private String lastImageUrl;
-    private double lastThreshold;
-    private boolean isBusy = false;
-
-    @RequestMapping(value = "/media/image/similar", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<Responses.SimilarityResponse> findSimilarImages(@RequestParam(value = "collection", required = true) String collectionName,
-                                                                @RequestParam(value = "imageurl", required = true) String imageurl,
-                                                                @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                                                @RequestParam(value = "count", required = false, defaultValue = "50") int count,
-                                                                @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
-        try {
-            if (isBusy)
-                return new ArrayList<>();
-            if (!imageurl.equals(lastImageUrl) || finallist == null || (finallist != null && offset + count > finallist.size()) || lastThreshold != threshold) {
-                isBusy = true;
-                int roundedToTheNextHundred = ((offset + count + 99) / 100) * 100;
-                lastThreshold = threshold;
-                lastImageUrl = imageurl;
-                Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, roundedToTheNextHundred).getResults();
-                System.out.println("results size " + temp.length);
-                for (Result res : temp) {
-                    System.out.println(res.getExternalId() + " " + res.getDistance() + " " + res.getInternalId());
-                }
-                finallist = new ArrayList<>(temp.length);
-                for (Result r : temp) {
-                    if (r.getDistance() <= threshold) {
-                        MediaItem found = mediaDao.getItem(r.getExternalId());
-                        if (found != null)
-                            finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
-                    }
-                }
-                Collections.sort(finallist, new Comparator<Responses.SimilarityResponse>() {
-                    @Override
-                    public int compare(Responses.SimilarityResponse result, Responses.SimilarityResponse result2) {
-                        return Long.compare(result.item.getPublicationTime(), result2.item.getPublicationTime());
-                    }
-                });
-            }
-            isBusy = false;
-            if (finallist.size() < count)
-                return finallist;
-            else
-                return finallist.subList(offset, offset + count);
-        } catch (Exception e) {
-            isBusy = false;
-            System.out.println(e);
-            return new ArrayList<>();
-        }
     }
 
     ////////////////////////////////////////////////////////
@@ -566,10 +296,10 @@ public class RevealController {
                                  @PathVariable("id") String id) {
         Media result;
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-        result = imageDAO.get(new ObjectId(id));
+        result = imageDAO.get(new ObjectId(id).toString());
         if (result == null) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
-            result = videoDAO.get(new ObjectId(id));
+            result = videoDAO.get(new ObjectId(id).toString());
         }
         return result;
     }
@@ -673,18 +403,6 @@ public class RevealController {
             System.out.println(e);
             return new ArrayList<>();
         }
-    }
-
-    ////////////////////////////////////////////////////////
-    ///////// SOLR               ///////////////////////////
-    ///////////////////////////////////////////////////////
-
-    @RequestMapping(value = "/media/webpages/search", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<WebPage> findItemsByKeyword(@RequestParam(value = "query", required = true) String query,
-                                            @RequestParam(value = "count", required = false, defaultValue = "50") int num) {
-        return solr.collectMediaItemsByQuery(query, num);
-
     }
 
     ////////////////////////////////////////////////////////

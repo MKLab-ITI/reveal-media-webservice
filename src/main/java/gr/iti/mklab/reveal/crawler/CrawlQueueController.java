@@ -42,14 +42,22 @@ public class CrawlQueueController {
     /**
      * The number of AVAILABLE_PORTS defines the number of simultaneously running BUbiNG Agents
      */
-    private final static Integer[] AVAILABLE_PORTS = {9995, 9997, 9999};
+    private Map<String, RevealAgent> agents = new HashMap<>(3);
 
     public CrawlQueueController() {
         // Creates a DAO object to persist submitted crawl requests
         dao = new BasicDAO<>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(DB_NAME).getName());
+        Set<String> k = new HashSet<String>();
+        k.add("the");
+        enqueue(true, "test",k);
         // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();
+    }
+
+    public static void main(String[] args) {
+        MorphiaManager.setup("127.0.0.1");
+        CrawlQueueController controller = new CrawlQueueController();
     }
 
     public void shutdown() {
@@ -66,7 +74,7 @@ public class CrawlQueueController {
         System.out.println("submit event " + ArrayUtils.toString(keywords));
         if (!isNew && new File(crawlDir).exists())
             throw new Exception("The collection " + collectionName + " already exists. Choose a different name");
-        CrawlRequest r = enqueue(isNew, crawlDir, collectionName.toLowerCase(), keywords);
+        CrawlRequest r = enqueue(isNew, collectionName.toLowerCase(), keywords);
         tryLaunch();
         return r;
     }
@@ -79,7 +87,7 @@ public class CrawlQueueController {
         System.out.println("CrawlRequest " + req.collectionName + " " + req.requestState);
         req.requestState = CrawlRequest.STATE.STOPPING;
         dao.save(req);
-        cancelForPort(req.portNumber);
+        agents.get(req.collectionName).stop();
         return req;
     }
 
@@ -98,8 +106,10 @@ public class CrawlQueueController {
                 //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(req.crawlDataPath));
                 FileUtils.deleteDirectory(new File(Configuration.INDEX_FOLDER + req.collectionName));
+                // Remove the agent from the map
+                agents.remove(req.collectionName);
             } else {
-                cancelForPort(req.portNumber);
+                agents.get(req.collectionName).stop();
                 req.requestState = CrawlRequest.STATE.DELETING;
                 dao.save(req);
             }
@@ -112,37 +122,13 @@ public class CrawlQueueController {
         return ds.find(Image.class).offset(offset).limit(count).asList();
     }
 
-    /**
-     * Cancels the BUbiNG Agent listening to the specified port
-     *
-     * @param portNumber
-     */
-    private void cancelForPort(int portNumber) {
-        try {
-            System.out.println("Canceling for port " + portNumber);
-            //JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
-            JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:" + portNumber + "/jmxrmi");
-            JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
-            MBeanServerConnection mbsc = cc.getMBeanServerConnection();
-            //This information is available in jconsole
-            ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=agent");
-            //  Invoke stop operation
-            mbsc.invoke(serviceConfigName, "stop", null, null);
-            //  Close JMX connector
-            cc.close();
-        } catch (Exception e) {
-            System.out.println("Exception occurred: " + e.toString());
-            e.printStackTrace();
-        }
-    }
-
-    private CrawlRequest enqueue(boolean isNew, String crawlDir, String collectionName, Set<String> keywords) {
+    private CrawlRequest enqueue(boolean isNew, String collectionName, Set<String> keywords) {
         CrawlRequest r = new CrawlRequest();
         r.collectionName = collectionName;
         r.requestState = CrawlRequest.STATE.WAITING;
         r.lastStateChange = new Date();
         r.creationDate = new Date();
-        r.crawlDataPath = crawlDir;
+        r.crawlDataPath = Configuration.CRAWLS_DIR+collectionName;
         r.isNew = isNew;
         r.keywords = keywords;
         dao.save(r);
@@ -151,29 +137,13 @@ public class CrawlQueueController {
 
     private void tryLaunch() {
         List<CrawlRequest> list = getRunningCrawls();
-        // Make a copy of the available port numbers
-        List<Integer> ports = new LinkedList<Integer>(Arrays.asList(AVAILABLE_PORTS));
-        // and find a non-used port
         System.out.println("Running crawls list size " + list.size());
         for (CrawlRequest r : list) {
             System.out.println("Port " + r.portNumber);
-            if (ports.contains(r.portNumber)) {
-                // Check if the Agent on that port has finished or failed
-                // without updating the DB
-                if (isPortAvailable(r.portNumber)) {
-                    System.out.println("Available");
-                    r.requestState = CrawlRequest.STATE.FINISHED;
-                    r.lastStateChange = new Date();
-                    dao.save(r);
-                } else {
-
-                    if (r.requestState == CrawlRequest.STATE.STOPPING || r.requestState == CrawlRequest.STATE.DELETING) {
-                        System.out.println("Crawl " + r.id + "  with name " + r.collectionName + "and state " + r.requestState + " has not stopped yet. Trying again");
-                        cancelForPort(r.portNumber);
-                    }
-                    // The port is really busy so remove it from the list of available ports
-                    System.out.println("Not available");
-                    ports.remove(new Integer(r.portNumber));
+            if (agents.keySet().contains(r.collectionName)) {
+                if (r.requestState == CrawlRequest.STATE.STOPPING || r.requestState == CrawlRequest.STATE.DELETING) {
+                    System.out.println("Crawl " + r.id + "  with name " + r.collectionName + "and state " + r.requestState + " has not stopped yet. Trying again");
+                    agents.get(r.collectionName).stop();
                 }
             }
         }
@@ -181,33 +151,8 @@ public class CrawlQueueController {
         List<CrawlRequest> waitingList = getWaitingCrawls();
         if (waitingList.isEmpty())
             return;
-        for (
-                Integer i
-                : ports)
-
-        {
-            System.out.println("Try launch crawl for port " + i);
-            // Check if port is really available, if it is launch the respective script
-            if (isPortAvailable(i)) {
-                launch("crawl" + i + ".sh");
-                break;
-            }
-            System.out.println("Port " + i + " is not available");
-        }
-    }
-
-    private void launch(String scriptName) {
-
-        try {
-            String path = Configuration.SCRIPTS_FOLDER + scriptName;
-            String[] command = {path};
-            ProcessBuilder p = new ProcessBuilder(command);
-            Process pr = p.start();
-            inheritIO(pr.getInputStream(), System.out);
-            inheritIO(pr.getErrorStream(), System.err);
-        } catch (IOException ioe) {
-            System.out.println("Problem starting process for scriptName " + scriptName + " " + ioe);
-        }
+        RevealAgent a = new RevealAgent("127.0.0.1", 9999, waitingList.get(0));
+        new Thread(a).start();
     }
 
     public class Poller implements Runnable {
@@ -367,26 +312,5 @@ public class CrawlQueueController {
         }
 
         return false;
-    }
-
-    private static void inheritIO(final InputStream src, final PrintStream dest) {
-        new Thread(new Runnable() {
-            public void run() {
-                Scanner sc = new Scanner(src);
-                while (sc.hasNextLine()) {
-                    dest.println(sc.nextLine());
-                }
-            }
-        }).start();
-    }
-
-    public static void main(String[] args) throws Exception {
-        MorphiaManager.setup("160.40.51.20");
-        CrawlQueueController cr = new CrawlQueueController();
-        CrawlRequest req = cr.dao.findOne("_id", "54c61590e4b0497943bc7c88");
-        //cr.delete("54c61590e4b0497943bc7c88");
-        //List<Responses.CrawlStatus> s = cr.getActiveCrawls();
-        MorphiaManager.tearDown();
-
     }
 }

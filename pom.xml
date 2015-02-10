@@ -85,30 +85,19 @@
             <version>0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>eu.socialsensor</groupId>
-            <artifactId>socialsensor-framework-common</artifactId>
-            <version>0.2-SNAPSHOT</version>
+            <groupId>gr.iti.mklab</groupId>
+            <artifactId>mklab-framework-client</artifactId>
+            <version>0.1-SNAPSHOT</version>
         </dependency>
-        <!--<dependency>
-           <groupId>com.mangofactory</groupId>
-           <artifactId>swagger-springmvc</artifactId>
-           <version>0.8.8</version>
-       </dependency>
-       <dependency>
-            <groupId>org.ajar</groupId>
-            <artifactId>swagger-spring-mvc-ui</artifactId>
-            <version>0.1</version>
-            <scope>compile</scope>
-        </dependency>
-       <dependency>
-           <groupId>eu.socialsensor</groupId>
-           <artifactId>socialsensor-framework-client</artifactId>
-           <version>0.2.2-SNAPSHOT</version>
-       </dependency>-->
         <dependency>
-            <groupId>foo.bar</groupId>
-            <artifactId>SocialSensorClient</artifactId>
-            <version>5.6.7</version>
+            <groupId>gr.iti.mklab</groupId>
+            <artifactId>simmo</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>gr.iti.mklab</groupId>
+            <artifactId>mklab-framework-common</artifactId>
+            <version>0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.sleepycat</groupId>
@@ -168,11 +157,6 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>gr.iti.mklab</groupId>
-            <artifactId>simmo</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>de.l3s.boilerpipe</groupId>
             <artifactId>boilerpipe</artifactId>
             <version>1.1.0</version>
@@ -192,6 +176,89 @@
             <artifactId>commons-math3</artifactId>
             <version>3.4.1</version>
         </dependency>
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>1.10</version>
+        </dependency>
+        <dependency>
+            <groupId>net.htmlparser.jericho</groupId>
+            <artifactId>jericho-html</artifactId>
+            <version>3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.rauschig</groupId>
+            <artifactId>jarchivelib</artifactId>
+            <version>0.6.0</version>
+        </dependency>
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+            <version>6.5.9</version>
+        </dependency>
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>dsiutils</artifactId>
+            <version>2.1.10</version>
+        </dependency>
+        <dependency>
+            <groupId>it.unimi.di.law</groupId>
+            <artifactId>jai4j</artifactId>
+            <version>2.0.7</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-digester</groupId>
+            <artifactId>commons-digester</artifactId>
+            <version>2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.gdata</groupId>
+            <artifactId>core</artifactId>
+            <version>1.47.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-youtube</artifactId>
+            <version>v3-rev125-1.19.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.softee</groupId>
+            <artifactId>pojo-mbean</artifactId>
+            <version>1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jgroups</groupId>
+            <artifactId>jgroups</artifactId>
+            <version>3.6.1.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.4</version>
+        </dependency>
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>sux4j</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>dnsjava</groupId>
+            <artifactId>dnsjava</artifactId>
+            <version>2.1.6</version>
+        </dependency>
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>webgraph</artifactId>
+            <version>3.4.2</version>
+        </dependency>
+
+
+
 
         <!-- <dependency>
              <groupId>org.slf4j</groupId>
