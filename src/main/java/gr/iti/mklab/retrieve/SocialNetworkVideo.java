@@ -14,12 +14,6 @@ public class SocialNetworkVideo extends Video {
 
     protected String networkName;
 
-    protected long numLikes;
-
-    protected long numViews;
-
-    protected float rating;
-
     @Embedded
     public SocialNetworkUser user;
 

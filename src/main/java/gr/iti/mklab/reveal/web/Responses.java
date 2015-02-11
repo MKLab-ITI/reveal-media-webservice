@@ -128,19 +128,4 @@ public class Responses {
         public String lastItemInserted;
     }
 
-    public static void main(String[] args) throws Exception {
-        Image im = new Image();
-        im.setObjectId(new ObjectId("54b8f9d2e4b0daec5c5e5921"));
-        SimilarityResponse res = new SimilarityResponse(im, 1.2);
-        Image im2 = new Image();
-        im2.setObjectId(new ObjectId("54b8f9d2e4b0daec5c5e5921"));
-        SimilarityResponse res2 = new SimilarityResponse(im, 1.2);
-
-        List<SimilarityResponse> set = new ArrayList<>();
-        set.add(res);
-        boolean contains = set.contains(res2);
-
-        int m = 0;
-    }
-
 }

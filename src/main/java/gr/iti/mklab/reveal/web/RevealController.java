@@ -42,9 +42,65 @@ import java.util.regex.Pattern;
 @RequestMapping("/mmapi")
 public class RevealController {
 
+    class MediaDaoFactory {
+        protected RevealMediaItemDaoImpl mediaDao;
+        protected RevealMediaItemDaoImpl sandyMediaDao;
 
-    protected RevealMediaItemDaoImpl mediaDao;
-    protected RevealMediaClusterDaoImpl clusterDAO;
+        protected RevealMediaItemDaoImpl getMediaDao(String collection) {
+            try {
+                if ("sandy".equalsIgnoreCase(collection)) {
+                    if (sandyMediaDao == null)
+                        sandyMediaDao = new RevealMediaItemDaoImpl(mongoHost, "sandy", "MediaItems");
+                    return sandyMediaDao;
+                } else {
+                    if (mediaDao == null)
+                        mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
+                    return mediaDao;
+                }
+            } catch (Exception ex) {
+                return null;
+            }
+        }
+
+        protected void dispose() {
+            if (mediaDao != null)
+                mediaDao.teardown();
+            if (sandyMediaDao != null)
+                sandyMediaDao.teardown();
+        }
+    }
+
+    class ClusterDaoFactory {
+        protected RevealMediaClusterDaoImpl clusterDAO;
+        protected RevealMediaClusterDaoImpl sandyClusterDAO;
+
+
+        protected RevealMediaClusterDaoImpl getMediaDao(String collection) {
+            try {
+                if ("sandy".equalsIgnoreCase(collection)) {
+                    if (sandyClusterDAO == null)
+                        sandyClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "sandy", "MediaClusters");
+                    return sandyClusterDAO;
+                } else {
+                    if (clusterDAO == null)
+                        clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClustersDBSCAN");
+                    return clusterDAO;
+                }
+            } catch (Exception ex) {
+                return null;
+            }
+        }
+
+        protected void dispose() {
+            if (clusterDAO != null)
+                clusterDAO.teardown();
+            if (sandyClusterDAO != null)
+                sandyClusterDAO.teardown();
+        }
+    }
+
+    private MediaDaoFactory mediaFactory = new MediaDaoFactory();
+    private ClusterDaoFactory clusterFactory = new ClusterDaoFactory();
 
     private static final Logger logger = LoggerFactory.getLogger(RevealController.class);
 
@@ -54,13 +110,12 @@ public class RevealController {
 
     protected NameThatEntity nte;
 
+    protected String mongoHost = "127.0.0.1";
+
     //protected MongoManager mgr = new MongoManager("127.0.0.1", "Linear", "MediaItems");
 
     public RevealController() throws Exception {
         Configuration.loadConfiguration(Configuration.CONF.DOCKER);
-        String mongoHost = "127.0.0.1";
-        mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
-        clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClustersDBSCAN");
         MorphiaManager.setup(mongoHost);
         crawlerCtrler = new CrawlQueueController();
         nte = new NameThatEntity();
@@ -74,10 +129,8 @@ public class RevealController {
         MorphiaManager.tearDown();
         if (crawlerCtrler != null)
             crawlerCtrler.shutdown();
-        if (mediaDao != null)
-            mediaDao.teardown();
-        if (clusterDAO != null)
-            clusterDAO.teardown();
+        mediaFactory.dispose();
+        clusterFactory.dispose();
     }
 
     ////////////////////////////////////////////////////////
@@ -172,6 +225,7 @@ public class RevealController {
     public List<Responses.CrawlStatus> getCrawlerStatus() {
         List<Responses.CrawlStatus> s = crawlerCtrler.getActiveCrawls();
         s.add(0, getStaticSnowStatus());
+        s.add(1, getStaticSandyStatus());
         return s;
     }
 
@@ -196,7 +250,7 @@ public class RevealController {
         st.crawlDataPath = "/home/snow";
         st.numImages = 33840;
         st.numVideos = 267;
-        MediaItem i = mediaDao.getMediaItems(500, 1, "image").get(0);
+        MediaItem i = mediaFactory.getMediaDao("Showcase").getMediaItems(500, 1, "image").get(0);
         Image img = new Image();
         img.setObjectId(new ObjectId());
         img.setHeight(i.getHeight());
@@ -204,6 +258,41 @@ public class RevealController {
         img.setCrawlDate(crawlDate);
         img.setDescription(i.getDescription());
         img.setTitle(i.getTitle());
+        img.setWebPageUrl(i.getPageUrl());
+        img.setUrl(i.getUrl());
+        st.image = img;
+        return st;
+    }
+
+    private Responses.CrawlStatus getStaticSandyStatus() {
+        Responses.CrawlStatus st = new Responses.CrawlStatus();
+        st.id = "k8563hb289ase34jhb";
+        st.requestState = CrawlRequest.STATE.FINISHED;
+        Set<String> keywords = new HashSet<>();
+        keywords.add("-");
+        st.keywords = keywords;
+        st.duration = 0;
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(0);
+        cal.set(2014, 1, 26, 15, 45, 3);
+        st.creationDate = cal.getTime();
+        cal.set(2014, 1, 27, 20, 17, 9);
+        st.lastStateChange = cal.getTime();
+        cal.set(2014, 1, 27, 20, 10, 54);
+        Date crawlDate = cal.getTime();
+        st.lastItemInserted = crawlDate.toString();
+        st.collectionName = "sandy";
+        st.crawlDataPath = "/home/sandy";
+        st.numImages = 31896;
+        st.numVideos = 2;
+        MediaItem i = mediaFactory.getMediaDao("sandy").getMediaItems(0, 1, "image").get(0);
+        Image img = new Image();
+        img.setObjectId(new ObjectId());
+        //img.setHeight(i.getHeight());
+        //img.setWidth(i.getWidth());
+        img.setCrawlDate(crawlDate);
+        img.setDescription(i.getDescription());
+        //img.setTitle(i.getTitle());
         img.setWebPageUrl(i.getPageUrl());
         img.setUrl(i.getUrl());
         st.image = img;
@@ -227,16 +316,20 @@ public class RevealController {
     @ResponseBody
     public List<MediaItem> mediaItems(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
                                       @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                      @RequestParam(value = "type", required = false) String type) {
-        List<MediaItem> list = mediaDao.getMediaItems(offset, count, type);
+                                      @RequestParam(value = "type", required = false) String type,
+                                      @RequestParam(value = "collection", required = false, defaultValue = "Showcase") String collection) {
+        List<MediaItem> list = mediaFactory.getMediaDao(collection).getMediaItems(offset, count, type);
         return list;
     }
 
     @RequestMapping(value = "/media/text/entities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<NamedEntity> getRankedEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                               @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
-        DAO<gr.iti.mklab.reveal.util.NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(gr.iti.mklab.reveal.util.NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("Showcase").getName());
+                                               @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                               @RequestParam(value = "collection", required = false, defaultValue = "Showcase") String collection) {
+        if(collection.equalsIgnoreCase("showcase"))
+            collection= "Showcase";
+        DAO<gr.iti.mklab.reveal.util.NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(gr.iti.mklab.reveal.util.NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         List<NamedEntity> ne = rankedDAO.getDatastore().find(NamedEntity.class).offset(offset).limit(count).asList();
         return ne;
     }
@@ -252,7 +345,7 @@ public class RevealController {
     @RequestMapping(value = "/mediaWithEntities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<EntityResult> mediaItemsWithEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int num) throws Exception {
-        List<MediaItem> list = mediaDao.getMediaItems(num, 0, null);
+        List<MediaItem> list = mediaFactory.getMediaDao("Showcase").getMediaItems(num, 0, null);
         List<EntityResult> result = new ArrayList<EntityResult>(list.size());
         NamedEntityDAO dao = new NamedEntityDAO("160.40.51.20", "Showcase", "NamedEntities");
         for (MediaItem item : list) {
@@ -274,10 +367,11 @@ public class RevealController {
     @RequestMapping(value = "/media/clusters", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<MediaCluster> mediaClusters(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
-        List<MediaCluster> clusters = clusterDAO.getSortedClusters(offset, count);
+                                            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                            @RequestParam(value = "collection", required = false, defaultValue = "Showcase") String collection) {
+        List<MediaCluster> clusters = clusterFactory.getMediaDao(collection).getSortedClusters(offset, count);
         for (MediaCluster c : clusters) {
-            c.item = mediaDao.getItem(c.getMembers().iterator().next());
+            c.item = mediaFactory.getMediaDao(collection).getItem(c.getMembers().iterator().next());
         }
         return clusters;
     }
@@ -297,11 +391,12 @@ public class RevealController {
     @ResponseBody
     public List<MediaItem> mediaCluster(@PathVariable(value = "id") String clusterId,
                                         @RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                        @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) throws RevealException {
+                                        @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                        @RequestParam(value = "collection", required = false, defaultValue = "Showcase") String collection) throws RevealException {
 
         if (!(previousClusterId == clusterId && clusterItems != null && clusterItems.size() >= offset + count)) {
             previousClusterId = clusterId;
-            MediaCluster cluster = clusterDAO.getCluster(clusterId);
+            MediaCluster cluster = clusterFactory.getMediaDao(collection).getCluster(clusterId);
             if (cluster == null)
                 return new ArrayList<>();
             int numMembers = cluster.getCount();
@@ -319,7 +414,7 @@ public class RevealController {
         }*/
             clusterItems = new ArrayList<>(cluster.getCount());
             for (int i = 0; i < cluster.getCount(); i++) {
-                MediaItem mi = mediaDao.getItem(members[i]);
+                MediaItem mi = mediaFactory.getMediaDao(collection).getItem(members[i]);
                 if (mi != null)
                     clusterItems.add(mi);
             }
@@ -343,8 +438,8 @@ public class RevealController {
      */
     @RequestMapping(value = "/media/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public MediaItem mediaItemById(@PathVariable("id") String mediaItemId) throws RevealException {
-        MediaItem mi = mediaDao.getItem(mediaItemId);
+    public MediaItem mediaItemById(@PathVariable("id") String mediaItemId, @RequestParam(value = "collection", required = false, defaultValue = "Showcase") String collection) throws RevealException {
+        MediaItem mi = mediaFactory.getMediaDao(collection).getItem(mediaItemId);
         if (mi == null)
             throw new RevealException("Media with id " + mediaItemId + " not found", null);
         return mi;
@@ -369,9 +464,10 @@ public class RevealController {
             @RequestParam(value = "user", required = false) String username,
             @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "count", required = false, defaultValue = "10") int count,
-            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
+            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+            @RequestParam(value = "collection", required = false, defaultValue = "Showcase") String collection) {
 
-        List<MediaItem> list = mediaDao.search(username, text, w, h, date, count, offset, type);
+        List<MediaItem> list = mediaFactory.getMediaDao(collection).search(username, text, w, h, date, count, offset, type);
         return list;
     }
 
@@ -403,7 +499,7 @@ public class RevealController {
                 finallist = new ArrayList<>(temp.length);
                 for (Result r : temp) {
                     if (r.getDistance() <= threshold) {
-                        MediaItem found = mediaDao.getItem(r.getExternalId());
+                        MediaItem found = mediaFactory.getMediaDao(collectionName).getItem(r.getExternalId());
                         if (found != null)
                             finallist.add(new Responses.SimilarityResponse(found, r.getDistance()));
                     }
@@ -566,10 +662,10 @@ public class RevealController {
                                  @PathVariable("id") String id) {
         Media result;
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-        result = imageDAO.get(new ObjectId(id));
+        result = imageDAO.get(new ObjectId(id).toString());
         if (result == null) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
-            result = videoDAO.get(new ObjectId(id));
+            result = videoDAO.get(new ObjectId(id).toString());
         }
         return result;
     }

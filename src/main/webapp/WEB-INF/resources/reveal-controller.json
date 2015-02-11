@@ -123,6 +123,14 @@
                         "defaultValue": "",
                         "required": false,
                         "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "collection",
+                        "description": "The collection name. Accepted values: Showcase, sandy",
+                        "defaultValue": "",
+                        "required": true,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -164,6 +172,14 @@
                         "required": false,
                         "type": "integer",
                         "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "collection",
+                        "defaultValue": "Showcase",
+                        "description": "The collection name. Showcase, sandy",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -190,6 +206,14 @@
                         "name": "mediaId",
                         "description": "ID of media item that needs to be fetched",
                         "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "collection",
+                        "defaultValue": "Showcase",
+                        "description": "The collection name. Showcase, sandy",
+                        "required": false,
                         "type": "string"
                     }
                 ],
@@ -320,6 +344,14 @@
                         "required": false,
                         "type": "integer",
                         "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "collection",
+                        "defaultValue": "Showcase",
+                        "description": "The collection name. Showcase, sandy",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -374,6 +406,14 @@
                         "required": false,
                         "type": "integer",
                         "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "collection",
+                        "defaultValue": "Showcase",
+                        "description": "The collection name. Showcase, sandy",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -457,6 +497,14 @@
                         "description": "The minimum date",
                         "required": false,
                         "type": "integer"
+                    },
+                    {
+                        "in": "query",
+                        "name": "collection",
+                        "defaultValue": "Showcase",
+                        "description": "The collection name. Showcase, sandy",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -523,8 +571,9 @@
                     {
                         "in": "query",
                         "name": "collection",
+                        "defaultValue": "Showcase",
                         "description": "The collection name",
-                        "required": true,
+                        "required": false,
                         "type": "string"
                     }
                 ],

@@ -28,7 +28,7 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
 
     private MongoHandler mongoHandler;
     private DBCollection dbCollection;
-    private StreamUserDAOImpl userDAO = new StreamUserDAOImpl("160.40.51.20", "Showcase", "StreamUsers");
+    private StreamUserDAOImpl userDAO;
 
     public RevealMediaItemDaoImpl() throws Exception {
         super("localhost");
@@ -37,6 +37,7 @@ public class RevealMediaItemDaoImpl extends MediaItemDAOImpl {
     public RevealMediaItemDaoImpl(String mongohost, String db, String collection) throws Exception {
         super(mongohost, db, collection);
 
+        userDAO = new StreamUserDAOImpl("160.40.51.20", db, "StreamUsers");
         // Get private mongoHandler field with Reflection
         // This is a temporary solution til the SIMMO framework is ready
         Field privateField = MediaItemDAOImpl.class.getDeclaredField("mongoHandler");

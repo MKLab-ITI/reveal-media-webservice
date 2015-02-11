@@ -9,12 +9,6 @@ import org.mongodb.morphia.annotations.Entity;
 @Entity("UserAccount")
 public class SocialNetworkUser extends UserAccount {
 
-    protected String pageUrl;
-
-    protected String location;
-
-    protected String description;
-
     public SocialNetworkUser() {
     }
 }
