@@ -54,10 +54,10 @@ public class NamedEntityImporter {
         MorphiaManager.setup("160.40.51.20");
         NameThatEntity nte = new NameThatEntity();
         nte.initPipeline();
-        DAO<NamedEntities, ObjectId> nedao = new BasicDAO<>(NamedEntities.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("sandy").getName());
-        DAO<NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("sandy").getName());
-        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "sandy", "MediaItems");
-        List<MediaItem> list = mediaDao.getMediaItems(0, 31898, null);
+        DAO<NamedEntities, ObjectId> nedao = new BasicDAO<>(NamedEntities.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("malaysia").getName());
+        DAO<NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("malaysia").getName());
+        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "malaysia", "MediaItems");
+        List<MediaItem> list = mediaDao.getMediaItems(0, 25076, null);
         for (MediaItem item : list) {
             if(item.getDescription()!=null || item.getTitle()!=null) {
                 TextPreprocessing textPre = new TextPreprocessing(item.getDescription()+" "+item.getTitle());

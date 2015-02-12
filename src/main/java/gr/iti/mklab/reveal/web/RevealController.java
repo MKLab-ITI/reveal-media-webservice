@@ -45,6 +45,7 @@ public class RevealController {
     class MediaDaoFactory {
         protected RevealMediaItemDaoImpl mediaDao;
         protected RevealMediaItemDaoImpl sandyMediaDao;
+        protected RevealMediaItemDaoImpl malaysiaMediaDao;
 
         protected RevealMediaItemDaoImpl getMediaDao(String collection) {
             try {
@@ -52,6 +53,10 @@ public class RevealController {
                     if (sandyMediaDao == null)
                         sandyMediaDao = new RevealMediaItemDaoImpl(mongoHost, "sandy", "MediaItems");
                     return sandyMediaDao;
+                } else if ("malaysia".equalsIgnoreCase(collection)) {
+                    if (malaysiaMediaDao == null)
+                        malaysiaMediaDao = new RevealMediaItemDaoImpl(mongoHost, "malaysia", "MediaItems");
+                    return malaysiaMediaDao;
                 } else {
                     if (mediaDao == null)
                         mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
@@ -67,20 +72,27 @@ public class RevealController {
                 mediaDao.teardown();
             if (sandyMediaDao != null)
                 sandyMediaDao.teardown();
+            if (malaysiaMediaDao != null)
+                malaysiaMediaDao.teardown();
         }
     }
 
     class ClusterDaoFactory {
         protected RevealMediaClusterDaoImpl clusterDAO;
         protected RevealMediaClusterDaoImpl sandyClusterDAO;
-
+        protected RevealMediaClusterDaoImpl malaysiaClusterDAO;
 
         protected RevealMediaClusterDaoImpl getMediaDao(String collection) {
             try {
                 if ("sandy".equalsIgnoreCase(collection)) {
                     if (sandyClusterDAO == null)
-                        sandyClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "sandy", "MediaClusters");
+                        sandyClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "sandy", "MediaClustersDBSCAN");
                     return sandyClusterDAO;
+                }
+                if ("malaysia".equalsIgnoreCase(collection)) {
+                    if (malaysiaClusterDAO == null)
+                        malaysiaClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "malaysia", "MediaClustersDBSCAN");
+                    return malaysiaClusterDAO;
                 } else {
                     if (clusterDAO == null)
                         clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClustersDBSCAN");
@@ -96,6 +108,8 @@ public class RevealController {
                 clusterDAO.teardown();
             if (sandyClusterDAO != null)
                 sandyClusterDAO.teardown();
+            if (malaysiaClusterDAO != null)
+                malaysiaClusterDAO.teardown();
         }
     }
 
@@ -115,7 +129,7 @@ public class RevealController {
     //protected MongoManager mgr = new MongoManager("127.0.0.1", "Linear", "MediaItems");
 
     public RevealController() throws Exception {
-        Configuration.loadConfiguration(Configuration.CONF.DOCKER);
+        Configuration.loadConfiguration(Configuration.CONF.ITI310);
         MorphiaManager.setup(mongoHost);
         crawlerCtrler = new CrawlQueueController();
         nte = new NameThatEntity();
@@ -224,14 +238,15 @@ public class RevealController {
     @ResponseBody
     public List<Responses.CrawlStatus> getCrawlerStatus() {
         List<Responses.CrawlStatus> s = crawlerCtrler.getActiveCrawls();
-        s.add(0, getStaticSnowStatus());
-        s.add(1, getStaticSandyStatus());
+        s.add(0, getStaticStatusForCollection("Showcase", 33840, 267, "4523hb289gl234jhb", 235 ));
+        s.add(1, getStaticStatusForCollection("sandy", 31896, 2, "k8563hb289ase34jhb", 412 ));
+        s.add(2, getStaticStatusForCollection("malaysia", 25076, 0, "eru856bv02bvuy", 300 ));
         return s;
     }
 
-    private Responses.CrawlStatus getStaticSnowStatus() {
+    private Responses.CrawlStatus getStaticStatusForCollection(String collection, int numImages, int numVideos, String id, int startElement){
         Responses.CrawlStatus st = new Responses.CrawlStatus();
-        st.id = "4523hb289gl234jhb";
+        st.id = id;
         st.requestState = CrawlRequest.STATE.FINISHED;
         Set<String> keywords = new HashSet<>();
         keywords.add("-");
@@ -246,53 +261,18 @@ public class RevealController {
         cal.set(2014, 1, 27, 20, 10, 54);
         Date crawlDate = cal.getTime();
         st.lastItemInserted = crawlDate.toString();
-        st.collectionName = "snow";
-        st.crawlDataPath = "/home/snow";
-        st.numImages = 33840;
-        st.numVideos = 267;
-        MediaItem i = mediaFactory.getMediaDao("Showcase").getMediaItems(500, 1, "image").get(0);
-        Image img = new Image();
-        img.setObjectId(new ObjectId());
-        img.setHeight(i.getHeight());
-        img.setWidth(i.getWidth());
-        img.setCrawlDate(crawlDate);
-        img.setDescription(i.getDescription());
-        img.setTitle(i.getTitle());
-        img.setWebPageUrl(i.getPageUrl());
-        img.setUrl(i.getUrl());
-        st.image = img;
-        return st;
-    }
-
-    private Responses.CrawlStatus getStaticSandyStatus() {
-        Responses.CrawlStatus st = new Responses.CrawlStatus();
-        st.id = "k8563hb289ase34jhb";
-        st.requestState = CrawlRequest.STATE.FINISHED;
-        Set<String> keywords = new HashSet<>();
-        keywords.add("-");
-        st.keywords = keywords;
-        st.duration = 0;
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(0);
-        cal.set(2014, 1, 26, 15, 45, 3);
-        st.creationDate = cal.getTime();
-        cal.set(2014, 1, 27, 20, 17, 9);
-        st.lastStateChange = cal.getTime();
-        cal.set(2014, 1, 27, 20, 10, 54);
-        Date crawlDate = cal.getTime();
-        st.lastItemInserted = crawlDate.toString();
-        st.collectionName = "sandy";
-        st.crawlDataPath = "/home/sandy";
-        st.numImages = 31896;
-        st.numVideos = 2;
-        MediaItem i = mediaFactory.getMediaDao("sandy").getMediaItems(0, 1, "image").get(0);
+        st.collectionName = collection;
+        st.crawlDataPath = "/home/"+collection;
+        st.numImages = numImages;
+        st.numVideos = numVideos;
+        MediaItem i = mediaFactory.getMediaDao(collection).getMediaItems(startElement, 1, "image").get(0);
         Image img = new Image();
         img.setObjectId(new ObjectId());
         //img.setHeight(i.getHeight());
         //img.setWidth(i.getWidth());
         img.setCrawlDate(crawlDate);
         img.setDescription(i.getDescription());
-        //img.setTitle(i.getTitle());
+        img.setTitle(i.getTitle());
         img.setWebPageUrl(i.getPageUrl());
         img.setUrl(i.getUrl());
         st.image = img;
@@ -327,8 +307,8 @@ public class RevealController {
     public List<NamedEntity> getRankedEntities(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
                                                @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                                @RequestParam(value = "collection", required = false, defaultValue = "Showcase") String collection) {
-        if(collection.equalsIgnoreCase("showcase"))
-            collection= "Showcase";
+        if (collection.equalsIgnoreCase("showcase"))
+            collection = "Showcase";
         DAO<gr.iti.mklab.reveal.util.NamedEntity, ObjectId> rankedDAO = new BasicDAO<>(gr.iti.mklab.reveal.util.NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         List<NamedEntity> ne = rankedDAO.getDatastore().find(NamedEntity.class).offset(offset).limit(count).asList();
         return ne;

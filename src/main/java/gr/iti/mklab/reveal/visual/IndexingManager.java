@@ -75,7 +75,10 @@ public class IndexingManager {
     }
 
     public void createIndex(String name) throws Exception {
-        createIndex(name, 100000);
+        if (name.equalsIgnoreCase("sandy") || name.equalsIgnoreCase("malaysia"))
+            createIndex(name, 50000);
+        else
+            createIndex(name, 100000);
     }
 
     //Use showcase for the snow dataset
@@ -83,10 +86,10 @@ public class IndexingManager {
     public void createIndex(String name, int maximumNumVectors) throws Exception {
         //String ivfpqIndexFolder = "/home/kandreadou/webservice/reveal_indices/" + name + "_" + targetLengthMax;
         String ivfpqIndexFolder;
-        if (name.equalsIgnoreCase("showcase"))
+        if (name.equalsIgnoreCase("showcase") || name.equalsIgnoreCase("sandy")|| name.equalsIgnoreCase("malaysia"))
             ivfpqIndexFolder = Configuration.INDEX_FOLDER + name + "/ivfpq";
         else
-            ivfpqIndexFolder =  Configuration.INDEX_FOLDER + name;
+            ivfpqIndexFolder = Configuration.INDEX_FOLDER + name;
         System.out.println("Loading index " + ivfpqIndexFolder);
         File jeLck = new File(ivfpqIndexFolder, "je.lck");
         if (jeLck.exists()) {

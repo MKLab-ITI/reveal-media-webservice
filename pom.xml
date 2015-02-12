@@ -106,10 +106,16 @@
            <version>0.2.2-SNAPSHOT</version>
        </dependency>-->
         <dependency>
+            <groupId>eu.socialsensor</groupId>
+            <artifactId>socialsensor-framework-client</artifactId>
+            <version>0.2.2</version>
+        </dependency>
+
+        <!--<dependency>
             <groupId>foo.bar</groupId>
             <artifactId>SocialSensorClient</artifactId>
             <version>5.6.7</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>com.sleepycat</groupId>
             <artifactId>je</artifactId>

@@ -3,6 +3,8 @@ package gr.iti.mklab.reveal.util;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
+import eu.socialsensor.framework.client.search.visual.VisualIndexHandler;
+import gr.iti.mklab.reveal.mongo.RevealMediaClusterDaoImpl;
 import gr.iti.mklab.reveal.mongo.RevealMediaItemDaoImpl;
 import gr.iti.mklab.reveal.visual.IndexingManager;
 import gr.iti.mklab.simmo.items.Image;
@@ -10,7 +12,9 @@ import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import gr.iti.mklab.visual.vectorization.ImageVectorization;
 import gr.iti.mklab.visual.vectorization.ImageVectorizationResult;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.math3.ml.clustering.*;
+import org.bson.types.ObjectId;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -32,7 +36,37 @@ public class ClusteringTest {
 
     public static void main(String[] args) throws Exception {
         ClusteringTest t = new ClusteringTest();
-        t.testcluster();
+        t.testClusterSandy();
+    }
+
+    private void testClusterSandy() throws Exception {
+        VisualIndexHandler handler = new VisualIndexHandler("http://160.40.51.20:8080/VisualIndexService", "malaysia");
+
+        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "malaysia", "MediaItems");
+        RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", "malaysia", "MediaClustersDBSCAN");
+        List<ClusterableItem> list = new ArrayList<>();
+        List<MediaItem> items = mediaDao.getMediaItems(0, 25076, "image");
+        for (MediaItem item : items) {
+            try {
+                Double[] vector = handler.getVector(item.getId());
+                if (vector != null && vector.length==1024)
+                    list.add(new ClusterableItem(item, ArrayUtils.toPrimitive(vector)));
+            } catch (Exception ex) {
+            }
+        }
+
+        DBSCANClusterer<ClusterableItem> clusterer = new DBSCANClusterer(1.2, 3);
+        List<Cluster<ClusterableItem>> centroids = clusterer.cluster(list);
+        System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
+
+        for (Cluster<ClusterableItem> c : centroids) {
+            MediaCluster mc = new MediaCluster(new ObjectId().toString());
+            mc.setCount(c.getPoints().size());
+            c.getPoints().stream().forEach(clusterable -> mc.addMember(clusterable.item.getId()));
+            clusterDao.saveCluster(mc);
+        }
+
+
     }
 
     private void testcluster() throws Exception {
