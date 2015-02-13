@@ -75,7 +75,8 @@ public class IndexingManager {
     }
 
     public void createIndex(String name) throws Exception {
-        if (name.equalsIgnoreCase("sandy") || name.equalsIgnoreCase("malaysia"))
+        if (name.equalsIgnoreCase("sandy") || name.equalsIgnoreCase("malaysia") || name.equalsIgnoreCase("ferry")
+                || name.equalsIgnoreCase("chemicals")|| name.equalsIgnoreCase("girls")|| name.equalsIgnoreCase("boston"))
             createIndex(name, 50000);
         else
             createIndex(name, 100000);
@@ -86,7 +87,8 @@ public class IndexingManager {
     public void createIndex(String name, int maximumNumVectors) throws Exception {
         //String ivfpqIndexFolder = "/home/kandreadou/webservice/reveal_indices/" + name + "_" + targetLengthMax;
         String ivfpqIndexFolder;
-        if (name.equalsIgnoreCase("showcase") || name.equalsIgnoreCase("sandy")|| name.equalsIgnoreCase("malaysia"))
+        if (name.equalsIgnoreCase("showcase") || name.equalsIgnoreCase("sandy") || name.equalsIgnoreCase("malaysia")
+                || name.equalsIgnoreCase("ferry") || name.equalsIgnoreCase("chemicals")|| name.equalsIgnoreCase("girls")|| name.equalsIgnoreCase("boston"))
             ivfpqIndexFolder = Configuration.INDEX_FOLDER + name + "/ivfpq";
         else
             ivfpqIndexFolder = Configuration.INDEX_FOLDER + name;

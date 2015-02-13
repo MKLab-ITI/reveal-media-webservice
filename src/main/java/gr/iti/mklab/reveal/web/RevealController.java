@@ -46,6 +46,10 @@ public class RevealController {
         protected RevealMediaItemDaoImpl mediaDao;
         protected RevealMediaItemDaoImpl sandyMediaDao;
         protected RevealMediaItemDaoImpl malaysiaMediaDao;
+        protected RevealMediaItemDaoImpl ferryMediaDao;
+        protected RevealMediaItemDaoImpl chemicalsMediaDao;
+        protected RevealMediaItemDaoImpl girlsMediaDao;
+        protected RevealMediaItemDaoImpl bostonMediaDao;
 
         protected RevealMediaItemDaoImpl getMediaDao(String collection) {
             try {
@@ -57,7 +61,25 @@ public class RevealController {
                     if (malaysiaMediaDao == null)
                         malaysiaMediaDao = new RevealMediaItemDaoImpl(mongoHost, "malaysia", "MediaItems");
                     return malaysiaMediaDao;
-                } else {
+                } else if ("ferry".equalsIgnoreCase(collection)) {
+                    if (ferryMediaDao == null)
+                        ferryMediaDao = new RevealMediaItemDaoImpl(mongoHost, "ferry", "MediaItems");
+                    return ferryMediaDao;
+                }else if ("chemicals".equalsIgnoreCase(collection)) {
+                    if (chemicalsMediaDao == null)
+                        chemicalsMediaDao = new RevealMediaItemDaoImpl(mongoHost, "chemicals", "MediaItems");
+                    return chemicalsMediaDao;
+                }
+                else if ("girls".equalsIgnoreCase(collection)) {
+                    if (girlsMediaDao == null)
+                        girlsMediaDao = new RevealMediaItemDaoImpl(mongoHost, "girls", "MediaItems");
+                    return girlsMediaDao;
+                }
+                else if ("boston".equalsIgnoreCase(collection)) {
+                    if (bostonMediaDao == null)
+                        bostonMediaDao = new RevealMediaItemDaoImpl(mongoHost, "boston", "MediaItems");
+                    return bostonMediaDao;
+                }else {
                     if (mediaDao == null)
                         mediaDao = new RevealMediaItemDaoImpl(mongoHost, "Showcase", "MediaItems");
                     return mediaDao;
@@ -74,6 +96,14 @@ public class RevealController {
                 sandyMediaDao.teardown();
             if (malaysiaMediaDao != null)
                 malaysiaMediaDao.teardown();
+            if (ferryMediaDao != null)
+                ferryMediaDao.teardown();
+            if (chemicalsMediaDao != null)
+                chemicalsMediaDao.teardown();
+            if (girlsMediaDao != null)
+                girlsMediaDao.teardown();
+            if (bostonMediaDao != null)
+                bostonMediaDao.teardown();
         }
     }
 
@@ -81,6 +111,10 @@ public class RevealController {
         protected RevealMediaClusterDaoImpl clusterDAO;
         protected RevealMediaClusterDaoImpl sandyClusterDAO;
         protected RevealMediaClusterDaoImpl malaysiaClusterDAO;
+        protected RevealMediaClusterDaoImpl ferryClusterDAO;
+        protected RevealMediaClusterDaoImpl chemicalsClusterDAO;
+        protected RevealMediaClusterDaoImpl girlsClusterDAO;
+        protected RevealMediaClusterDaoImpl bostonClusterDAO;
 
         protected RevealMediaClusterDaoImpl getMediaDao(String collection) {
             try {
@@ -89,10 +123,28 @@ public class RevealController {
                         sandyClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "sandy", "MediaClustersDBSCAN");
                     return sandyClusterDAO;
                 }
-                if ("malaysia".equalsIgnoreCase(collection)) {
+                else if ("malaysia".equalsIgnoreCase(collection)) {
                     if (malaysiaClusterDAO == null)
                         malaysiaClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "malaysia", "MediaClustersDBSCAN");
                     return malaysiaClusterDAO;
+                }else if ("ferry".equalsIgnoreCase(collection)) {
+                    if (ferryClusterDAO == null)
+                        ferryClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "ferry", "MediaClustersDBSCAN");
+                    return ferryClusterDAO;
+                }else if ("chemicals".equalsIgnoreCase(collection)) {
+                    if (chemicalsClusterDAO == null)
+                        chemicalsClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "chemicals", "MediaClustersDBSCAN");
+                    return chemicalsClusterDAO;
+                }
+                else if ("girls".equalsIgnoreCase(collection)) {
+                    if (girlsClusterDAO == null)
+                        girlsClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "girls", "MediaClustersDBSCAN");
+                    return girlsClusterDAO;
+                }
+                else if ("boston".equalsIgnoreCase(collection)) {
+                    if (bostonClusterDAO == null)
+                        bostonClusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "boston", "MediaClustersDBSCAN");
+                    return bostonClusterDAO;
                 } else {
                     if (clusterDAO == null)
                         clusterDAO = new RevealMediaClusterDaoImpl(mongoHost, "Showcase", "MediaClustersDBSCAN");
@@ -110,6 +162,14 @@ public class RevealController {
                 sandyClusterDAO.teardown();
             if (malaysiaClusterDAO != null)
                 malaysiaClusterDAO.teardown();
+            if (ferryClusterDAO != null)
+                ferryClusterDAO.teardown();
+            if (chemicalsClusterDAO != null)
+                chemicalsClusterDAO.teardown();
+            if (bostonClusterDAO != null)
+                bostonClusterDAO.teardown();
+            if (girlsClusterDAO != null)
+                girlsClusterDAO.teardown();
         }
     }
 
@@ -241,6 +301,10 @@ public class RevealController {
         s.add(0, getStaticStatusForCollection("Showcase", 33840, 267, "4523hb289gl234jhb", 235 ));
         s.add(1, getStaticStatusForCollection("sandy", 31896, 2, "k8563hb289ase34jhb", 412 ));
         s.add(2, getStaticStatusForCollection("malaysia", 25076, 0, "eru856bv02bvuy", 300 ));
+        s.add(3, getStaticStatusForCollection("ferry", 2691, 0, "phfg7bawtbgb", 50 ));
+        s.add(4, getStaticStatusForCollection("chemicals", 2692, 0, "aw98vn48ug", 50 ));
+        s.add(5, getStaticStatusForCollection("girls", 1257, 0, "mnvuebvadf", 308 ));
+        s.add(6, getStaticStatusForCollection("boston", 10000, 0, "mvn846tbva", 500 ));
         return s;
     }
 
