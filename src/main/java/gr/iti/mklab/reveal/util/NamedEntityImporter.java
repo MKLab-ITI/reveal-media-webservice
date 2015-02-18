@@ -34,7 +34,7 @@ public class NamedEntityImporter {
 
     public static void main(String[] args) throws Exception {
         NamedEntityImporter nei = new NamedEntityImporter();
-        nei.extractFromItems("girls");
+        nei.extractFromItems("boston");
     }
 
     public void parse() throws Exception {

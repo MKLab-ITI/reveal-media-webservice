@@ -298,7 +298,7 @@ public class RevealController {
     @ResponseBody
     public List<Responses.CrawlStatus> getCrawlerStatus() {
         List<Responses.CrawlStatus> s = crawlerCtrler.getActiveCrawls();
-        s.add(0, getStaticStatusForCollection("Showcase", 33840, 267, "4523hb289gl234jhb", 235 ));
+        s.add(0, getStaticStatusForCollection("showcase", 33840, 267, "4523hb289gl234jhb", 235 ));
         s.add(1, getStaticStatusForCollection("sandy", 31896, 2, "k8563hb289ase34jhb", 412 ));
         s.add(2, getStaticStatusForCollection("malaysia", 25076, 0, "eru856bv02bvuy", 300 ));
         s.add(3, getStaticStatusForCollection("ferry", 2691, 0, "phfg7bawtbgb", 50 ));

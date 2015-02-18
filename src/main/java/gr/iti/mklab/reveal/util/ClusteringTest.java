@@ -36,7 +36,7 @@ public class ClusteringTest {
 
     public static void main(String[] args) throws Exception {
         ClusteringTest t = new ClusteringTest();
-        t.testClusterSandy("girls");
+        t.testClusterSandy("boston");
     }
 
     private void testClusterSandy(String colname) throws Exception {
