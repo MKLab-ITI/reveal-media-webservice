@@ -35,7 +35,7 @@ public class RevealAgent implements Runnable {
     private DAO<CrawlRequest, ObjectId> dao;
     private VisualIndexer _indexer;
 
-    public RevealAgent(String hostname, int jmxPort, CrawlRequest request) {
+    public RevealAgent(String hostname, int jmxPort, CrawlRequest request) throws Exception {
         _hostname = hostname;
         _jmxPort = jmxPort;
         _request = request;
@@ -45,7 +45,6 @@ public class RevealAgent implements Runnable {
     @Override
     public void run() {
         try {
-            Configuration.load("local.properties");
             // Mark the request as running
             dao = new BasicDAO<>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(CrawlQueueController.DB_NAME).getName());
             _request.requestState = CrawlRequest.STATE.RUNNING;

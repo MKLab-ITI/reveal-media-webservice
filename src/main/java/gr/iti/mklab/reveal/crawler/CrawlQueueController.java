@@ -47,17 +47,19 @@ public class CrawlQueueController {
     public CrawlQueueController() {
         // Creates a DAO object to persist submitted crawl requests
         dao = new BasicDAO<>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(DB_NAME).getName());
-        Set<String> k = new HashSet<String>();
-        k.add("the");
-        enqueue(true, "test",k);
         // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        Configuration.load("local.properties");
         MorphiaManager.setup("127.0.0.1");
         CrawlQueueController controller = new CrawlQueueController();
+        String colName = "tsipras";
+        Set<String> keywords = new HashSet<String>();
+        keywords.add("tsipras");
+        controller.submit(true, "/home/kandreadou/Pictures/"+colName, colName, keywords);
     }
 
     public void shutdown() {
@@ -135,11 +137,10 @@ public class CrawlQueueController {
         return r;
     }
 
-    private void tryLaunch() {
+    private void tryLaunch() throws Exception {
         List<CrawlRequest> list = getRunningCrawls();
         System.out.println("Running crawls list size " + list.size());
         for (CrawlRequest r : list) {
-            System.out.println("Port " + r.portNumber);
             if (agents.keySet().contains(r.collectionName)) {
                 if (r.requestState == CrawlRequest.STATE.STOPPING || r.requestState == CrawlRequest.STATE.DELETING) {
                     System.out.println("Crawl " + r.id + "  with name " + r.collectionName + "and state " + r.requestState + " has not stopped yet. Trying again");
@@ -151,7 +152,11 @@ public class CrawlQueueController {
         List<CrawlRequest> waitingList = getWaitingCrawls();
         if (waitingList.isEmpty())
             return;
-        RevealAgent a = new RevealAgent("127.0.0.1", 9999, waitingList.get(0));
+        CrawlRequest req = waitingList.get(0);
+        req.requestState = CrawlRequest.STATE.STARTING;
+        dao.save(req);
+        RevealAgent a = new RevealAgent("127.0.0.1", 9999, req);
+        agents.put(req.collectionName, a);
         new Thread(a).start();
     }
 
@@ -162,7 +167,11 @@ public class CrawlQueueController {
         @Override
         public void run() {
             System.out.println("NEW polling event");
-            tryLaunch();
+            try {
+                tryLaunch();
+            }catch(Exception ex){
+                System.out.println(ex);
+            }
         }
 
         public void startPolling() {

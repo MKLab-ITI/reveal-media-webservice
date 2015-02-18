@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.web;
 
+import gr.iti.mklab.framework.client.search.visual.JsonResultSet;
 import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.crawler.CrawlRequest;
@@ -9,6 +10,7 @@ import gr.iti.mklab.reveal.text.htmlsegmentation.BoilerpipeContentExtraction;
 import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
 
 import gr.iti.mklab.reveal.visual.IndexingManager;
+import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.simmo.annotations.NamedEntity;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Media;
@@ -35,7 +37,6 @@ import java.util.regex.Pattern;
 public class RevealController {
 
 
-
     private static final Logger logger = LoggerFactory.getLogger(RevealController.class);
 
 
@@ -46,12 +47,12 @@ public class RevealController {
     //protected MongoManager mgr = new MongoManager("127.0.0.1", "Linear", "MediaItems");
 
     public RevealController() throws Exception {
-        Configuration.loadConfiguration(Configuration.CONF.DOCKER);
+        Configuration.load(getClass().getResourceAsStream("/local.properties"));
         String mongoHost = "127.0.0.1";
         MorphiaManager.setup(mongoHost);
         crawlerCtrler = new CrawlQueueController();
-        nte = new NameThatEntity();
-        nte.initPipeline(); //Should be called only once in the beggining
+        //nte = new NameThatEntity();
+        //nte.initPipeline(); //Should be called only once in the beggining
         //solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
     }
 
@@ -381,7 +382,7 @@ public class RevealController {
                 int roundedToTheNextHundred = ((offset + count + 99) / 100) * 100;
                 lastThreshold2 = threshold;
                 lastImageUrl2 = imageurl;
-                Result[] temp = IndexingManager.getInstance().findSimilar(imageurl, collectionName, roundedToTheNextHundred).getResults();
+                List<JsonResultSet.JsonResult>  temp = VisualIndexer.getInstance().findSimilar(imageurl, collectionName, roundedToTheNextHundred).getResults();
                 System.out.println("results size " + temp.length);
                 simList2 = new ArrayList<>(temp.length);
                 for (Result r : temp) {

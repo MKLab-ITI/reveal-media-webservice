@@ -130,10 +130,10 @@ public class Responses {
 
     public static void main(String[] args) throws Exception {
         Image im = new Image();
-        im.setId(new ObjectId("54b8f9d2e4b0daec5c5e5921").toString());
+        //im.setId(new ObjectId("54b8f9d2e4b0daec5c5e5921").toString());
         SimilarityResponse res = new SimilarityResponse(im, 1.2);
         Image im2 = new Image();
-        im2.setId(new ObjectId("54b8f9d2e4b0daec5c5e5921").toString());
+        //im2.setId(new ObjectId("54b8f9d2e4b0daec5c5e5921").toString());
         SimilarityResponse res2 = new SimilarityResponse(im, 1.2);
 
         List<SimilarityResponse> set = new ArrayList<>();

@@ -17,7 +17,7 @@ import java.util.Set;
 public class CrawlRequest {
 
     public enum STATE {
-        WAITING, STOPPING, PAUSED, RUNNING, FINISHED, DELETING
+        WAITING, STOPPING, PAUSED, RUNNING, FINISHED, DELETING, STARTING
     }
 
     /**
@@ -35,12 +35,6 @@ public class CrawlRequest {
      * Useful for finding out how long a request has been waiting or running for instance
      */
     public Date lastStateChange;
-
-    /**
-     * The JMX port number, necessary for invoking the JMX methods
-     * and differentiating among the different BUbiNG agents
-     */
-    public int portNumber;
 
     /**
      * The path to the crawl data directory (not the warc files rather than

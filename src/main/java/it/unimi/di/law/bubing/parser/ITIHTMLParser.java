@@ -22,6 +22,7 @@ import gr.iti.mklab.reveal.crawler.RevealAgent;
 import gr.iti.mklab.reveal.util.ImageUtils;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.simmo.items.Image;
+import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.visual.utilities.ImageIOGreyScale;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.util.BURL;
@@ -331,7 +332,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
     /**
      * The character buffer. It is set up at construction time, but it can be changed later.
      */
-    //protected final char[] buffer;
+    protected final char[] buffer;
     /**
      * The charset we guessed for the last response.
      */
@@ -377,7 +378,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
      * @param bufferSize               the fixed size of the internal buffer; if zero, the buffer will be dynamic.
      */
     public ITIHTMLParser(final HashFunction hashFunction, final TextProcessor<T> textProcessor, final boolean crossAuthorityDuplicates, final int bufferSize) {
-        //buffer = bufferSize != 0 ? new char[bufferSize] : null;
+        buffer = bufferSize != 0 ? new char[bufferSize] : null;
         digestAppendable = hashFunction == null ? null : new DigestAppendable(hashFunction);
         this.textProcessor = textProcessor;
         this.crossAuthorityDuplicates = crossAuthorityDuplicates;
@@ -481,6 +482,15 @@ public class ITIHTMLParser<T> implements Parser<T> {
      */
     public void processImageURL(URI pageUri, URI base, String imageUri, String altText) throws MalformedURLException, IOException {
 
+        boolean keywordFound = false;
+        for (String keyword : keywords) {
+            if (altText.toLowerCase().contains(keyword.toLowerCase()) ||imageUri.toLowerCase().contains(keyword.toLowerCase())) {
+                keywordFound = true;
+                break;
+            }
+        }
+        if(!keywordFound)
+            return;
         URI url = BURL.parse(imageUri);
         if (url != null) {
             URI resolved = base.resolve(url);
@@ -541,17 +551,6 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
         final HttpEntity entity = httpResponse.getEntity();
 
-        boolean keywordFound = false;
-        /*String htmlText = EntityUtils.toString(entity);
-        //LOGGER.info("Keywords "+ ArrayUtils.toString(keywords.toArray()));
-        for (String keyword:keywords){
-            keywordFound |= htmlText.contains(keyword);
-        }
-        if(!keywordFound){
-            //LOGGER.info("*******************************Page "+uri.toString()+"does not contain keyword");
-            return null;
-        }*/
-
         // TODO: check if it will make sense to use getValue() of entity
         // Try to guess using headers
         final Header contentTypeHeader = entity.getContentType();
@@ -611,8 +610,8 @@ public class ITIHTMLParser<T> implements Parser<T> {
         }
 
         @SuppressWarnings("resource")
-        final Source streamedSource = new Source(new InputStreamReader(contentStream, charset));
-        //if (buffer != null) streamedSource.setBuffer(buffer);
+        final StreamedSource streamedSource = new StreamedSource(new InputStreamReader(contentStream, charset));
+        if (buffer != null) streamedSource.setBuffer(buffer);
         if (digestAppendable != null) digestAppendable.init(crossAuthorityDuplicates ? null : uri);
         URI base = uri;
 
@@ -626,39 +625,6 @@ public class ITIHTMLParser<T> implements Parser<T> {
                     if (startTag.getTagType() != StartTagType.NORMAL) continue;
                     final String name = startTag.getName();
 
-                    // Break if keywords not in title
-                    if ((name == HTMLElementName.TITLE) && !startTag.isSyntacticalEmptyElementTag()) {
-                        if (startTag.getElement() != null && startTag.getElement().getContent() != null) {
-                            String title = startTag.getElement().getContent().toString();
-                            LOGGER.debug("Page url " + uri + " title " + title);
-                            int threshold;
-                            switch (keywords.size()){
-                                case 0:
-                                    threshold = 0;
-                                    break;
-                                case 1:
-                                case 2:
-                                    threshold = 1;
-                                    break;
-                                case 3:
-                                case 4:
-                                    threshold = 2;
-                                    break;
-                                default:
-                                    threshold = 3;
-                                    break;
-                            }
-                            int found = 0;
-                            for (String keyword : keywords) {
-                                if (title.toLowerCase().contains(keyword.toLowerCase()))
-                                    found++;
-                            }
-                            if(found>=threshold)
-                                keywordFound = true;
-                            LOGGER.debug("Keyword found " + keywordFound);
-                        }
-                    }
-
                     if ((name == HTMLElementName.STYLE || name == HTMLElementName.SCRIPT) && !startTag.isSyntacticalEmptyElementTag())
                         inSpecialText++;
 
@@ -669,15 +635,15 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
                     // IFRAME or FRAME + SRC
                     if (name == HTMLElementName.IFRAME || name == HTMLElementName.FRAME || name == HTMLElementName.EMBED)
-                        process(linkReceiver, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("name"), keywordFound);
-                    else if (name == HTMLElementName.IMG && keywordFound) {
+                        process(linkReceiver, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("name"), true);
+                    else if (name == HTMLElementName.IMG ) {
                         processImageURL(uri, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("alt"));
                     } else if (name == HTMLElementName.SCRIPT)
                         process(linkReceiver, base, startTag.getAttributeValue("src"), null, false);
                     else if (name == HTMLElementName.OBJECT)
-                        process(linkReceiver, base, startTag.getAttributeValue("data"), startTag.getAttributeValue("name"), keywordFound);
+                        process(linkReceiver, base, startTag.getAttributeValue("data"), startTag.getAttributeValue("name"), true);
                     else if (name == HTMLElementName.A || name == HTMLElementName.AREA || name == HTMLElementName.LINK)
-                        process(linkReceiver, base, startTag.getAttributeValue("href"), null, keywordFound);
+                        process(linkReceiver, base, startTag.getAttributeValue("href"), null, true);
                     else if (name == HTMLElementName.BASE) {
                         String s = startTag.getAttributeValue("href");
                         if (s != null) {
