@@ -42,15 +42,12 @@ public class VisualIndexer {
 
     protected static int maxNumPixels = 768 * 512;
     protected static int targetLengthMax = 1024;
-    protected static PCA pca;
-    // One VisualIndexHandler per collection
-    private VisualIndexHandler handler;
+    private static PCA pca;
     private static CloseableHttpClient _httpclient;
     private static RequestConfig _requestConfig;
-    private final static Logger _logger = LoggerFactory.getLogger(VisualIndexer.class);
-    private MediaDAO<Image> imageDAO;
+    private static Logger _logger = LoggerFactory.getLogger(VisualIndexer.class);
 
-    public VisualIndexer(String collectionName) throws Exception {
+    public static void init() throws Exception {
 
         _requestConfig = RequestConfig.custom()
                 .setSocketTimeout(30000)
@@ -60,9 +57,6 @@ public class VisualIndexer {
         _httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
                 .build();
-        createCollection(collectionName);
-        handler = new VisualIndexHandler("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
-        imageDAO = new MediaDAO<>(Image.class, collectionName);
         int[] numCentroids = {128, 128, 128, 128};
         int initialLength = numCentroids.length * numCentroids[0] * AbstractFeatureExtractor.SURFLength;
 
@@ -86,6 +80,15 @@ public class VisualIndexer {
             pca.loadPCAFromFile(pcaFile);
             ImageVectorization.setPcaProjector(pca);
         }
+    }
+
+    private VisualIndexHandler handler;
+    private MediaDAO<Image> imageDAO;
+
+    public VisualIndexer(String collectionName) throws Exception {
+        createCollection(collectionName);
+        handler = new VisualIndexHandler("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
+        imageDAO = new MediaDAO<>(Image.class, collectionName);
     }
 
     public boolean index(Media media, String collectionName) {

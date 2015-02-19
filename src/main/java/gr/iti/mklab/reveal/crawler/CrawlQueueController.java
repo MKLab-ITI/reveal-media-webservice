@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.configuration.Configuration;
+import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Video;
@@ -39,10 +40,8 @@ public class CrawlQueueController {
     private DAO<CrawlRequest, ObjectId> dao;
     private Poller poller;
 
-    /**
-     * The number of AVAILABLE_PORTS defines the number of simultaneously running BUbiNG Agents
-     */
     private Map<String, RevealAgent> agents = new HashMap<>(3);
+    private Map<String, Thread> threads = new HashMap<>(3);
 
     public CrawlQueueController() {
         // Creates a DAO object to persist submitted crawl requests
@@ -55,11 +54,12 @@ public class CrawlQueueController {
     public static void main(String[] args) throws Exception {
         Configuration.load("local.properties");
         MorphiaManager.setup("127.0.0.1");
+        VisualIndexer.init();
         CrawlQueueController controller = new CrawlQueueController();
         String colName = "tsipras";
         Set<String> keywords = new HashSet<String>();
         keywords.add("tsipras");
-        controller.submit(true, "/home/kandreadou/Pictures/"+colName, colName, keywords);
+        controller.submit(true, colName, keywords);
     }
 
     public void shutdown() {
@@ -69,14 +69,23 @@ public class CrawlQueueController {
     /**
      * Submits a new crawl request
      *
-     * @param crawlDir
      * @param collectionName
      */
-    public synchronized CrawlRequest submit(boolean isNew, String crawlDir, String collectionName, Set<String> keywords) throws Exception {
-        System.out.println("submit event " + ArrayUtils.toString(keywords));
-        if (!isNew && new File(crawlDir).exists())
-            throw new Exception("The collection " + collectionName + " already exists. Choose a different name");
-        CrawlRequest r = enqueue(isNew, collectionName.toLowerCase(), keywords);
+    public synchronized CrawlRequest submit(boolean isNew, String collectionName, Set<String> keywords) throws Exception {
+        System.out.println("CRAWL: submit " + ArrayUtils.toString(keywords));
+        String crawlDataPath = Configuration.CRAWLS_DIR + collectionName;
+        List<CrawlRequest> requestsWithSameName = dao.getDatastore().find(CrawlRequest.class).field("collectionName").equal(collectionName).asList();
+        if (!isNew && (new File(crawlDataPath).exists() || requestsWithSameName.size() > 0))
+            throw new Exception("The collection " + collectionName + " already exists. Choose a different name or mark not new");
+        CrawlRequest r = new CrawlRequest();
+        r.collectionName = collectionName;
+        r.requestState = CrawlRequest.STATE.WAITING;
+        r.lastStateChange = new Date();
+        r.creationDate = new Date();
+        r.crawlDataPath = crawlDataPath;
+        r.isNew = isNew;
+        r.keywords = keywords;
+        dao.save(r);
         tryLaunch();
         return r;
     }
@@ -84,81 +93,84 @@ public class CrawlQueueController {
     public synchronized CrawlRequest cancel(String id) {
         System.out.println("CRAWL: Cancel for id " + id);
         CrawlRequest req = getCrawlRequest(id);
-        if ("showcase".equalsIgnoreCase(req.collectionName))
-            return null;
         System.out.println("CrawlRequest " + req.collectionName + " " + req.requestState);
         req.requestState = CrawlRequest.STATE.STOPPING;
+        req.lastStateChange = new Date(System.currentTimeMillis());
         dao.save(req);
-        agents.get(req.collectionName).stop();
+        stopCrawl(req);
         return req;
     }
 
-    public synchronized void delete(String id) throws Exception {
+    public synchronized CrawlRequest delete(String id) throws Exception {
         System.out.println("CRAWL: Delete for id " + id);
         CrawlRequest req = getCrawlRequest(id);
-        if ("showcase".equalsIgnoreCase(req.collectionName))
-            return;
         System.out.println("CrawlRequest " + req.collectionName + " " + req.requestState);
-        if (req != null) {
-            if (req.requestState != CrawlRequest.STATE.RUNNING) {
-                //Delete the request from the request DB
-                dao.delete(req);
-                //Delete the collection DB
-                MorphiaManager.getDB(req.collectionName).dropDatabase();
-                //Delete the crawl and index folders
-                FileUtils.deleteDirectory(new File(req.crawlDataPath));
-                FileUtils.deleteDirectory(new File(Configuration.INDEX_FOLDER + req.collectionName));
-                // Remove the agent from the map
-                agents.remove(req.collectionName);
-            } else {
-                agents.get(req.collectionName).stop();
-                req.requestState = CrawlRequest.STATE.DELETING;
-                dao.save(req);
-            }
-        }
-    }
-
-    public List<Image> getImages(String id, int count, int offset) {
-        CrawlRequest req = getCrawlRequest(id);
-        Datastore ds = MorphiaManager.getMorphia().createDatastore(MorphiaManager.getMongoClient(), req.collectionName);
-        return ds.find(Image.class).offset(offset).limit(count).asList();
-    }
-
-    private CrawlRequest enqueue(boolean isNew, String collectionName, Set<String> keywords) {
-        CrawlRequest r = new CrawlRequest();
-        r.collectionName = collectionName;
-        r.requestState = CrawlRequest.STATE.WAITING;
-        r.lastStateChange = new Date();
-        r.creationDate = new Date();
-        r.crawlDataPath = Configuration.CRAWLS_DIR+collectionName;
-        r.isNew = isNew;
-        r.keywords = keywords;
-        dao.save(r);
-        return r;
+        req.requestState = CrawlRequest.STATE.DELETING;
+        req.lastStateChange = new Date(System.currentTimeMillis());
+        dao.save(req);
+        stopCrawl(req);
+        return req;
     }
 
     private void tryLaunch() throws Exception {
         List<CrawlRequest> list = getRunningCrawls();
         System.out.println("Running crawls list size " + list.size());
+        //First make sure stopping crawls are stopped
         for (CrawlRequest r : list) {
             if (agents.keySet().contains(r.collectionName)) {
                 if (r.requestState == CrawlRequest.STATE.STOPPING || r.requestState == CrawlRequest.STATE.DELETING) {
                     System.out.println("Crawl " + r.id + "  with name " + r.collectionName + "and state " + r.requestState + " has not stopped yet. Trying again");
-                    agents.get(r.collectionName).stop();
+                    stopCrawl(r);
                 }
             }
         }
+        //Then make sure all running crawls are running
+        for(String c: threads.keySet()){
+            if(threads.get(c)==null || !threads.get(c).isAlive()){
+                threads.remove(c);
+                agents.remove(c);
+            }
 
+        }
+
+        if(threads.size()>=3)
+            return;
         List<CrawlRequest> waitingList = getWaitingCrawls();
         if (waitingList.isEmpty())
             return;
         CrawlRequest req = waitingList.get(0);
         req.requestState = CrawlRequest.STATE.STARTING;
         dao.save(req);
+        startCrawl(req);
+    }
+
+    private void startCrawl(CrawlRequest req) throws Exception{
         RevealAgent a = new RevealAgent("127.0.0.1", 9999, req);
         agents.put(req.collectionName, a);
-        new Thread(a).start();
+        Thread t = new Thread(a);
+        threads.put(req.collectionName, t);
+        t.start();
+        for(String c:threads.keySet()){
+            System.out.println(threads.get(c).toString()+ " agent"+agents.get(c).toString());
+        }
     }
+
+    private void stopCrawl(CrawlRequest req) {
+        if (req.requestState != CrawlRequest.STATE.RUNNING && System.currentTimeMillis() - req.lastStateChange.getTime() > 5 * 60 * 1000) {
+            Thread t = threads.get(req.collectionName);
+            if (t!=null && t.isAlive())
+                threads.get(req.collectionName).interrupt();
+            // Remove the agent from the map
+            agents.remove(req.collectionName);
+            threads.remove(req.collectionName);
+        } else {
+            agents.get(req.collectionName).stop();
+        }
+    }
+
+    //////////////////////////////////////////////////
+    //////////// POLLING ///////////////////////////
+    /////////////////////////////////////////////////
 
     public class Poller implements Runnable {
         final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
@@ -169,7 +181,7 @@ public class CrawlQueueController {
             System.out.println("NEW polling event");
             try {
                 tryLaunch();
-            }catch(Exception ex){
+            } catch (Exception ex) {
                 System.out.println(ex);
             }
         }
@@ -185,6 +197,10 @@ public class CrawlQueueController {
         }
 
     }
+
+    //////////////////////////////////////////////////
+    //////////// DB STUFF ///////////////////////////
+    /////////////////////////////////////////////////
 
     private CrawlRequest getCrawlRequest(String id) {
         return dao.findOne("_id", id);
@@ -216,7 +232,8 @@ public class CrawlQueueController {
                 q.criteria("requestState").equal(CrawlRequest.STATE.WAITING),
                 q.criteria("requestState").equal(CrawlRequest.STATE.STOPPING),
                 q.criteria("requestState").equal(CrawlRequest.STATE.FINISHED),
-                q.criteria("requestState").equal(CrawlRequest.STATE.DELETING)
+                q.criteria("requestState").equal(CrawlRequest.STATE.DELETING),
+                q.criteria("requestState").equal(CrawlRequest.STATE.STARTING)
         );
         List<Responses.CrawlStatus> result = new ArrayList<>();
         for (CrawlRequest req : q.asList()) {
@@ -293,33 +310,5 @@ public class CrawlQueueController {
             }
         }
         return res.get(0);
-    }
-
-    private boolean isPortAvailable(int port) {
-
-        ServerSocket ss = null;
-        DatagramSocket ds = null;
-        try {
-            ss = new ServerSocket(port);
-            ss.setReuseAddress(true);
-            ds = new DatagramSocket(port);
-            ds.setReuseAddress(true);
-            return true;
-        } catch (IOException e) {
-        } finally {
-            if (ds != null) {
-                ds.close();
-            }
-
-            if (ss != null) {
-                try {
-                    ss.close();
-                } catch (IOException e) {
-                /* should not be thrown */
-                }
-            }
-        }
-
-        return false;
     }
 }

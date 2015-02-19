@@ -161,7 +161,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
     /**
      * A class computing the digest of a page.
-     * <p/>
+     * <p>
      * <p>The page is somewhat simplified before being passed (as a sequence of bytes obtained
      * by breaking each character into the upper and lower byte) to a {@link Hasher}.
      * All start/end tags are case-normalized, and their whole content (except for the
@@ -171,10 +171,10 @@ public class ITIHTMLParser<T> implements Parser<T> {
      * distinguish correctly framed pages without alternative text. The attributes will be resolved
      * w.r.t. the {@linkplain #init(URI) URL associated to the page}.
      * Moreover, non-HTML tags are substituted with a special tag <samp>unknown</samp>.
-     * <p/>
+     * <p>
      * <p>For what concerns the text, all digits are substituted by a whitespace, and nonempty whitespace maximal sequences are coalesced
      * to a single space. Tags are considered as a non-whitespace character.
-     * <p/>
+     * <p>
      * <p>To avoid clashes between digests coming from different sites, you can optionally set a URL
      * (passed to the {@link #init(URI)} method) whose scheme+authority will be used to update the digest before adding the actual text page.
      */
@@ -484,12 +484,12 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
         boolean keywordFound = false;
         for (String keyword : keywords) {
-            if (altText.toLowerCase().contains(keyword.toLowerCase()) ||imageUri.toLowerCase().contains(keyword.toLowerCase())) {
+            if ((altText != null && altText.toLowerCase().contains(keyword.toLowerCase())) || imageUri.toLowerCase().contains(keyword.toLowerCase())) {
                 keywordFound = true;
                 break;
             }
         }
-        if(!keywordFound)
+        if (!keywordFound)
             return;
         URI url = BURL.parse(imageUri);
         if (url != null) {
@@ -531,7 +531,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
                         item.setCrawlDate(new Date());
 
                         try {
-                            if(indexer.index(item, collectionName)){
+                            if (indexer.index(item, collectionName)) {
 
                             }
 
@@ -636,7 +636,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
                     // IFRAME or FRAME + SRC
                     if (name == HTMLElementName.IFRAME || name == HTMLElementName.FRAME || name == HTMLElementName.EMBED)
                         process(linkReceiver, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("name"), true);
-                    else if (name == HTMLElementName.IMG ) {
+                    else if (name == HTMLElementName.IMG) {
                         processImageURL(uri, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("alt"));
                     } else if (name == HTMLElementName.SCRIPT)
                         process(linkReceiver, base, startTag.getAttributeValue("src"), null, false);
@@ -766,7 +766,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
      * present, interpreting the provided byte array as a sequence of
      * ISO-8859-1-encoded characters. Only the first such occurrence is considered (even if
      * it might not correspond to a valid or available charset).
-     * <p/>
+     * <p>
      * <p><strong>Beware</strong>: it might not work if the
      * <em>value</em> of some attribute in a <code>meta</code> tag
      * contains a string matching (case insensitively) the r.e.
@@ -805,7 +805,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
     /**
      * Extracts the charset name from the header value of a <samp>content-type</samp>
      * header using a regular expression.
-     * <p/>
+     * <p>
      * <strong>Warning</strong>: it might not work if someone puts the string <samp>charset=</samp>
      * in a string inside some attribute/value pair.
      *
@@ -847,7 +847,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
         return textProcessor == null ? null : textProcessor.result();
     }
 
-    public void setIndexParameters(String collectionName, Set<String> keywords, VisualIndexer indexer){
+    public void setIndexParameters(String collectionName, Set<String> keywords, VisualIndexer indexer) {
         this.collectionName = collectionName;
         this.keywords = keywords;
         this.indexer = indexer;
