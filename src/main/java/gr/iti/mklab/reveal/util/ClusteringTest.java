@@ -36,26 +36,26 @@ public class ClusteringTest {
 
     public static void main(String[] args) throws Exception {
         ClusteringTest t = new ClusteringTest();
-        t.testClusterSandy("boston");
+        t.testClusterSandy("sandy");
     }
 
     private void testClusterSandy(String colname) throws Exception {
         VisualIndexHandler handler = new VisualIndexHandler("http://160.40.51.20:8080/VisualIndexService", colname);
 
         RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", colname, "MediaItems");
-        RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", colname, "MediaClustersDBSCAN");
+        RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", colname, "MediaClustersDBSCAN1");
         List<ClusterableItem> list = new ArrayList<>();
-        List<MediaItem> items = mediaDao.getMediaItems(0, 2692, "image");
+        List<MediaItem> items = mediaDao.getMediaItems(0, 25767, "image");
         for (MediaItem item : items) {
             try {
                 Double[] vector = handler.getVector(item.getId());
-                if (vector != null && vector.length==1024)
+                if (vector != null && vector.length == 1024)
                     list.add(new ClusterableItem(item, ArrayUtils.toPrimitive(vector)));
             } catch (Exception ex) {
             }
         }
 
-        DBSCANClusterer<ClusterableItem> clusterer = new DBSCANClusterer(1.2, 3);
+        DBSCANClusterer<ClusterableItem> clusterer = new DBSCANClusterer(1.0, 3);
         List<Cluster<ClusterableItem>> centroids = clusterer.cluster(list);
         System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
 

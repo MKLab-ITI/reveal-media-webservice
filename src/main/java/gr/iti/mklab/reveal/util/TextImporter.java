@@ -32,7 +32,7 @@ public class TextImporter {
 
     public static void main(String[] args) throws Exception {
         TextImporter ti = new TextImporter();
-        ti.exportMetaDataFromClusters();
+        ti.sanitizeMediaClusters("boston");
     }
 
     private void exportMetaDataFromClusters() throws Exception {
@@ -100,10 +100,10 @@ public class TextImporter {
     }
 
     private void sanitizeImageSizes() throws Exception {
-        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "Showcase", "MediaItems");
+        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", "sandy", "MediaItems");
         int nullCounter = 0;
         int smallCounter = 0;
-        List<MediaItem> items = mediaDao.getMediaItems(0, 35105, "image");
+        List<MediaItem> items = mediaDao.getMediaItems(0, 31898, "image");
         for (MediaItem item : items) {
             if (item.getWidth() == null || item.getHeight() == null)
                 mediaDao.removeMediaItem(item.getId());
@@ -126,12 +126,22 @@ public class TextImporter {
     }
 
     // Delete non existing cluster members
-    private void sanitizeMediaClusters() throws Exception {
-        RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", "Showcase", "MediaClusters");
+    private void sanitizeMediaClusters(String collection) throws Exception {
+        int count=0;
+        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", collection, "MediaItems");
+        RevealMediaClusterDaoImpl clusterDao = new RevealMediaClusterDaoImpl("160.40.51.20", collection, "MediaClustersDBSCAN");
         List<MediaCluster> clusters = clusterDao.getSortedClusters(0, 7278);
         for (MediaCluster c : clusters) {
-            clusterDao.updateCluster(c.getId(), c.getMembers().size());
+            for (String s: c.getMembers()){
+                if(mediaDao.getItem(s)==null){
+                    System.out.println("MediaItem is null "+s);
+                    count++;
+                    //c.
+                }
+            }
+            //clusterDao.updateCluster(c.getId(), c.getMembers().size());
         }
+        System.out.println("Number of deleted items "+count);
     }
 
     private void importUsersFromFiles() throws Exception {
