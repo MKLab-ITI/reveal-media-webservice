@@ -135,7 +135,6 @@ public class CrawlQueueController {
             ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=" + name);
 // Invoke stop operation
             mbsc.invoke(serviceConfigName, "stop", null, null);
-            mbsc.unregisterMBean(serviceConfigName);
 // Close JMX connector
             cc.close();
         } catch (Exception e) {
