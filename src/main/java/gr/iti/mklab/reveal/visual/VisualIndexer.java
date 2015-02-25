@@ -2,6 +2,7 @@ package gr.iti.mklab.reveal.visual;
 
 import gr.iti.mklab.framework.client.search.visual.JsonResultSet;
 import gr.iti.mklab.framework.client.search.visual.VisualIndexHandler;
+import gr.iti.mklab.retrieve.SocialNetworkVideo;
 import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Media;
@@ -84,17 +85,21 @@ public class VisualIndexer {
 
     private VisualIndexHandler handler;
     private MediaDAO<Image> imageDAO;
+    private MediaDAO<Video> videoDAO;
+    private String collection;
 
     public VisualIndexer(String collectionName) throws Exception {
+        this.collection = collectionName;
         createCollection(collectionName);
         handler = new VisualIndexHandler("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
         imageDAO = new MediaDAO<>(Image.class, collectionName);
+        videoDAO = new MediaDAO<>(Video.class, collectionName);
     }
 
-    public boolean index(Media media, String collectionName) {
+    public boolean index(Media media) {
         boolean indexed = false;
         if (handler == null)
-            throw new IllegalStateException("There is no index for the collection " + collectionName);
+            throw new IllegalStateException("There is no index for the collection " + collection);
         HttpGet httpget = null;
         try {
             String id = media.getId();
@@ -133,12 +138,17 @@ public class VisualIndexer {
                     _logger.error("Error in feature extraction for " + id);
                 }
                 indexed = handler.index(id, vector);
-                if (indexed)
-                    imageDAO.save((Image) media);
+                if (indexed){
+                    if(media instanceof Image)
+                        imageDAO.save((Image) media);
+                    else
+                        videoDAO.save((Video)media);
+                }
+
 
             }
         } catch (Exception e) {
-            _logger.error(e.getMessage(), e);
+            //_logger.error(e.getMessage(), e);
 
         } finally {
             if (httpget != null) {
@@ -227,6 +237,6 @@ public class VisualIndexer {
         Image im = new Image();
         //im.setId("1235");
         im.setUrl("http://animalia-life.com/data_images/dog/dog4.jpg");
-        boolean indexed = v.index(im, "test");
+        boolean indexed = v.index(im);
     }
 }

@@ -2,6 +2,7 @@ package gr.iti.mklab.reveal.crawler;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
+import gr.iti.mklab.retrieve.YoutubeV3;
 import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
@@ -16,6 +17,11 @@ import org.mongodb.morphia.dao.DAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.MBeanServerConnection;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.Date;
@@ -31,7 +37,6 @@ public class RevealAgent implements Runnable {
     private final String _hostname;
     private final int _jmxPort;
     private CrawlRequest _request;
-    private Agent agent;
     private DAO<CrawlRequest, ObjectId> dao;
     private VisualIndexer _indexer;
 
@@ -39,12 +44,16 @@ public class RevealAgent implements Runnable {
         _hostname = hostname;
         _jmxPort = jmxPort;
         _request = request;
-        _indexer = new VisualIndexer(_request.collectionName);
     }
 
     @Override
     public void run() {
         try {
+            LOGGER.warn("###### REVEAL agent run method");
+            _indexer = new VisualIndexer(_request.collectionName);
+            LOGGER.warn("###### After visual indexer has been created");
+            YoutubeV3 youtube = new YoutubeV3(_indexer);
+            youtube.collect(_request.keywords);
             // Mark the request as running
             dao = new BasicDAO<>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(CrawlQueueController.DB_NAME).getName());
             _request.requestState = CrawlRequest.STATE.RUNNING;
@@ -64,7 +73,8 @@ public class RevealAgent implements Runnable {
             rc.keywords = _request.keywords;
             rc.collectionName = _request.collectionName;
             rc.indexer = _indexer;
-            agent = new Agent(_hostname, _jmxPort, rc);
+            LOGGER.warn("###### Agent for request id " + _request.id + " started");
+            new Agent(_hostname, _jmxPort, rc);
             LOGGER.warn("###### Agent for request id " + _request.id + " finished");
             _request = dao.findOne("_id", _request.id);
             if (_request != null)
@@ -85,13 +95,30 @@ public class RevealAgent implements Runnable {
                 _request.lastStateChange = new Date();
                 dao.save(_request);
             }
+            LOGGER.warn("###### youtube.stop()");
+            youtube.stop();
+            LOGGER.warn("###### unregister bean for name");
+            unregisterBeanForName(_request.collectionName);
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
         }
     }
 
-    public void stop() {
-        agent.stop();
+    private void unregisterBeanForName(String name) {
+        try {
+//JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
+            JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
+            JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
+            MBeanServerConnection mbsc = cc.getMBeanServerConnection();
+//This information is available in jconsole
+            ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=" + name);
+            mbsc.unregisterMBean(serviceConfigName);
+// Close JMX connector
+            cc.close();
+        } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.toString());
+            e.printStackTrace();
+        }
     }
 
 }

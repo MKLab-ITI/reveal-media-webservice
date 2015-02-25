@@ -531,7 +531,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
                         item.setCrawlDate(new Date());
 
                         try {
-                            if (indexer.index(item, collectionName)) {
+                            if (indexer.index(item)) {
 
                             }
 

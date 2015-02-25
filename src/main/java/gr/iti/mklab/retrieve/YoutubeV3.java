@@ -1,6 +1,6 @@
 package gr.iti.mklab.retrieve;
 
-import gr.iti.mklab.simmo.morphia.MorphiaManager;
+import gr.iti.mklab.reveal.visual.VisualIndexer;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.ObjectId;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
@@ -37,10 +37,10 @@ public class YoutubeV3 {
 
     private Thread thread;
 
-    //private MediaDAO<SocialNetworkVideo> videoDAO;
+    private VisualIndexer indexer;
 
     public static void main(String[] args) throws Exception {
-        MorphiaManager.setup("127.0.0.1");
+        //MorphiaManager.setup("127.0.0.1");
 
         Set<String> keywords = new HashSet<String>();
         keywords.add("tsipras");
@@ -48,21 +48,26 @@ public class YoutubeV3 {
         keywords.add("election");
     }
 
-    public YoutubeV3() throws Exception {
+    public YoutubeV3(VisualIndexer indexer) {
 
         youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), new HttpRequestInitializer() {
             public void initialize(HttpRequest request) throws IOException {
             }
         }).setApplicationName("reveal-2015").build();
-
-        //videoDAO = new MediaDAO<SocialNetworkVideo>(SocialNetworkVideo.class, collectionName);
+        this.indexer = indexer;
     }
 
     public void stop() {
 
-        stop = true;
-        if(thread!=null && thread.isAlive())
-            thread.interrupt();
+        try {
+            stop = true;
+            Thread.sleep(1000);
+        } catch (InterruptedException ie) {
+            System.out.println(ie);
+        } finally {
+            if (thread != null && thread.isAlive())
+                thread.interrupt();
+        }
     }
 
     public void collect(final Set<String> keywords) {
@@ -71,7 +76,6 @@ public class YoutubeV3 {
             @Override
             public void run() {
                 get(keywords);
-                MorphiaManager.tearDown();
             }
         });
         thread.start();
@@ -91,9 +95,8 @@ public class YoutubeV3 {
         int count = 100;
         String pageToken = null;
         //while (VisualIndexer.videoDAO.count() < count && !stop) {
-        while(true){
+        while (!stop) {
             try {
-                System.out.println("### NEW PAGE");
                 // Define the API request for retrieving search results.
                 YouTube.Search.List search = youtube.search().list("id,snippet");
                 search.setKey(apiKey);
@@ -146,7 +149,7 @@ public class YoutubeV3 {
                     for (int i = 0; i < videoList.size(); i++) {
                         SocialNetworkVideo newV = new SocialNetworkVideo(videoList.get(i), channelList.get(i));
                         newV.setId(new ObjectId().toString());
-                        //VisualIndexer.indexAndStore(newV);
+                        indexer.index(newV);
                     }
                     /*if (videoList != null) {
                         prettyPrint(videoList.iterator(), queryTerm);
@@ -208,5 +211,4 @@ public class YoutubeV3 {
             System.out.println("\n-------------------------------------------------------------\n");
         }
     }
-
 }

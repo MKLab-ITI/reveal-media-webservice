@@ -7,10 +7,8 @@ import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Video;
 import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
-import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
@@ -21,11 +19,6 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.net.DatagramSocket;
-import java.net.ServerSocket;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -39,9 +32,6 @@ public class CrawlQueueController {
     public static final String DB_NAME = "crawlerQUEUE";
     private DAO<CrawlRequest, ObjectId> dao;
     private Poller poller;
-
-    private Map<String, RevealAgent> agents = new HashMap<>(3);
-    private Map<String, Thread> threads = new HashMap<>(3);
 
     public CrawlQueueController() {
         // Creates a DAO object to persist submitted crawl requests
@@ -72,7 +62,7 @@ public class CrawlQueueController {
      * @param collectionName
      */
     public synchronized CrawlRequest submit(boolean isNew, String collectionName, Set<String> keywords) throws Exception {
-        System.out.println("CRAWL: submit " + ArrayUtils.toString(keywords));
+        System.out.println("CRAWL: submit "+collectionName+" keywords " + ArrayUtils.toString(keywords));
         String crawlDataPath = Configuration.CRAWLS_DIR + collectionName;
         List<CrawlRequest> requestsWithSameName = dao.getDatastore().find(CrawlRequest.class).field("collectionName").equal(collectionName).asList();
         if (!isNew && (new File(crawlDataPath).exists() || requestsWithSameName.size() > 0))
@@ -97,7 +87,7 @@ public class CrawlQueueController {
         req.requestState = CrawlRequest.STATE.STOPPING;
         req.lastStateChange = new Date(System.currentTimeMillis());
         dao.save(req);
-        stopCrawl(req);
+        cancelForName(req.collectionName);
         return req;
     }
 
@@ -108,32 +98,15 @@ public class CrawlQueueController {
         req.requestState = CrawlRequest.STATE.DELETING;
         req.lastStateChange = new Date(System.currentTimeMillis());
         dao.save(req);
-        stopCrawl(req);
+        cancelForName(req.collectionName);
         return req;
     }
 
     private void tryLaunch() throws Exception {
         List<CrawlRequest> list = getRunningCrawls();
         System.out.println("Running crawls list size " + list.size());
-        //First make sure stopping crawls are stopped
-        for (CrawlRequest r : list) {
-            if (agents.keySet().contains(r.collectionName)) {
-                if (r.requestState == CrawlRequest.STATE.STOPPING || r.requestState == CrawlRequest.STATE.DELETING) {
-                    System.out.println("Crawl " + r.id + "  with name " + r.collectionName + "and state " + r.requestState + " has not stopped yet. Trying again");
-                    stopCrawl(r);
-                }
-            }
-        }
-        //Then make sure all running crawls are running
-        for(String c: threads.keySet()){
-            if(threads.get(c)==null || !threads.get(c).isAlive()){
-                threads.remove(c);
-                agents.remove(c);
-            }
 
-        }
-
-        if(threads.size()>=3)
+        if (list.size() >= 3)
             return;
         List<CrawlRequest> waitingList = getWaitingCrawls();
         if (waitingList.isEmpty())
@@ -144,27 +117,30 @@ public class CrawlQueueController {
         startCrawl(req);
     }
 
-    private void startCrawl(CrawlRequest req) throws Exception{
-        RevealAgent a = new RevealAgent("127.0.0.1", 9999, req);
-        agents.put(req.collectionName, a);
-        Thread t = new Thread(a);
-        threads.put(req.collectionName, t);
-        t.start();
-        for(String c:threads.keySet()){
-            System.out.println(threads.get(c).toString()+ " agent"+agents.get(c).toString());
-        }
+    private void startCrawl(CrawlRequest req) throws Exception {
+        System.out.println("METHOD: Startcrawl " + req.collectionName + " " + req.requestState);
+        new Thread(new RevealAgent("127.0.0.1", 9999, req)).start();
     }
 
-    private void stopCrawl(CrawlRequest req) {
-        if (req.requestState != CrawlRequest.STATE.RUNNING && System.currentTimeMillis() - req.lastStateChange.getTime() > 5 * 60 * 1000) {
-            Thread t = threads.get(req.collectionName);
-            if (t!=null && t.isAlive())
-                threads.get(req.collectionName).interrupt();
-            // Remove the agent from the map
-            agents.remove(req.collectionName);
-            threads.remove(req.collectionName);
-        } else {
-            agents.get(req.collectionName).stop();
+    /**
+     * Cancels the BUbiNG Agent listening to the specified port
+     */
+    private void cancelForName(String name) {
+        try {
+//JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
+            JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
+            JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
+            MBeanServerConnection mbsc = cc.getMBeanServerConnection();
+//This information is available in jconsole
+            ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=" + name);
+// Invoke stop operation
+            mbsc.invoke(serviceConfigName, "stop", null, null);
+            mbsc.unregisterMBean(serviceConfigName);
+// Close JMX connector
+            cc.close();
+        } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.toString());
+            e.printStackTrace();
         }
     }
 
@@ -211,7 +187,8 @@ public class CrawlQueueController {
         q.or(
                 q.criteria("requestState").equal(CrawlRequest.STATE.RUNNING),
                 q.criteria("requestState").equal(CrawlRequest.STATE.STOPPING),
-                q.criteria("requestState").equal(CrawlRequest.STATE.DELETING)
+                q.criteria("requestState").equal(CrawlRequest.STATE.DELETING),
+                q.criteria("requestState").equal(CrawlRequest.STATE.STARTING)
         );
         return q.asList();
     }

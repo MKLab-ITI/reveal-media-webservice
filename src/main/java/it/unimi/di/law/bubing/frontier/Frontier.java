@@ -695,22 +695,45 @@ public class Frontier implements JobListener<BubingJob>, AbstractSieve.NewFlowRe
 	 * 
 	 * @throws IOException
 	 * @throws InterruptedException */
-	public void close() throws IOException, InterruptedException {
+	public void close() throws IOException {
 		/* First we wait for all high-level threads to complete. Note that only the workbench thread
 		 * needs to be interrupted--all other threads check regularly for rc.stopping. Note that
 		 * visit states in the todo and done list will be moved by snap() back into the workbench. */
 		todoThread.interrupt();
 
-		doneThread.join();
+        try {
+            doneThread.join();
+        }catch(InterruptedException ie){
+            LOGGER.info( "Exception on doneThread.join()" );
+            doneThread.interrupt();
+        }
 		LOGGER.info( "Joined done thread" );
+        try {
 		distributor.join();
+        }catch(InterruptedException ie){
+            LOGGER.info( "Exception on distributor.join()" );
+            distributor.interrupt();
+        }
 		LOGGER.info( "Joined distributor" );
+        try {
 		todoThread.join();
+        }catch(InterruptedException ie){
+            LOGGER.info( "Exception on todoThread.join()" );
+            todoThread.interrupt();
+        }
 		LOGGER.info( "Joined todo thread" );
 
 		/* First we stop DNS threads; note that we have to set explicitly stop. */
 		for ( DNSThread t : dnsThreads ) t.stop = true;
-		for ( DNSThread t : dnsThreads ) t.join();
+		for ( DNSThread t : dnsThreads ) {
+            try {
+                t.join();
+            }catch(InterruptedException ie){
+                LOGGER.info( "Exception on dns thread t.join()" );
+                t.interrupt();
+            }
+        }
+
 		LOGGER.info( "Joined DNS threads" );
 
 		/* We wait for all fetching activity to come to a stop. */
@@ -723,7 +746,11 @@ public class Frontier implements JobListener<BubingJob>, AbstractSieve.NewFlowRe
 		boolean someAlive;
 		
 		do {
-			Thread.sleep( 1000 );
+            try {
+                Thread.sleep(1000);
+            }catch(InterruptedException ie){
+                LOGGER.info( "Exception Thread.sleep(1000)" );
+            }
 			someAlive = false;
 			for ( FetchingThread t : fetchingThreads ) someAlive |= t.isAlive();
 		} while ( someAlive && System.currentTimeMillis() - time < rc.socketTimeout * 2 );
@@ -732,16 +759,26 @@ public class Frontier implements JobListener<BubingJob>, AbstractSieve.NewFlowRe
 		
 		time = System.currentTimeMillis();
 		do {
-			Thread.sleep( 1000 );
+            try {
+                Thread.sleep(1000);
+            }catch(InterruptedException ie){
+                LOGGER.info( "Exception Thread.sleep(1000)" );
+            }
 			someAlive = false;
 			for ( FetchingThread t : fetchingThreads ) someAlive |= t.isAlive();
 		} while ( someAlive && System.currentTimeMillis() - time < rc.socketTimeout * 2 );
 		
 		// This catches fetching threads stuck because all parsing threads crashed
 		for ( FetchingThread t : fetchingThreads ) t.interrupt();
-		for ( FetchingThread t : fetchingThreads ) t.join();
-
-		LOGGER.info( "Joined fetching threads" );
+		for ( FetchingThread t : fetchingThreads ) {
+            try {
+                t.join();
+            }catch(InterruptedException ie){
+                LOGGER.info( "Exception on fetching thread t.join()" );
+                t.interrupt();
+            }
+        }
+        LOGGER.info( "Joined fetching threads" );
 
 		// Wait for all results to be parsed, unless there are no more parsing threads alive
 		while ( results.size() != 0 ) {
@@ -751,13 +788,24 @@ public class Frontier implements JobListener<BubingJob>, AbstractSieve.NewFlowRe
 				LOGGER.error( "No parsing thread alive: some results might not have been parsed" );
 				break;
 			}
-			Thread.sleep( 1000 );
+            try {
+                Thread.sleep(1000);
+            }catch(InterruptedException ie){
+                LOGGER.info( "Exception Thread.sleep(1000)" );
+            }
 		}
 		if ( results.size() == 0 ) LOGGER.info( "All results have been parsed" );
 
 		/* Then we stop parsing threads; note that we have to set explicitly stop. */
 		for ( ParsingThread t : parsingThreads ) t.stop = true;
-		for ( ParsingThread t : parsingThreads ) t.join();
+		for ( ParsingThread t : parsingThreads ) {
+            try {
+                t.join();
+            }catch(InterruptedException ie){
+                LOGGER.info( "Exception on parsing thread t.join()" );
+                t.interrupt();
+            }
+        }
 		robotsWarcParallelOutputStream.close();
 		store.close();
 		LOGGER.info( "Joined parsing threads and closed stores" );
