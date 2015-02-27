@@ -82,22 +82,22 @@
         <dependency>
             <groupId>eu.socialsensor</groupId>
             <artifactId>multimedia-indexing</artifactId>
-            <version>0.2-SNAPSHOT</version>
+            <version>0.2</version>
         </dependency>
         <dependency>
             <groupId>gr.iti.mklab</groupId>
             <artifactId>mklab-framework-client</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1</version>
         </dependency>
         <dependency>
             <groupId>gr.iti.mklab</groupId>
             <artifactId>simmo</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>0.1</version>
         </dependency>
         <dependency>
             <groupId>gr.iti.mklab</groupId>
             <artifactId>mklab-framework-common</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1</version>
         </dependency>
         <dependency>
             <groupId>com.sleepycat</groupId>

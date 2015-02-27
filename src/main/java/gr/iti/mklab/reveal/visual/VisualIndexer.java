@@ -2,7 +2,6 @@ package gr.iti.mklab.reveal.visual;
 
 import gr.iti.mklab.framework.client.search.visual.JsonResultSet;
 import gr.iti.mklab.framework.client.search.visual.VisualIndexHandler;
-import gr.iti.mklab.retrieve.SocialNetworkVideo;
 import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Media;
