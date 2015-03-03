@@ -1,10 +1,8 @@
 package gr.iti.mklab.reveal.crawler;
-
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnels;
 import gr.iti.mklab.retrieve.YoutubeV3;
 import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
+import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
@@ -23,7 +21,6 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.File;
-import java.nio.charset.Charset;
 import java.util.Date;
 
 /**
@@ -32,7 +29,6 @@ import java.util.Date;
 public class RevealAgent implements Runnable {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(RevealAgent.class);
-    public final static BloomFilter<String> UNIQUE_IMAGE_URLS = BloomFilter.create(Funnels.stringFunnel(Charset.forName("UTF-8")), 100000);
 
     private final String _hostname;
     private final int _jmxPort;
@@ -40,7 +36,8 @@ public class RevealAgent implements Runnable {
     private DAO<CrawlRequest, ObjectId> dao;
     private VisualIndexer _indexer;
 
-    public RevealAgent(String hostname, int jmxPort, CrawlRequest request) throws Exception {
+    public RevealAgent(String hostname, int jmxPort, CrawlRequest request) {
+        System.out.println("RevealAgent constructor for hostname "+hostname);
         _hostname = hostname;
         _jmxPort = jmxPort;
         _request = request;
@@ -50,8 +47,10 @@ public class RevealAgent implements Runnable {
     public void run() {
         try {
             LOGGER.warn("###### REVEAL agent run method");
-            _indexer = new VisualIndexer(_request.collectionName);
+            System.out.println("###### REVEAL agent run method");
+            _indexer = VisualIndexerFactory.getVisualIndexer(_request.collectionName);
             LOGGER.warn("###### After visual indexer has been created");
+            System.out.println("###### After visual indexer has been created");
             YoutubeV3 youtube = new YoutubeV3(_indexer);
             youtube.collect(_request.keywords);
             // Mark the request as running
@@ -101,6 +100,7 @@ public class RevealAgent implements Runnable {
             unregisterBeanForName(_request.collectionName);
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
+            System.out.println(e.getMessage());
         }
     }
 

@@ -18,6 +18,8 @@ package it.unimi.di.law.bubing.parser;
  *
  */
 
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
 import gr.iti.mklab.reveal.crawler.RevealAgent;
 import gr.iti.mklab.reveal.util.ImageUtils;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
@@ -469,6 +471,8 @@ public class ITIHTMLParser<T> implements Parser<T> {
             linkReceiver.link(base.resolve(url));
     }
 
+    private final BloomFilter<String> UNIQUE_IMAGE_URLS = BloomFilter.create(Funnels.stringFunnel(Charset.forName("UTF-8")), 100000);
+
     /**
      * Checks if an image URI is valid and if it is, it downloads the image,
      * performs feature extraction, indexes and stores the metadata in a MongoDB.
@@ -496,10 +500,10 @@ public class ITIHTMLParser<T> implements Parser<T> {
             URI resolved = base.resolve(url);
             String resolvedStr = resolved.toString();
             //avoid trying to index the same image multiple times
-            if (!RevealAgent.UNIQUE_IMAGE_URLS.mightContain(resolvedStr)) {
+            if (!UNIQUE_IMAGE_URLS.mightContain(resolvedStr)) {
                 // Put it in the bloom filter even if it is not saved eventually
                 // to avoid doing the same checks for the same image a second time
-                RevealAgent.UNIQUE_IMAGE_URLS.put(resolvedStr);
+                UNIQUE_IMAGE_URLS.put(resolvedStr);
 
                 final URLConnection con = resolved.toURL().openConnection();
 

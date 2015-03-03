@@ -10,6 +10,7 @@ import gr.iti.mklab.reveal.text.htmlsegmentation.BoilerpipeContentExtraction;
 import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
 
 import gr.iti.mklab.reveal.visual.VisualIndexer;
+import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.annotations.NamedEntity;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Media;
@@ -41,15 +42,13 @@ public class RevealController {
 
     protected NameThatEntity nte;
 
-    private Map<String, SoftReference<VisualIndexer>> indexers = new HashMap<>();
-
     public RevealController() throws Exception {
         Configuration.load(getClass().getResourceAsStream("/docker.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
-        //nte = new NameThatEntity();
-        //nte.initPipeline(); //Should be called only once in the beggining
+        nte = new NameThatEntity();
+        nte.initPipeline(); //Should be called only once in the beggining
         //solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
     }
 
@@ -150,17 +149,6 @@ public class RevealController {
     ///////// COLLECTIONS INDEXING             /////////////
     ///////////////////////////////////////////////////////
 
-    private VisualIndexer getIndexerForName(String name) throws Exception {
-        SoftReference<VisualIndexer> ref = indexers.get(name);
-        if (ref != null && ref.get() != null) {
-            return ref.get();
-        } else {
-            VisualIndexer indexer = new VisualIndexer(name);
-            indexers.put(name, new SoftReference<VisualIndexer>(indexer));
-            return indexer;
-        }
-    }
-
     /**
      * Adds a collection with the specified name
      * <p>
@@ -175,7 +163,7 @@ public class RevealController {
             @RequestParam(value = "name", required = true) String name,
             @RequestParam(value = "size", required = false, defaultValue = "100000") int numVectors) {
         try {
-            getIndexerForName(name);
+            VisualIndexerFactory.getVisualIndexer(name);
             return new Responses.IndexResponse();
         } catch (Exception ex) {
             return new Responses.IndexResponse(false, ex.toString());
@@ -296,11 +284,10 @@ public class RevealController {
                 return new ArrayList<>();
             if (!imageurl.equals(lastImageUrl2) || simList2 == null || (simList2 != null && offset + count > simList2.size()) || lastThreshold2 != threshold) {
                 isBusy2 = true;
-                VisualIndexer ind = getIndexerForName(collectionName);
                 MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collectionName);
                 lastThreshold2 = threshold;
                 lastImageUrl2 = imageurl;
-                List<JsonResultSet.JsonResult> temp = ind.findSimilar(imageurl, collectionName, threshold);
+                List<JsonResultSet.JsonResult> temp = VisualIndexerFactory.getVisualIndexer(collectionName).findSimilar(imageurl, threshold);
                 simList2 = new ArrayList<>(temp.size());
                 for (JsonResultSet.JsonResult r : temp) {
                     System.out.println("r.getExternalId " + r.getId());

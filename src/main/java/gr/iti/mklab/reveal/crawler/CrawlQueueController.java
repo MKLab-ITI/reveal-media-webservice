@@ -106,7 +106,7 @@ public class CrawlQueueController {
         List<CrawlRequest> list = getRunningCrawls();
         System.out.println("Running crawls list size " + list.size());
 
-        if (list.size() >= 3)
+        if (list.size() >= 2)
             return;
         List<CrawlRequest> waitingList = getWaitingCrawls();
         if (waitingList.isEmpty())

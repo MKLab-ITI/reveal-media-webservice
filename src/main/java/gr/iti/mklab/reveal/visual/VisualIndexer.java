@@ -50,8 +50,8 @@ public class VisualIndexer {
     public static void init() throws Exception {
 
         _requestConfig = RequestConfig.custom()
-                .setSocketTimeout(30000)
-                .setConnectTimeout(30000)
+                .setSocketTimeout(60000)
+                .setConnectTimeout(60000)
                 .build();
         PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
         _httpclient = HttpClients.custom()
@@ -178,7 +178,7 @@ public class VisualIndexer {
         return true;
     }
 
-    public List<JsonResultSet.JsonResult> findSimilar(String url, String collection, double threshold) {
+    public List<JsonResultSet.JsonResult> findSimilar(String url, double threshold) {
         List<JsonResultSet.JsonResult> results = new ArrayList<>();
         if (handler == null)
             throw new IllegalStateException("There is no index for the collection " + collection);
