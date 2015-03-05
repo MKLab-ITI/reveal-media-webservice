@@ -9,7 +9,9 @@
 
     <properties>
         <spring.version>4.1.0.RELEASE</spring.version>
+        <mongo.host>160.40.51.28</mongo.host>
     </properties>
+    
 
     <dependencies>
         <!-- Spring -->
@@ -274,8 +276,6 @@
             <url>http://clojars.org/repo</url>
         </repository>
     </repositories>
-
-
     <build>
         <finalName>reveal</finalName>
         <plugins>
@@ -287,5 +287,11 @@
                 </configuration>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
     </build>
 </project>
