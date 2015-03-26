@@ -32,7 +32,7 @@ public class TextImporter {
 
     public static void main(String[] args) throws Exception {
         TextImporter ti = new TextImporter();
-        ti.sanitizeMediaClusters("boston");
+        ti.writeCollectionToFile("girls");
     }
 
     private void exportMetaDataFromClusters() throws Exception {
@@ -110,6 +110,46 @@ public class TextImporter {
             else if (item.getHeight() < 200 && item.getWidth() < 200)
                 mediaDao.removeMediaItem(item.getId());
         }
+    }
+
+    private void writeCollectionToFile(String collection) throws Exception {
+        File arffFile = new File("/home/kandreadou/Documents/girls.csv");
+        FileWriter fw = new FileWriter(arffFile.getAbsoluteFile());
+        BufferedWriter bw = new BufferedWriter(fw);
+
+        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", collection, "MediaItems");
+        List<MediaItem> items = mediaDao.getMediaItems(0, 39000, null);
+        for (MediaItem item : items) {
+            bw.write(item.getId()+"\t"+item.getUserId()+"\t"+item.getUrl());
+            bw.newLine();
+        }
+        bw.close();
+        fw.close();
+    }
+
+    private void onlyKeepValidUsers(String collection)  throws Exception{
+        int count = 0;
+        RevealMediaItemDaoImpl mediaDao = new RevealMediaItemDaoImpl("160.40.51.20", collection, "MediaItems");
+        List<MediaItem> items = mediaDao.getMediaItems(0, 35000, null);
+        StreamUserDAOImpl userDAO = new StreamUserDAOImpl("160.40.51.20", collection, "StreamUsers");
+        StreamUserDAO.StreamUserIterator it = userDAO.getIterator(new BasicDBObject());
+        while (it.hasNext()) {
+            boolean found = false;
+            StreamUser s = it.next();
+            for (MediaItem item : items) {
+                if (s.getId().equals(item.getUserId())){
+                    found = true;
+                    break;
+                }
+            }
+            if(!found){
+                count++;
+                System.out.println("User "+s.getId()+" is never used "+count);
+                boolean removed = userDAO.deleteStreamUser(s.getUserid());
+                System.out.println("removed "+removed);
+            }
+        }
+        System.out.println(count+" users should be deleted");
     }
 
     // This is needed because of the way the storm focused crawler stores the video
