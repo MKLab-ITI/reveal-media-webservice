@@ -3,6 +3,7 @@ import gr.iti.mklab.retrieve.YoutubeV3;
 import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.simmo.jobs.CrawlJob;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
@@ -32,11 +33,11 @@ public class RevealAgent implements Runnable {
 
     private final String _hostname;
     private final int _jmxPort;
-    private CrawlRequest _request;
-    private DAO<CrawlRequest, ObjectId> dao;
+    private CrawlJob _request;
+    private DAO<CrawlJob, ObjectId> dao;
     private VisualIndexer _indexer;
 
-    public RevealAgent(String hostname, int jmxPort, CrawlRequest request) {
+    public RevealAgent(String hostname, int jmxPort, CrawlJob request) {
         System.out.println("RevealAgent constructor for hostname "+hostname);
         _hostname = hostname;
         _jmxPort = jmxPort;
@@ -48,56 +49,56 @@ public class RevealAgent implements Runnable {
         try {
             LOGGER.warn("###### REVEAL agent run method");
             System.out.println("###### REVEAL agent run method");
-            _indexer = VisualIndexerFactory.getVisualIndexer(_request.collectionName);
+            _indexer = VisualIndexerFactory.getVisualIndexer(_request.getCollection());
             LOGGER.warn("###### After visual indexer has been created");
             System.out.println("###### After visual indexer has been created");
             YoutubeV3 youtube = new YoutubeV3(_indexer);
-            youtube.collect(_request.keywords);
+            youtube.collect(_request.getKeywords());
             // Mark the request as running
-            dao = new BasicDAO<>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(CrawlQueueController.DB_NAME).getName());
-            _request.requestState = CrawlRequest.STATE.RUNNING;
-            _request.lastStateChange = new Date();
+            dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
+            _request.setState(CrawlJob.STATE.RUNNING);
+            _request.setLastStateChange(new Date());
             dao.save(_request);
 
             final BaseConfiguration additional = new BaseConfiguration();
-            additional.addProperty("name", _request.collectionName);
+            additional.addProperty("name", _request.getCollection());
             additional.addProperty("group", "gr.iti.mklab");
-            additional.addProperty("crawlIsNew", _request.isNew);
+            additional.addProperty("crawlIsNew", _request.isNew());
             additional.addProperty("weight", "1");
             //NOTE: This is new
-            additional.addProperty("rootDir", Configuration.CRAWLS_DIR + _request.collectionName);
+            additional.addProperty("rootDir", Configuration.CRAWLS_DIR + _request.getCollection());
 
-            LOGGER.warn("###### Starting Agent for request id " + _request.id + " and collection name " + _request.collectionName);
+            LOGGER.warn("###### Starting Agent for request id " + _request.getId() + " and collection name " + _request.getCollection());
             RuntimeConfiguration rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional));
-            rc.keywords = _request.keywords;
-            rc.collectionName = _request.collectionName;
+            rc.keywords = _request.getKeywords();
+            rc.collectionName = _request.getCollection();
             rc.indexer = _indexer;
-            LOGGER.warn("###### Agent for request id " + _request.id + " started");
+            LOGGER.warn("###### Agent for request id " + _request.getId() + " started");
             new Agent(_hostname, _jmxPort, rc);
-            LOGGER.warn("###### Agent for request id " + _request.id + " finished");
-            _request = dao.findOne("_id", _request.id);
+            LOGGER.warn("###### Agent for request id " + _request.getId() + " finished");
+            _request = dao.findOne("_id", _request.getId());
             if (_request != null)
-                LOGGER.warn("###### Found request with id " + _request.id + " " + _request.requestState);
-            if (_request.requestState == CrawlRequest.STATE.DELETING) {
+                LOGGER.warn("###### Found request with id " + _request.getId() + " " + _request.getState());
+            if (_request.getState() == CrawlJob.STATE.DELETING) {
                 LOGGER.warn("###### Delete");
                 //Delete the request from the request DB
                 dao.delete(_request);
                 //Delete the collection DB
-                MorphiaManager.getDB(_request.collectionName).dropDatabase();
+                MorphiaManager.getDB(_request.getCollection()).dropDatabase();
                 //Delete the crawl and index folders
-                FileUtils.deleteDirectory(new File(_request.crawlDataPath));
-                FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + _request.collectionName));
+                FileUtils.deleteDirectory(new File(_request.getCrawlDataPath()));
+                FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + _request.getCollection()));
 
             } else {
                 LOGGER.warn("###### Cancel");
-                _request.requestState = CrawlRequest.STATE.FINISHED;
-                _request.lastStateChange = new Date();
+                _request.setState(CrawlJob.STATE.FINISHED);
+                _request.setLastStateChange(new Date());
                 dao.save(_request);
             }
             LOGGER.warn("###### youtube.stop()");
             youtube.stop();
             LOGGER.warn("###### unregister bean for name");
-            unregisterBeanForName(_request.collectionName);
+            unregisterBeanForName(_request.getCollection());
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
             System.out.println(e.getMessage());

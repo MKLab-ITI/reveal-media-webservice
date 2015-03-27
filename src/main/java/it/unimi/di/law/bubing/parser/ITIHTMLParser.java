@@ -892,7 +892,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
             digest = htmlParser.parse(BURL.parse(url), new StringHttpMessages.HttpResponse(content), linkReceiver);
         }
 
-        System.out.println("DigestHexString: " + Hex.encodeHexString(digest));
+        //System.out.println("DigestHexString: " + Hex.encodeHexString(digest));
         System.out.println("Links: " + linkReceiver.urls);
 
         Set<String> urlStrings = new ObjectOpenHashSet<String>();

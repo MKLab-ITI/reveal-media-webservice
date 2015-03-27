@@ -8,26 +8,12 @@ import java.util.Set;
  */
 public final class Requests {
 
-    /**
-     * Created by kandreadou on 1/8/15.
-     * {
-     * "collectionName":"col",
-     * "isNew":true,
-     * "keywords":[
-     * "malaysia",
-     * "disaster",
-     * "missing",
-     * "airplane",
-     * "boeing",
-     * "injured"
-     * ]
-     * }
-     */
+    /** {"collection":"germanwings","isNew":true,"keywords":["germanwings","crash"] } **/
     public class CrawlPostRequest {
 
         public Set<String> keywords = new HashSet<>();
 
-        public String collectionName;
+        public String collection;
 
         public boolean isNew;
     }

@@ -5,6 +5,8 @@ import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Video;
+import gr.iti.mklab.simmo.jobs.CrawlJob;
+import gr.iti.mklab.simmo.jobs.Job;
 import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
 import org.apache.commons.lang.ArrayUtils;
@@ -29,13 +31,12 @@ import java.util.concurrent.TimeUnit;
  * Created by kandreadou on 12/18/14.
  */
 public class CrawlQueueController {
-    public static final String DB_NAME = "crawlerQUEUE";
-    private DAO<CrawlRequest, ObjectId> dao;
+    private DAO<CrawlJob, ObjectId> dao;
     private Poller poller;
 
     public CrawlQueueController() {
         // Creates a DAO object to persist submitted crawl requests
-        dao = new BasicDAO<>(CrawlRequest.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(DB_NAME).getName());
+        dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
         // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();
@@ -61,64 +62,60 @@ public class CrawlQueueController {
      *
      * @param collectionName
      */
-    public synchronized CrawlRequest submit(boolean isNew, String collectionName, Set<String> keywords) throws Exception {
+    public synchronized CrawlJob submit(boolean isNew, String collectionName, Set<String> keywords) throws Exception {
         System.out.println("CRAWL: submit "+collectionName+" keywords " + ArrayUtils.toString(keywords));
         String crawlDataPath = Configuration.CRAWLS_DIR + collectionName;
-        List<CrawlRequest> requestsWithSameName = dao.getDatastore().find(CrawlRequest.class).field("collectionName").equal(collectionName).asList();
+        List<CrawlJob> requestsWithSameName = dao.getDatastore().find(CrawlJob.class).field("collection").equal(collectionName).asList();
         if (!isNew && (new File(crawlDataPath).exists() || requestsWithSameName.size() > 0))
             throw new Exception("The collection " + collectionName + " already exists. Choose a different name or mark not new");
-        CrawlRequest r = new CrawlRequest();
-        r.collectionName = collectionName;
-        r.requestState = CrawlRequest.STATE.WAITING;
-        r.lastStateChange = new Date();
-        r.creationDate = new Date();
-        r.crawlDataPath = crawlDataPath;
-        r.isNew = isNew;
-        r.keywords = keywords;
+        CrawlJob r = new CrawlJob(crawlDataPath, collectionName, keywords, isNew);
+        r.setState(Job.STATE.WAITING);
+        r.setLastStateChange(new Date());
+        r.setCreationDate(new Date());
         dao.save(r);
         tryLaunch();
         return r;
     }
 
-    public synchronized CrawlRequest cancel(String id) {
+    public synchronized CrawlJob cancel(String id) {
         System.out.println("CRAWL: Cancel for id " + id);
-        CrawlRequest req = getCrawlRequest(id);
-        System.out.println("CrawlRequest " + req.collectionName + " " + req.requestState);
-        req.requestState = CrawlRequest.STATE.STOPPING;
-        req.lastStateChange = new Date(System.currentTimeMillis());
+        CrawlJob req = getCrawlRequest(id);
+        System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
+        req.setState(CrawlJob.STATE.STOPPING);
+        req.setLastStateChange(new Date());
         dao.save(req);
-        cancelForName(req.collectionName);
+        cancelForName(req.getCollection());
         return req;
     }
 
-    public synchronized CrawlRequest delete(String id) throws Exception {
+    public synchronized CrawlJob delete(String id) throws Exception {
         System.out.println("CRAWL: Delete for id " + id);
-        CrawlRequest req = getCrawlRequest(id);
-        System.out.println("CrawlRequest " + req.collectionName + " " + req.requestState);
-        req.requestState = CrawlRequest.STATE.DELETING;
-        req.lastStateChange = new Date(System.currentTimeMillis());
+        CrawlJob req = getCrawlRequest(id);
+        System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
+        req.setState(CrawlJob.STATE.DELETING);
+        req.setLastStateChange(new Date());
         dao.save(req);
-        cancelForName(req.collectionName);
+        cancelForName(req.getCollection());
         return req;
     }
 
     private void tryLaunch() throws Exception {
-        List<CrawlRequest> list = getRunningCrawls();
+        List<CrawlJob> list = getRunningCrawls();
         System.out.println("Running crawls list size " + list.size());
 
         if (list.size() >= 2)
             return;
-        List<CrawlRequest> waitingList = getWaitingCrawls();
+        List<CrawlJob> waitingList = getWaitingCrawls();
         if (waitingList.isEmpty())
             return;
-        CrawlRequest req = waitingList.get(0);
-        req.requestState = CrawlRequest.STATE.STARTING;
+        CrawlJob req = waitingList.get(0);
+        req.setState(CrawlJob.STATE.STARTING);
         dao.save(req);
         startCrawl(req);
     }
 
-    private void startCrawl(CrawlRequest req) throws Exception {
-        System.out.println("METHOD: Startcrawl " + req.collectionName + " " + req.requestState);
+    private void startCrawl(CrawlJob req) throws Exception {
+        System.out.println("METHOD: Startcrawl " + req.getCollection() + " " + req.getState());
         new Thread(new RevealAgent("127.0.0.1", 9999, req)).start();
     }
 
@@ -177,23 +174,23 @@ public class CrawlQueueController {
     //////////// DB STUFF ///////////////////////////
     /////////////////////////////////////////////////
 
-    private CrawlRequest getCrawlRequest(String id) {
+    private CrawlJob getCrawlRequest(String id) {
         return dao.findOne("_id", id);
     }
 
-    private List<CrawlRequest> getRunningCrawls() {
-        Query<CrawlRequest> q = dao.createQuery();
+    private List<CrawlJob> getRunningCrawls() {
+        Query<CrawlJob> q = dao.createQuery();
         q.or(
-                q.criteria("requestState").equal(CrawlRequest.STATE.RUNNING),
-                q.criteria("requestState").equal(CrawlRequest.STATE.STOPPING),
-                q.criteria("requestState").equal(CrawlRequest.STATE.DELETING),
-                q.criteria("requestState").equal(CrawlRequest.STATE.STARTING)
+                q.criteria("requestState").equal(CrawlJob.STATE.RUNNING),
+                q.criteria("requestState").equal(CrawlJob.STATE.STOPPING),
+                q.criteria("requestState").equal(CrawlJob.STATE.DELETING),
+                q.criteria("requestState").equal(CrawlJob.STATE.STARTING)
         );
         return q.asList();
     }
 
-    private List<CrawlRequest> getWaitingCrawls() {
-        return dao.getDatastore().find(CrawlRequest.class).filter("requestState", CrawlRequest.STATE.WAITING).asList();
+    private List<CrawlJob> getWaitingCrawls() {
+        return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.WAITING).asList();
     }
 
     /**
@@ -202,17 +199,17 @@ public class CrawlQueueController {
      * @return
      */
     public List<Responses.CrawlStatus> getActiveCrawls() {
-        Query<CrawlRequest> q = dao.createQuery();
+        Query<CrawlJob> q = dao.createQuery();
         q.or(
-                q.criteria("requestState").equal(CrawlRequest.STATE.RUNNING),
-                q.criteria("requestState").equal(CrawlRequest.STATE.WAITING),
-                q.criteria("requestState").equal(CrawlRequest.STATE.STOPPING),
-                q.criteria("requestState").equal(CrawlRequest.STATE.FINISHED),
-                q.criteria("requestState").equal(CrawlRequest.STATE.DELETING),
-                q.criteria("requestState").equal(CrawlRequest.STATE.STARTING)
+                q.criteria("requestState").equal(CrawlJob.STATE.RUNNING),
+                q.criteria("requestState").equal(CrawlJob.STATE.WAITING),
+                q.criteria("requestState").equal(CrawlJob.STATE.STOPPING),
+                q.criteria("requestState").equal(CrawlJob.STATE.FINISHED),
+                q.criteria("requestState").equal(CrawlJob.STATE.DELETING),
+                q.criteria("requestState").equal(CrawlJob.STATE.STARTING)
         );
         List<Responses.CrawlStatus> result = new ArrayList<>();
-        for (CrawlRequest req : q.asList()) {
+        for (CrawlJob req : q.asList()) {
             result.add(getStatusFromCrawlRequest(req));
         }
         return result;
@@ -222,15 +219,15 @@ public class CrawlQueueController {
         return getStatusFromCrawlRequest(getCrawlRequest(id));
     }
 
-    private Responses.CrawlStatus getStatusFromCrawlRequest(CrawlRequest req) {
+    private Responses.CrawlStatus getStatusFromCrawlRequest(CrawlJob req) {
         Responses.CrawlStatus status = new Responses.CrawlStatus(req);
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, status.collectionName);
-        MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, status.collectionName);
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, status.getCollection());
+        MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, status.getCollection());
         Date lastImageInserted = null;
         Date lastVideoInserted = null;
         if (imageDAO != null && imageDAO.count() > 0) {
             status.numImages = imageDAO.count();
-            status.image = getRepresentativeImage(imageDAO, status.keywords);
+            status.image = getRepresentativeImage(imageDAO, status.getKeywords());
             List<Image> imgs = imageDAO.getDatastore().find(Image.class).order("-crawlDate").limit(100).asList();
             if (imgs != null && imgs.size() > 0)
                 lastImageInserted = imgs.get(0).getCrawlDate();
@@ -242,16 +239,16 @@ public class CrawlQueueController {
             if (vds != null && vds.size() > 0)
                 lastVideoInserted = vds.get(0).getCrawlDate();
         }
-        switch (status.requestState) {
+        switch (status.getState()) {
             case WAITING:
                 status.duration = 0;
                 break;
             case RUNNING:
             case STOPPING:
-                status.duration = new Date().getTime() - status.creationDate.getTime();
+                status.duration = new Date().getTime() - status.getCreationDate().getTime();
                 break;
             default:
-                status.duration = status.lastStateChange.getTime() - status.creationDate.getTime();
+                status.duration = status.getLastStateChange().getTime() - status.getCreationDate().getTime();
                 break;
         }
         if (lastImageInserted == null && lastVideoInserted == null) {

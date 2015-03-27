@@ -89,21 +89,21 @@
         </dependency>
         <dependency>
             <groupId>gr.iti.mklab</groupId>
-            <artifactId>mklab-framework-client</artifactId>
-            <version>0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>gr.iti.mklab</groupId>
             <artifactId>simmo</artifactId>
-            <version>0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>gr.iti.mklab</groupId>
-            <artifactId>mklab-framework-common</artifactId>
-            <version>0.1</version>
+            <version>0.2</version>
         </dependency>
 
         <!-- multimedia indexing dependencies -->
+        <dependency>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.3.1</version>
+        </dependency>
         <dependency>
             <groupId>com.sleepycat</groupId>
             <artifactId>je</artifactId>
@@ -170,6 +170,11 @@
         </dependency>
 
         <!-- bubing dependencies -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.10</version>
+        </dependency>
         <dependency>
             <groupId>net.sourceforge.nekohtml</groupId>
             <artifactId>nekohtml</artifactId>

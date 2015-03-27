@@ -1,23 +1,29 @@
 package gr.iti.mklab.reveal.web;
 
-import gr.iti.mklab.framework.client.search.visual.JsonResultSet;
 import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
-import gr.iti.mklab.reveal.crawler.CrawlRequest;
 import gr.iti.mklab.reveal.text.NameThatEntity;
 import gr.iti.mklab.reveal.text.TextPreprocessing;
 import gr.iti.mklab.reveal.text.htmlsegmentation.BoilerpipeContentExtraction;
 import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
 
+import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.annotations.NamedEntity;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Media;
 import gr.iti.mklab.simmo.items.Video;
+import gr.iti.mklab.simmo.jobs.CrawlJob;
 import gr.iti.mklab.simmo.morphia.MediaDAO;
 import gr.iti.mklab.simmo.morphia.MorphiaManager;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.math3.ml.clustering.Cluster;
+import org.apache.commons.math3.ml.clustering.Clusterable;
+import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.bson.types.ObjectId;
+import org.mongodb.morphia.dao.BasicDAO;
+import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.PreDestroy;
 import java.lang.ref.SoftReference;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 
@@ -43,7 +50,7 @@ public class RevealController {
     protected NameThatEntity nte;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/docker.properties"));
+        Configuration.load(getClass().getResourceAsStream("/local.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -104,9 +111,9 @@ public class RevealController {
 
     @RequestMapping(value = "/crawls/add", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
     @ResponseBody
-    public CrawlRequest submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) throws RevealException {
+    public CrawlJob submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) throws RevealException {
         try {
-            return crawlerCtrler.submit(request.isNew, request.collectionName, request.keywords);
+            return crawlerCtrler.submit(request.isNew, request.collection, request.keywords);
         } catch (Exception ex) {
             throw new RevealException(ex.getMessage(), ex);
         }
@@ -125,7 +132,7 @@ public class RevealController {
 
     @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public CrawlRequest cancelCrawlingJob(@PathVariable(value = "id") String id) {
+    public CrawlJob cancelCrawlingJob(@PathVariable(value = "id") String id) {
         return crawlerCtrler.cancel(id);
     }
 
@@ -309,6 +316,68 @@ public class RevealController {
     }
 
     ////////////////////////////////////////////////////////
+    ////////// C L U S T E R I N G /////////////////////////
+    ///////////////////////////////////////////////////////
+
+    @RequestMapping(value = "/media/v2/{collection}/cluster", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public boolean clusterCommand(@PathVariable(value = "collection") String collection) {
+
+        List<ClusterableImage> list = new ArrayList<>();
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
+        DAO<gr.iti.mklab.simmo.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        List<Image> images = imageDAO.getItems((int) imageDAO.count(), 0);
+        images.stream().forEach(i -> {
+            Double[] vector = new Double[0];
+            try {
+                System.out.println("Before getVector ");
+                vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
+                System.out.println("vector length "+vector.length);
+            } catch (ExecutionException e) {
+                //ignore
+            }
+            if (vector != null && vector.length == 1024)
+                list.add(new ClusterableImage(i, ArrayUtils.toPrimitive(vector)));
+
+        });
+        DBSCANClusterer<ClusterableImage> clusterer = new DBSCANClusterer(1.0, 3);
+        List<Cluster<ClusterableImage>> centroids = clusterer.cluster(list);
+        System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
+        for (Cluster<ClusterableImage> c : centroids) {
+            gr.iti.mklab.simmo.cluster.Cluster cluster = new gr.iti.mklab.simmo.cluster.Cluster();
+            //mc.setCount(c.getPoints().size());
+            c.getPoints().stream().forEach(clusterable -> cluster.addMember(clusterable.image));
+            clusterDAO.save(cluster);
+        }
+
+        return true;
+    }
+
+    @RequestMapping(value = "/clusters/{collection}", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public boolean getClusters(@PathVariable(value = "collection") String collection) {
+        return true;
+    }
+
+    private static class ClusterableImage extends Image implements Clusterable {
+
+        private double[] vector;
+        private Image image;
+
+        public ClusterableImage(Image item, double[] vector) {
+            this.image = item;
+            this.vector = vector;
+        }
+
+        @Override
+        public double[] getPoint() {
+            return vector;
+        }
+
+    }
+
+
+    ////////////////////////////////////////////////////////
     ///////// EXCEPTION HANDLING ///////////////////////////
     ///////////////////////////////////////////////////////
 
@@ -317,5 +386,39 @@ public class RevealController {
     @ResponseBody
     public RevealException handleCustomException(RevealException ex) {
         return ex;
+    }
+
+    public static void main(String[] args) throws Exception{
+        Configuration.load("local.properties");
+        MorphiaManager.setup("127.0.0.1");
+        VisualIndexer.init();
+        String collection = "testfinal";
+        List<ClusterableImage> list = new ArrayList<>();
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
+        DAO<gr.iti.mklab.simmo.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        List<Image> images = imageDAO.getItems((int) imageDAO.count(), 0);
+        images.stream().forEach(i -> {
+            Double[] vector = new Double[0];
+            try {
+                System.out.println("Before getVector ");
+                vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
+                System.out.println("vector length "+vector.length);
+            } catch (ExecutionException e) {
+                //ignore
+            }
+            if (vector != null && vector.length == 1024)
+                list.add(new ClusterableImage(i, ArrayUtils.toPrimitive(vector)));
+
+        });
+        DBSCANClusterer<ClusterableImage> clusterer = new DBSCANClusterer(1.0, 3);
+        List<Cluster<ClusterableImage>> centroids = clusterer.cluster(list);
+        System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
+        for (Cluster<ClusterableImage> c : centroids) {
+            gr.iti.mklab.simmo.cluster.Cluster cluster = new gr.iti.mklab.simmo.cluster.Cluster();
+            //mc.setCount(c.getPoints().size());
+            c.getPoints().stream().forEach(clusterable -> cluster.addMember(clusterable.image));
+            clusterDAO.save(cluster);
+        }
+        MorphiaManager.tearDown();
     }
 }

@@ -1,7 +1,5 @@
 package gr.iti.mklab.reveal.visual;
 
-import gr.iti.mklab.framework.client.search.visual.JsonResultSet;
-import gr.iti.mklab.framework.client.search.visual.VisualIndexHandler;
 import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.simmo.items.Image;
 import gr.iti.mklab.simmo.items.Media;
@@ -95,6 +93,10 @@ public class VisualIndexer {
         videoDAO = new MediaDAO<>(Video.class, collectionName);
     }
 
+    public Double[] getVector(String id) {
+        return handler.getVector(id);
+    }
+
     public boolean index(Media media) {
         boolean indexed = false;
         if (handler == null)
@@ -137,11 +139,11 @@ public class VisualIndexer {
                     _logger.error("Error in feature extraction for " + id);
                 }
                 indexed = handler.index(id, vector);
-                if (indexed){
-                    if(media instanceof Image)
+                if (indexed) {
+                    if (media instanceof Image)
                         imageDAO.save((Image) media);
                     else
-                        videoDAO.save((Video)media);
+                        videoDAO.save((Video) media);
                 }
 
 
