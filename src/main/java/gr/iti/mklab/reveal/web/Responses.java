@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.web;
 
 import gr.iti.mklab.simmo.items.Image;
+import gr.iti.mklab.simmo.items.Media;
 import gr.iti.mklab.simmo.items.Video;
 import gr.iti.mklab.simmo.jobs.CrawlJob;
 
@@ -32,10 +33,10 @@ public class Responses {
 
         protected double distance;
 
-        protected Image image;
+        protected Media item;
 
-        public SimilarityResponse(Image image, double distance) throws MalformedURLException {
-            this.image = image;
+        public SimilarityResponse(Media item, double distance) throws MalformedURLException {
+            this.item = item;
             this.distance = distance;
         }
 
@@ -47,7 +48,7 @@ public class Responses {
             SimilarityResponse that = (SimilarityResponse) o;
 
             if (Double.compare(that.distance, distance) != 0) return false;
-            if (image != null ? !image.getId().equals(that.image.getId()) : that.image != null) return false;
+            if (item != null ? !item.getId().equals(that.item.getId()) : that.item != null) return false;
 
             return true;
         }
@@ -58,7 +59,7 @@ public class Responses {
             long temp;
             temp = Double.doubleToLongBits(distance);
             result = (int) (temp ^ (temp >>> 32));
-            result = 31 * result + (image != null ? image.hashCode() : 0);
+            result = 31 * result + (item != null ? item.hashCode() : 0);
             return result;
         }
     }

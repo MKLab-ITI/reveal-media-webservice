@@ -54,7 +54,12 @@ public class CrawlQueueController {
     }
 
     public void shutdown() {
+
         poller.stopPolling();
+        List<CrawlJob> list = getRunningCrawls();
+        for (CrawlJob job:list){
+            cancel(job.getId());
+        }
     }
 
     /**

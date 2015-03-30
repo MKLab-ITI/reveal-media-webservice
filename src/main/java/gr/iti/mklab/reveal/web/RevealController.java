@@ -50,7 +50,7 @@ public class RevealController {
     protected NameThatEntity nte;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/local.properties"));
+        Configuration.load(getClass().getResourceAsStream("/docker.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -181,7 +181,7 @@ public class RevealController {
     ///////// MEDIA NEW API WITH SIMMO FRAMEWORK ///////////
     ///////////////////////////////////////////////////////
 
-    @RequestMapping(value = "/media/v2/{collection}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/media/{collection}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public Responses.MediaResponse mediaItemsV2(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
                                                 @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
@@ -204,7 +204,7 @@ public class RevealController {
         return response;
     }
 
-    @RequestMapping(value = "/media/v2/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/media/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public Media mediaItemByIdV2(@PathVariable(value = "collection") String collection,
                                  @PathVariable("id") String id) {
@@ -218,7 +218,7 @@ public class RevealController {
         return result;
     }
 
-    @RequestMapping(value = "/media/v2/{collection}/search", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/media/{collection}/search", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public Responses.MediaResponse mediaItemsSearchV2(
             @PathVariable(value = "collection") String collection,
@@ -279,7 +279,7 @@ public class RevealController {
     private double lastThreshold2;
     private boolean isBusy2 = false;
 
-    @RequestMapping(value = "/media/v2/{collection}/similar", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/media/{collection}/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<Responses.SimilarityResponse> findSimilarImagesV2(@PathVariable(value = "collection") String collectionName,
                                                                   @RequestParam(value = "imageurl", required = true) String imageurl,
@@ -292,14 +292,19 @@ public class RevealController {
             if (!imageurl.equals(lastImageUrl2) || simList2 == null || (simList2 != null && offset + count > simList2.size()) || lastThreshold2 != threshold) {
                 isBusy2 = true;
                 MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collectionName);
+                MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collectionName);
                 lastThreshold2 = threshold;
                 lastImageUrl2 = imageurl;
                 List<JsonResultSet.JsonResult> temp = VisualIndexerFactory.getVisualIndexer(collectionName).findSimilar(imageurl, threshold);
                 simList2 = new ArrayList<>(temp.size());
                 for (JsonResultSet.JsonResult r : temp) {
                     System.out.println("r.getExternalId " + r.getId());
-                    Image found = imageDAO.getDatastore().find(Image.class).field("_id").equal(r.getId()).get();
-                    simList2.add(new Responses.SimilarityResponse(found, r.getRank()));
+                    Media found = imageDAO.getDatastore().find(Image.class).field("_id").equal(r.getId()).get();
+                    if (found != null)
+                        simList2.add(new Responses.SimilarityResponse(found, r.getRank()));
+                    found = videoDAO.getDatastore().find(Video.class).field("_id").equal(r.getId()).get();
+                    if (found != null)
+                        simList2.add(new Responses.SimilarityResponse(found, r.getRank()));
                 }
             }
             isBusy2 = false;
@@ -319,34 +324,51 @@ public class RevealController {
     ////////// C L U S T E R I N G /////////////////////////
     ///////////////////////////////////////////////////////
 
-    @RequestMapping(value = "/media/v2/{collection}/cluster", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/media/{collection}/cluster", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public boolean clusterCommand(@PathVariable(value = "collection") String collection) {
+    public boolean clusterCommand(@PathVariable(value = "collection") String collection,
+                                  @RequestParam(value = "eps", required = true, defaultValue = "1.0") double eps,
+                                  @RequestParam(value = "minpoints", required = true, defaultValue = "3") int minpoints) {
 
-        List<ClusterableImage> list = new ArrayList<>();
+        System.out.println("DBSCAN for " + collection + " eps= " + eps + " minpoints= " + minpoints);
+        List<ClusterableMedia> list = new ArrayList<>();
+        //images
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
         DAO<gr.iti.mklab.simmo.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        clusterDAO.deleteByQuery(clusterDAO.createQuery());
         List<Image> images = imageDAO.getItems((int) imageDAO.count(), 0);
         images.stream().forEach(i -> {
             Double[] vector = new Double[0];
             try {
-                System.out.println("Before getVector ");
                 vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
-                System.out.println("vector length "+vector.length);
             } catch (ExecutionException e) {
                 //ignore
             }
             if (vector != null && vector.length == 1024)
-                list.add(new ClusterableImage(i, ArrayUtils.toPrimitive(vector)));
+                list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));
 
         });
-        DBSCANClusterer<ClusterableImage> clusterer = new DBSCANClusterer(1.0, 3);
-        List<Cluster<ClusterableImage>> centroids = clusterer.cluster(list);
+        //videos
+        MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
+        List<Video> videos = videoDAO.getItems((int) videoDAO.count(), 0);
+        videos.stream().forEach(i -> {
+            Double[] vector = new Double[0];
+            try {
+                vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
+            } catch (ExecutionException e) {
+                //ignore
+            }
+            if (vector != null && vector.length == 1024)
+                list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));
+
+        });
+        DBSCANClusterer<ClusterableMedia> clusterer = new DBSCANClusterer(eps, minpoints);
+        List<Cluster<ClusterableMedia>> centroids = clusterer.cluster(list);
         System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
-        for (Cluster<ClusterableImage> c : centroids) {
+        for (Cluster<ClusterableMedia> c : centroids) {
             gr.iti.mklab.simmo.cluster.Cluster cluster = new gr.iti.mklab.simmo.cluster.Cluster();
-            //mc.setCount(c.getPoints().size());
-            c.getPoints().stream().forEach(clusterable -> cluster.addMember(clusterable.image));
+            cluster.setSize(c.getPoints().size());
+            c.getPoints().stream().forEach(clusterable -> cluster.addMember(clusterable.item));
             clusterDAO.save(cluster);
         }
 
@@ -355,17 +377,20 @@ public class RevealController {
 
     @RequestMapping(value = "/clusters/{collection}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public boolean getClusters(@PathVariable(value = "collection") String collection) {
-        return true;
+    public List<gr.iti.mklab.simmo.cluster.Cluster> getClusters(@PathVariable(value = "collection") String collection,
+                                                                @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                                @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
+        DAO<gr.iti.mklab.simmo.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        return clusterDAO.getDatastore().find(gr.iti.mklab.simmo.cluster.Cluster.class).offset(offset).limit(count).asList();
     }
 
-    private static class ClusterableImage extends Image implements Clusterable {
+    private static class ClusterableMedia extends Media implements Clusterable {
 
         private double[] vector;
-        private Image image;
+        private Media item;
 
-        public ClusterableImage(Image item, double[] vector) {
-            this.image = item;
+        public ClusterableMedia(Media item, double[] vector) {
+            this.item = item;
             this.vector = vector;
         }
 
@@ -373,7 +398,6 @@ public class RevealController {
         public double[] getPoint() {
             return vector;
         }
-
     }
 
 
@@ -388,12 +412,12 @@ public class RevealController {
         return ex;
     }
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
         Configuration.load("local.properties");
         MorphiaManager.setup("127.0.0.1");
         VisualIndexer.init();
         String collection = "testfinal";
-        List<ClusterableImage> list = new ArrayList<>();
+        List<ClusterableMedia> list = new ArrayList<>();
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
         DAO<gr.iti.mklab.simmo.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         List<Image> images = imageDAO.getItems((int) imageDAO.count(), 0);
@@ -402,21 +426,21 @@ public class RevealController {
             try {
                 System.out.println("Before getVector ");
                 vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
-                System.out.println("vector length "+vector.length);
+                System.out.println("vector length " + vector.length);
             } catch (ExecutionException e) {
                 //ignore
             }
             if (vector != null && vector.length == 1024)
-                list.add(new ClusterableImage(i, ArrayUtils.toPrimitive(vector)));
+                list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));
 
         });
-        DBSCANClusterer<ClusterableImage> clusterer = new DBSCANClusterer(1.0, 3);
-        List<Cluster<ClusterableImage>> centroids = clusterer.cluster(list);
+        DBSCANClusterer<ClusterableMedia> clusterer = new DBSCANClusterer(1.0, 3);
+        List<Cluster<ClusterableMedia>> centroids = clusterer.cluster(list);
         System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
-        for (Cluster<ClusterableImage> c : centroids) {
+        for (Cluster<ClusterableMedia> c : centroids) {
             gr.iti.mklab.simmo.cluster.Cluster cluster = new gr.iti.mklab.simmo.cluster.Cluster();
             //mc.setCount(c.getPoints().size());
-            c.getPoints().stream().forEach(clusterable -> cluster.addMember(clusterable.image));
+            c.getPoints().stream().forEach(clusterable -> cluster.addMember(clusterable.item));
             clusterDAO.save(cluster);
         }
         MorphiaManager.tearDown();
