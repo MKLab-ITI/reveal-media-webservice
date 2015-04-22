@@ -1,10 +1,8 @@
 package gr.iti.mklab.reveal.crawler;
-import gr.iti.mklab.retrieve.YoutubeV3;
 import gr.iti.mklab.reveal.configuration.Configuration;
-import gr.iti.mklab.reveal.visual.VisualIndexer;
-import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
-import gr.iti.mklab.simmo.jobs.CrawlJob;
-import gr.iti.mklab.simmo.morphia.MorphiaManager;
+import gr.iti.mklab.simmo.core.jobs.CrawlJob;
+import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
+import gr.iti.mklab.sm.streams.StreamsManagerConfiguration;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
 import it.unimi.di.law.bubing.StartupConfiguration;
@@ -35,7 +33,6 @@ public class RevealAgent implements Runnable {
     private final int _jmxPort;
     private CrawlJob _request;
     private DAO<CrawlJob, ObjectId> dao;
-    private VisualIndexer _indexer;
 
     public RevealAgent(String hostname, int jmxPort, CrawlJob request) {
         System.out.println("RevealAgent constructor for hostname "+hostname);
@@ -49,11 +46,18 @@ public class RevealAgent implements Runnable {
         try {
             LOGGER.warn("###### REVEAL agent run method");
             System.out.println("###### REVEAL agent run method");
-            _indexer = VisualIndexerFactory.getVisualIndexer(_request.getCollection());
-            LOGGER.warn("###### After visual indexer has been created");
+            IndexingRunner runner = new IndexingRunner(_request.getCollection());
+            Thread indexingThread = new Thread(runner);
+            indexingThread.start();
+            LOGGER.warn("###### After the indexing runner has been created");
             System.out.println("###### After visual indexer has been created");
-            YoutubeV3 youtube = new YoutubeV3(_indexer);
-            youtube.collect(_request.getKeywords());
+            File streamConfigFile = new File("/home/kandreadou/mklab/streams.conf.xml");
+            StreamsManagerConfiguration config = StreamsManagerConfiguration.readFromFile(streamConfigFile);
+            config.getStorageConfig("Mongodb").setParameter("mongodb.database", _request.getCollection());
+            SocialMediaCrawler manager = new SocialMediaCrawler(config);
+            manager.open(_request.getKeywords());
+            Thread socialmediaCrawlerThread = new Thread(manager);
+            socialmediaCrawlerThread.start();
             // Mark the request as running
             dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
             _request.setState(CrawlJob.STATE.RUNNING);
@@ -72,7 +76,6 @@ public class RevealAgent implements Runnable {
             RuntimeConfiguration rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional));
             rc.keywords = _request.getKeywords();
             rc.collectionName = _request.getCollection();
-            rc.indexer = _indexer;
             LOGGER.warn("###### Agent for request id " + _request.getId() + " started");
             new Agent(_hostname, _jmxPort, rc);
             LOGGER.warn("###### Agent for request id " + _request.getId() + " finished");
@@ -95,8 +98,11 @@ public class RevealAgent implements Runnable {
                 _request.setLastStateChange(new Date());
                 dao.save(_request);
             }
-            LOGGER.warn("###### youtube.stop()");
-            youtube.stop();
+            LOGGER.warn("###### ston indexing runner and social media crawler");
+            runner.stop();
+            indexingThread.interrupt();
+            manager.close();
+            socialmediaCrawlerThread.interrupt();
             LOGGER.warn("###### unregister bean for name");
             unregisterBeanForName(_request.getCollection());
         } catch (Exception e) {

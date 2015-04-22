@@ -3,7 +3,7 @@ package gr.iti.mklab.retrieve;
 import com.google.api.services.youtube.model.Channel;
 import com.google.api.services.youtube.model.VideoContentDetails;
 import com.google.api.services.youtube.model.VideoStatistics;
-import gr.iti.mklab.simmo.items.Video;
+import gr.iti.mklab.simmo.core.items.Video;
 import org.mongodb.morphia.annotations.Embedded;
 import org.mongodb.morphia.annotations.Entity;
 

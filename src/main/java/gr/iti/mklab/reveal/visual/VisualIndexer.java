@@ -1,11 +1,11 @@
 package gr.iti.mklab.reveal.visual;
 
 import gr.iti.mklab.reveal.configuration.Configuration;
-import gr.iti.mklab.simmo.items.Image;
-import gr.iti.mklab.simmo.items.Media;
-import gr.iti.mklab.simmo.items.Video;
-import gr.iti.mklab.simmo.morphia.MediaDAO;
-import gr.iti.mklab.simmo.morphia.MorphiaManager;
+import gr.iti.mklab.simmo.core.items.Image;
+import gr.iti.mklab.simmo.core.items.Media;
+import gr.iti.mklab.simmo.core.items.Video;
+import gr.iti.mklab.simmo.core.morphia.MediaDAO;
+import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.visual.aggregation.AbstractFeatureAggregator;
 import gr.iti.mklab.visual.aggregation.VladAggregatorMultipleVocabularies;
 import gr.iti.mklab.visual.dimreduction.PCA;
@@ -81,16 +81,12 @@ public class VisualIndexer {
     }
 
     private VisualIndexHandler handler;
-    private MediaDAO<Image> imageDAO;
-    private MediaDAO<Video> videoDAO;
     private String collection;
 
     public VisualIndexer(String collectionName) throws Exception {
         this.collection = collectionName;
         createCollection(collectionName);
         handler = new VisualIndexHandler("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
-        imageDAO = new MediaDAO<>(Image.class, collectionName);
-        videoDAO = new MediaDAO<>(Video.class, collectionName);
     }
 
     public Double[] getVector(String id) {
@@ -139,14 +135,6 @@ public class VisualIndexer {
                     _logger.error("Error in feature extraction for " + id);
                 }
                 indexed = handler.index(id, vector);
-                if (indexed) {
-                    if (media instanceof Image)
-                        imageDAO.save((Image) media);
-                    else
-                        videoDAO.save((Video) media);
-                }
-
-
             }
         } catch (Exception e) {
             //_logger.error(e.getMessage(), e);

@@ -274,8 +274,6 @@ public class RuntimeConfiguration {
 
     public Set<String> keywords;
 
-    public VisualIndexer indexer;
-
 	/** A pattern used to identify hosts specified directed via their address in dotted notation. Note the dot at the end.
 	 *  It covers both IPv6 addresses (where hexadecimal notation is accepted by default) and IPv4 addresses (where hexadecimal notation
 	 *  requires the 0x prefix on every single piece of the address). */

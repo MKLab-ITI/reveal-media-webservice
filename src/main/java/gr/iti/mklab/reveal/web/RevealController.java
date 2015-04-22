@@ -10,13 +10,13 @@ import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
 import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
-import gr.iti.mklab.simmo.annotations.NamedEntity;
-import gr.iti.mklab.simmo.items.Image;
-import gr.iti.mklab.simmo.items.Media;
-import gr.iti.mklab.simmo.items.Video;
-import gr.iti.mklab.simmo.jobs.CrawlJob;
-import gr.iti.mklab.simmo.morphia.MediaDAO;
-import gr.iti.mklab.simmo.morphia.MorphiaManager;
+import gr.iti.mklab.simmo.core.annotations.NamedEntity;
+import gr.iti.mklab.simmo.core.items.Image;
+import gr.iti.mklab.simmo.core.items.Media;
+import gr.iti.mklab.simmo.core.items.Video;
+import gr.iti.mklab.simmo.core.jobs.CrawlJob;
+import gr.iti.mklab.simmo.core.morphia.MediaDAO;
+import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.ml.clustering.Clusterable;
@@ -334,7 +334,7 @@ public class RevealController {
         List<ClusterableMedia> list = new ArrayList<>();
         //images
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-        DAO<gr.iti.mklab.simmo.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         clusterDAO.deleteByQuery(clusterDAO.createQuery());
         List<Image> images = imageDAO.getItems((int) imageDAO.count(), 0);
         images.stream().forEach(i -> {
@@ -366,7 +366,7 @@ public class RevealController {
         List<Cluster<ClusterableMedia>> centroids = clusterer.cluster(list);
         System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
         for (Cluster<ClusterableMedia> c : centroids) {
-            gr.iti.mklab.simmo.cluster.Cluster cluster = new gr.iti.mklab.simmo.cluster.Cluster();
+            gr.iti.mklab.simmo.core.cluster.Cluster cluster = new gr.iti.mklab.simmo.core.cluster.Cluster();
             cluster.setSize(c.getPoints().size());
             c.getPoints().stream().forEach(clusterable -> cluster.addMember(clusterable.item));
             clusterDAO.save(cluster);
@@ -377,11 +377,11 @@ public class RevealController {
 
     @RequestMapping(value = "/clusters/{collection}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<gr.iti.mklab.simmo.cluster.Cluster> getClusters(@PathVariable(value = "collection") String collection,
+    public List<gr.iti.mklab.simmo.core.cluster.Cluster> getClusters(@PathVariable(value = "collection") String collection,
                                                                 @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                                                 @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
-        DAO<gr.iti.mklab.simmo.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-        return clusterDAO.getDatastore().find(gr.iti.mklab.simmo.cluster.Cluster.class).offset(offset).limit(count).asList();
+        DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        return clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).offset(offset).limit(count).asList();
     }
 
     private static class ClusterableMedia extends Media implements Clusterable {
@@ -419,7 +419,7 @@ public class RevealController {
         String collection = "testfinal";
         List<ClusterableMedia> list = new ArrayList<>();
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-        DAO<gr.iti.mklab.simmo.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         List<Image> images = imageDAO.getItems((int) imageDAO.count(), 0);
         images.stream().forEach(i -> {
             Double[] vector = new Double[0];
@@ -438,7 +438,7 @@ public class RevealController {
         List<Cluster<ClusterableMedia>> centroids = clusterer.cluster(list);
         System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
         for (Cluster<ClusterableMedia> c : centroids) {
-            gr.iti.mklab.simmo.cluster.Cluster cluster = new gr.iti.mklab.simmo.cluster.Cluster();
+            gr.iti.mklab.simmo.core.cluster.Cluster cluster = new gr.iti.mklab.simmo.core.cluster.Cluster();
             //mc.setCount(c.getPoints().size());
             c.getPoints().stream().forEach(clusterable -> cluster.addMember(clusterable.item));
             clusterDAO.save(cluster);

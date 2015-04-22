@@ -11,16 +11,25 @@
         <spring.version>4.1.0.RELEASE</spring.version>
         <mongo.host>160.40.51.28</mongo.host>
     </properties>
-    
+
 
     <dependencies>
+    <dependency>
+    	<groupId>com.google.guava</groupId>
+    	<artifactId>guava</artifactId>
+    	<version>18.0</version>
+    </dependency>
+        <dependency>
+          <groupId>gr.iti.mklab</groupId>
+          <artifactId>simmo-stream-manager</artifactId>
+          <version>0.1-SNAPSHOT</version>
+        </dependency>
         <!-- Spring -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <version>${spring.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
@@ -77,71 +86,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-core</artifactId>
-            <version>4.10.0</version>
-        </dependency>-->
-
-        <!-- gr.iti.mklab libraries -->
-        <dependency>
-            <groupId>eu.socialsensor</groupId>
-            <artifactId>multimedia-indexing</artifactId>
-            <version>0.2</version>
-        </dependency>
-        <dependency>
-            <groupId>gr.iti.mklab</groupId>
-            <artifactId>simmo</artifactId>
-            <version>0.2-SNAPSHOT</version>
-        </dependency>
-
-        <!-- multimedia indexing dependencies -->
-        <dependency>
-            <groupId>commons-httpclient</groupId>
-            <artifactId>commons-httpclient</artifactId>
-            <version>3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sleepycat</groupId>
-            <artifactId>je</artifactId>
-            <version>5.0.73</version>
-        </dependency>
-        <dependency>
-            <groupId>net.sf.trove4j</groupId>
-            <artifactId>trove4j</artifactId>
-            <version>3.0.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.boofcv</groupId>
-            <artifactId>io</artifactId>
-            <version>0.16</version>
-        </dependency>
-        <dependency>
-            <groupId>org.boofcv</groupId>
-            <artifactId>ip</artifactId>
-            <version>0.16</version>
-        </dependency>
-        <dependency>
-            <groupId>org.boofcv</groupId>
-            <artifactId>visualize</artifactId>
-            <version>0.16</version>
-        </dependency>
-        <dependency>
-            <groupId>nz.ac.waikato.cms.weka</groupId>
-            <artifactId>weka-dev</artifactId>
-            <version>3.7.10</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mongodb.morphia</groupId>
-            <artifactId>morphia</artifactId>
-            <version>0.108</version>
-        </dependency>
-
         <!-- text indexing dependencies -->
         <dependency>
             <groupId>com.aliasi</groupId>
@@ -182,11 +126,7 @@
             <artifactId>nekohtml</artifactId>
             <version>1.9.13</version>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>18.0</version>
-        </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
@@ -212,16 +152,16 @@
             <artifactId>jarchivelib</artifactId>
             <version>0.6.0</version>
         </dependency>
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
-            <artifactId>fastutil</artifactId>
-            <version>6.5.9</version>
-        </dependency>
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
-            <artifactId>dsiutils</artifactId>
-            <version>2.1.10</version>
-        </dependency>
+       <dependency>
+                   <groupId>it.unimi.dsi</groupId>
+                   <artifactId>fastutil</artifactId>
+                   <version>6.5.9</version>
+               </dependency>
+               <dependency>
+                   <groupId>it.unimi.dsi</groupId>
+                   <artifactId>dsiutils</artifactId>
+                   <version>2.1.10</version>
+               </dependency>
         <dependency>
             <groupId>it.unimi.di.law</groupId>
             <artifactId>jai4j</artifactId>
@@ -231,16 +171,6 @@
             <groupId>commons-digester</groupId>
             <artifactId>commons-digester</artifactId>
             <version>2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.gdata</groupId>
-            <artifactId>core</artifactId>
-            <version>1.47.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.apis</groupId>
-            <artifactId>google-api-services-youtube</artifactId>
-            <version>v3-rev125-1.19.1</version>
         </dependency>
         <dependency>
             <groupId>org.softee</groupId>
@@ -260,7 +190,7 @@
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>sux4j</artifactId>
-            <version>3.2.1</version>
+            <version>3.2.2</version>
         </dependency>
         <dependency>
             <groupId>dnsjava</groupId>
@@ -270,7 +200,14 @@
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>webgraph</artifactId>
-            <version>3.4.2</version>
+            <version>3.4.3</version>
+        </dependency>
+
+        <!-- gr.iti.mklab libraries -->
+        <dependency>
+            <groupId>eu.socialsensor</groupId>
+            <artifactId>multimedia-indexing</artifactId>
+            <version>0.2</version>
         </dependency>
 
     </dependencies>
@@ -327,6 +264,27 @@
                             <url>http://squall-1.atc.gr:49203/manager/text</url>
                             <path>/crawler</path>
                         </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <version>1.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>only-junit-dep-is-used</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <bannedDependencies>
+                                            <excludes>
+                                                <exclude>com.google.guava:guava</exclude>
+                                            </excludes>
+                                        </bannedDependencies>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

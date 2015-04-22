@@ -1,9 +1,9 @@
 package gr.iti.mklab.reveal.web;
 
-import gr.iti.mklab.simmo.items.Image;
-import gr.iti.mklab.simmo.items.Media;
-import gr.iti.mklab.simmo.items.Video;
-import gr.iti.mklab.simmo.jobs.CrawlJob;
+import gr.iti.mklab.simmo.core.items.Image;
+import gr.iti.mklab.simmo.core.items.Media;
+import gr.iti.mklab.simmo.core.items.Video;
+import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 
 import java.net.MalformedURLException;
 import java.util.*;

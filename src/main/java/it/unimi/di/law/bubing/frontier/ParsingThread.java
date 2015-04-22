@@ -267,7 +267,7 @@ public class ParsingThread extends Thread {
         for (Parser<?> parser : frontier.rc.parsers) {
             Parser p = parser.copy();
             if(p instanceof ITIHTMLParser)
-                ((ITIHTMLParser) p).setIndexParameters(frontier.rc.collectionName, frontier.rc.keywords, frontier.rc.indexer);
+                ((ITIHTMLParser) p).setIndexParameters(frontier.rc.collectionName, frontier.rc.keywords);
             this.parsers.add(p);
         }
         setPriority((Thread.NORM_PRIORITY + Thread.MIN_PRIORITY) / 2); // Below main threads

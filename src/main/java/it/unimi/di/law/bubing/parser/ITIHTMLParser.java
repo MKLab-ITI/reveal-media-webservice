@@ -20,12 +20,9 @@ package it.unimi.di.law.bubing.parser;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
-import gr.iti.mklab.reveal.crawler.RevealAgent;
 import gr.iti.mklab.reveal.util.ImageUtils;
-import gr.iti.mklab.reveal.visual.VisualIndexer;
-import gr.iti.mklab.simmo.items.Image;
-import gr.iti.mklab.simmo.morphia.MediaDAO;
-import gr.iti.mklab.visual.utilities.ImageIOGreyScale;
+import gr.iti.mklab.simmo.core.items.Image;
+import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.util.BURL;
 import it.unimi.di.law.bubing.util.ByteArrayCharSequence;
@@ -41,7 +38,6 @@ import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import it.unimi.dsi.lang.ObjectParser;
 import it.unimi.dsi.util.TextPattern;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -63,7 +59,6 @@ import java.util.regex.Pattern;
 
 import net.htmlparser.jericho.*;
 
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -72,7 +67,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,8 +82,6 @@ import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.Switch;
 import com.martiansoftware.jsap.UnflaggedOption;
 
-import javax.imageio.ImageIO;
-
 // RELEASE-STATUS: DIST
 
 /**
@@ -104,7 +96,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
     public Set<String> keywords = new HashSet<String>();
     public String collectionName;
-    public VisualIndexer indexer;
+    private MediaDAO<Image> imageDAO;
 
     static {
         /* As suggested by Martin Jericho. This should speed up things and avoid problems with
@@ -163,7 +155,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
     /**
      * A class computing the digest of a page.
-     * <p>
+     * <p/>
      * <p>The page is somewhat simplified before being passed (as a sequence of bytes obtained
      * by breaking each character into the upper and lower byte) to a {@link Hasher}.
      * All start/end tags are case-normalized, and their whole content (except for the
@@ -173,10 +165,10 @@ public class ITIHTMLParser<T> implements Parser<T> {
      * distinguish correctly framed pages without alternative text. The attributes will be resolved
      * w.r.t. the {@linkplain #init(URI) URL associated to the page}.
      * Moreover, non-HTML tags are substituted with a special tag <samp>unknown</samp>.
-     * <p>
+     * <p/>
      * <p>For what concerns the text, all digits are substituted by a whitespace, and nonempty whitespace maximal sequences are coalesced
      * to a single space. Tags are considered as a non-whitespace character.
-     * <p>
+     * <p/>
      * <p>To avoid clashes between digests coming from different sites, you can optionally set a URL
      * (passed to the {@link #init(URI)} method) whose scheme+authority will be used to update the digest before adding the actual text page.
      */
@@ -464,14 +456,14 @@ public class ITIHTMLParser<T> implements Parser<T> {
         if (url == null) return;
         if (checkImage && ImageUtils.isImageUrl(s)) {
             try {
-                processImageURL(url, base, s, text);
+                processImageURL(url, base, s, text, 0, 0);
             } catch (Exception ex) {
             }
         } else
             linkReceiver.link(base.resolve(url));
     }
 
-    private final BloomFilter<String> UNIQUE_IMAGE_URLS = BloomFilter.create(Funnels.stringFunnel(Charset.forName("UTF-8")), 100000);
+    private final BloomFilter<CharSequence> UNIQUE_IMAGE_URLS = BloomFilter.create(Funnels.unencodedCharsFunnel(), 100000);
 
     /**
      * Checks if an image URI is valid and if it is, it downloads the image,
@@ -484,7 +476,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
      * @throws MalformedURLException
      * @throws IOException
      */
-    public void processImageURL(URI pageUri, URI base, String imageUri, String altText) throws MalformedURLException, IOException {
+    public void processImageURL(URI pageUri, URI base, String imageUri, String altText, int width, int height) throws MalformedURLException, IOException {
 
         boolean keywordFound = false;
         for (String keyword : keywords) {
@@ -499,6 +491,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
         if (url != null) {
             URI resolved = base.resolve(url);
             String resolvedStr = resolved.toString();
+
             //avoid trying to index the same image multiple times
             if (!UNIQUE_IMAGE_URLS.mightContain(resolvedStr)) {
                 // Put it in the bloom filter even if it is not saved eventually
@@ -507,44 +500,16 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
                 final URLConnection con = resolved.toURL().openConnection();
 
-                if (ImageUtils.checkContentHeaders(con.getContentLength(), con.getContentType())) {
-
-                    InputStream is = con.getInputStream();
-
-                    BufferedImage image = null;
-                    try {
-                        image = ImageIO.read(is);
-                    } catch (IllegalArgumentException e) {
-                        // this exception is probably thrown because of a greyscale jpeg image
-                        System.out.println("Exception: " + e.getMessage() + " | Image: " + imageUri);
-                        image = ImageIOGreyScale.read(is); // retry with the modified class
-                    } catch (MalformedURLException e) {
-                        System.out.println("Malformed url exception. Url: " + imageUri);
-                    }
-
-                    if (ImageUtils.checkImage(image)) {
-
-                        Image item = new Image();
-                        item.setUrl(resolvedStr);
-                        item.setTitle(altText);
-                        item.setWidth(image.getWidth());
-                        item.setHeight(image.getHeight());
-                        item.setWebPageUrl(pageUri.toString());
-                        item.setLastModifiedDate(new Date(con.getLastModified()));
-                        item.setId(new ObjectId().toString());
-                        item.setCrawlDate(new Date());
-
-                        try {
-                            if (indexer.index(item)) {
-
-                            }
-
-                        } catch (Exception e) {
-                            System.out.println("HTMLImageParser parse exeption: " + e);
-                        }
-
-                    }
-                }
+                Image item = new Image();
+                item.setUrl(resolvedStr);
+                item.setTitle(altText);
+                item.setWidth(width);
+                item.setHeight(height);
+                item.setWebPageUrl(pageUri.toString());
+                item.setLastModifiedDate(new Date(con.getLastModified()));
+                item.setId("Web#" + resolvedStr.hashCode());
+                item.setCrawlDate(new Date());
+                imageDAO.save(item);
             }
         }
     }
@@ -641,7 +606,13 @@ public class ITIHTMLParser<T> implements Parser<T> {
                     if (name == HTMLElementName.IFRAME || name == HTMLElementName.FRAME || name == HTMLElementName.EMBED)
                         process(linkReceiver, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("name"), true);
                     else if (name == HTMLElementName.IMG) {
-                        processImageURL(uri, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("alt"));
+                        if (startTag.getAttributeValue("width")!=null && startTag.getAttributeValue("height")!=null) {
+                            int width = Integer.parseInt(startTag.getAttributeValue("width"));
+                            int height = Integer.parseInt(startTag.getAttributeValue("height"));
+                            if (ImageUtils.checkDimensions(width, height))
+                                processImageURL(uri, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("alt"), width, height);
+                        }
+
                     } else if (name == HTMLElementName.SCRIPT)
                         process(linkReceiver, base, startTag.getAttributeValue("src"), null, false);
                     else if (name == HTMLElementName.OBJECT)
@@ -770,7 +741,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
      * present, interpreting the provided byte array as a sequence of
      * ISO-8859-1-encoded characters. Only the first such occurrence is considered (even if
      * it might not correspond to a valid or available charset).
-     * <p>
+     * <p/>
      * <p><strong>Beware</strong>: it might not work if the
      * <em>value</em> of some attribute in a <code>meta</code> tag
      * contains a string matching (case insensitively) the r.e.
@@ -809,7 +780,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
     /**
      * Extracts the charset name from the header value of a <samp>content-type</samp>
      * header using a regular expression.
-     * <p>
+     * <p/>
      * <strong>Warning</strong>: it might not work if someone puts the string <samp>charset=</samp>
      * in a string inside some attribute/value pair.
      *
@@ -851,10 +822,10 @@ public class ITIHTMLParser<T> implements Parser<T> {
         return textProcessor == null ? null : textProcessor.result();
     }
 
-    public void setIndexParameters(String collectionName, Set<String> keywords, VisualIndexer indexer) {
+    public void setIndexParameters(String collectionName, Set<String> keywords) {
         this.collectionName = collectionName;
         this.keywords = keywords;
-        this.indexer = indexer;
+        imageDAO = new MediaDAO<>(Image.class, collectionName);
     }
 
     public static void main(String arg[]) throws IllegalArgumentException, IOException, URISyntaxException, JSAPException, NoSuchAlgorithmException {

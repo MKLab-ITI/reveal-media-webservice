@@ -1,6 +1,6 @@
 package gr.iti.mklab.reveal.text;
 
-import gr.iti.mklab.simmo.annotations.NamedEntity;
+import gr.iti.mklab.simmo.core.annotations.NamedEntity;
 import edu.stanford.nlp.ling.CoreAnnotations.NamedEntityTagAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
