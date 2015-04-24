@@ -96,12 +96,12 @@ public class SocialMediaCrawler implements Runnable {
             feed.setSinceDate(cal.getTime());
             feed.setSource("Twitter");
             feeds.add(feed);
-            /*KeywordsFeed youtube = new KeywordsFeed();
-            youtube.addKeyword("obama");
+            KeywordsFeed youtube = new KeywordsFeed();
+            youtube.addKeywords(new ArrayList(keywords));
             youtube.setId("Youtube#1");
-            youtube.setSinceDate(new Date(0));
+            youtube.setSinceDate(cal.getTime());
             youtube.setSource("YouTube");
-            feeds.add(youtube);*/
+            feeds.add(youtube);
             Map<String, Set<Feed>> feedsPerSource = createFeedsPerSource(feeds);
 
             //Start the Subscribers
@@ -148,9 +148,8 @@ public class SocialMediaCrawler implements Runnable {
         }
 
         try {
-            for (Stream stream : streams.values()) {
-                logger.info("Close " + stream);
-                stream.close();
+            if(monitor!=null){
+                monitor.stop();
             }
 
             if (storageHandler != null) {

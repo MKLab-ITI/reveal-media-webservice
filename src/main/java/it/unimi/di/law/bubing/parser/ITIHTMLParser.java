@@ -20,8 +20,11 @@ package it.unimi.di.law.bubing.parser;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
+import com.sun.webkit.WebPage;
 import gr.iti.mklab.reveal.util.ImageUtils;
+import gr.iti.mklab.simmo.core.documents.Webpage;
 import gr.iti.mklab.simmo.core.items.Image;
+import gr.iti.mklab.simmo.core.morphia.DAOManager;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.util.BURL;
@@ -45,20 +48,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLConnection;
+import java.net.*;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.htmlparser.jericho.*;
 
+import org.apache.commons.httpclient.util.DateParseException;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -67,6 +69,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.ivy.util.DateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +99,8 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
     public Set<String> keywords = new HashSet<String>();
     public String collectionName;
-    private MediaDAO<Image> imageDAO;
+    private DAOManager manager;
+    //private MediaDAO<Image> imageDAO;
 
     static {
         /* As suggested by Martin Jericho. This should speed up things and avoid problems with
@@ -450,20 +454,52 @@ public class ITIHTMLParser<T> implements Parser<T> {
      * @param base         the base URL to be used to derelativize the link.
      * @param s            the raw link to be derelativized.
      */
-    protected void process(final LinkReceiver linkReceiver, final URI base, final String s, final String text, boolean checkImage) {
+    protected void process(final LinkReceiver linkReceiver, final URI base, final String s, final String text, Webpage wp, boolean checkImage) {
         if (s == null) return;
         URI url = BURL.parse(s);
         if (url == null) return;
-        if (checkImage && ImageUtils.isImageUrl(s)) {
-            try {
-                processImageURL(url, base, s, text, 0, 0);
-            } catch (Exception ex) {
-            }
+        URI resolved = base.resolve(url);
+        if (checkImage && ImageUtils.isImageUrl(resolved.toString())) {
+            String resolvedStr = resolved.toString();
+            Image item = new Image();
+            item.setUrl(resolvedStr);
+            item.setTitle(text);
+            item.setWebPageUrl(wp.getUrl());
+            item.setLastModifiedDate(wp.getLastModifiedDate());
+            item.setId("Web#" + resolvedStr.hashCode());
+            item.setCrawlDate(wp.getCrawlDate());
+            wp.addItem(item);
+            processImageURL(wp);
         } else
-            linkReceiver.link(base.resolve(url));
+            linkReceiver.link(resolved);
     }
 
     private final BloomFilter<CharSequence> UNIQUE_IMAGE_URLS = BloomFilter.create(Funnels.unencodedCharsFunnel(), 100000);
+
+    public void processImageURL(Webpage wp) {
+        Image image = (Image) wp.getItems().get(0);
+        if (image == null) return;
+        String altText = image.getAlternateText();
+        String imageUri = image.getUrl();
+        LOGGER.debug("Process image URL "+imageUri+" "+altText);
+        if (altText == null || imageUri == null)
+            return;
+        boolean keywordFound = false;
+        for (String keyword : keywords) {
+            if ((altText != null && altText.toLowerCase().contains(keyword.toLowerCase())) || imageUri.toLowerCase().contains(keyword.toLowerCase())) {
+                keywordFound = true;
+                break;
+            }
+        }
+        if (!keywordFound)
+            return;
+        if (!UNIQUE_IMAGE_URLS.mightContain(imageUri)) {
+            // Put it in the bloom filter even if it is not saved eventually
+            // to avoid doing the same checks for the same image a second time
+            UNIQUE_IMAGE_URLS.put(imageUri);
+            manager.saveWebpage(wp);
+        }
+    }
 
     /**
      * Checks if an image URI is valid and if it is, it downloads the image,
@@ -498,6 +534,9 @@ public class ITIHTMLParser<T> implements Parser<T> {
                 // to avoid doing the same checks for the same image a second time
                 UNIQUE_IMAGE_URLS.put(resolvedStr);
 
+                Webpage wp = new Webpage();
+                wp.setUrl(pageUri.toString());
+
                 final URLConnection con = resolved.toURL().openConnection();
 
                 Image item = new Image();
@@ -509,7 +548,9 @@ public class ITIHTMLParser<T> implements Parser<T> {
                 item.setLastModifiedDate(new Date(con.getLastModified()));
                 item.setId("Web#" + resolvedStr.hashCode());
                 item.setCrawlDate(new Date());
-                imageDAO.save(item);
+                wp.addItem(item);
+                manager.saveWebpage(wp);
+                //imageDAO.save(item);
             }
         }
     }
@@ -602,23 +643,73 @@ public class ITIHTMLParser<T> implements Parser<T> {
                     // TODO: detect flow breakers
                     if (linkReceiver == null) continue; // No link receiver, nothing to do.
 
-                    // IFRAME or FRAME + SRC
-                    if (name == HTMLElementName.IFRAME || name == HTMLElementName.FRAME || name == HTMLElementName.EMBED)
-                        process(linkReceiver, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("name"), true);
-                    else if (name == HTMLElementName.IMG) {
-                        if (startTag.getAttributeValue("width")!=null && startTag.getAttributeValue("height")!=null) {
-                            int width = Integer.parseInt(startTag.getAttributeValue("width"));
-                            int height = Integer.parseInt(startTag.getAttributeValue("height"));
-                            if (ImageUtils.checkDimensions(width, height))
-                                processImageURL(uri, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("alt"), width, height);
+                    Webpage wp = new Webpage();
+                    wp.setUrl(uri.toString());
+                    wp.setCrawlDate(new Date());
+                    final Header lastModifiedHeader = httpResponse.getFirstHeader(HttpHeaders.LAST_MODIFIED);
+                    Date webpageLastModifiedDate = null;
+                    if (lastModifiedHeader != null) {
+                        try {
+                            webpageLastModifiedDate = DateUtil.parse(lastModifiedHeader.getValue());
+                            wp.setLastModifiedDate(webpageLastModifiedDate);
+                        } catch (ParseException pe) {
+                            // ignore
                         }
+                    }
+
+                    if(name == HTMLElementName.META){
+                        String nameAttr = startTag.getAttributeValue("name");
+                        if("description".equalsIgnoreCase(nameAttr)){
+                            wp.setDescription(startTag.getAttributeValue("content"));
+                        }else if("author".equalsIgnoreCase(nameAttr)){
+                            wp.setSource(startTag.getAttributeValue("content"));
+                        }else if("og:title".equalsIgnoreCase(nameAttr)){
+                            wp.setTitle(startTag.getAttributeValue("content"));
+                        }else {
+                            if ("keywords".equalsIgnoreCase(nameAttr)) {
+                                String keywords = startTag.getAttributeValue("content");
+                                if (keywords != null) {
+                                    wp.setTags(new HashSet<>(Arrays.asList(keywords.split(","))));
+                                }
+                            }
+                        }
+                    }
+                    // IFRAME or FRAME + SRC
+                    else if (name == HTMLElementName.IFRAME || name == HTMLElementName.FRAME || name == HTMLElementName.EMBED)
+                        process(linkReceiver, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("name"), wp, true);
+                    else if (name == HTMLElementName.IMG) {
+                        URI url = BURL.parse(startTag.getAttributeValue("src"));
+                        if (url == null) continue;
+                        URI resolved = base.resolve(url);
+                        String resolveStr = resolved.toString();
+                        Image item = new Image();
+                        item.setAlternateText(startTag.getAttributeValue("alt"));
+                        item.setWebPageUrl(uri.toString());
+                        item.setLastModifiedDate(webpageLastModifiedDate);
+                        item.setCrawlDate(wp.getCrawlDate());
+                        item.setUrl(resolveStr);
+                        item.setId("Web#" + resolveStr.hashCode());
+                        if (startTag.getAttributeValue("width") != null && startTag.getAttributeValue("height") != null) {
+                            try {
+                                int width = Integer.parseInt(startTag.getAttributeValue("width"));
+                                int height = Integer.parseInt(startTag.getAttributeValue("height"));
+                                if (ImageUtils.checkDimensions(width, height)) {
+                                    item.setWidth(width);
+                                    item.setHeight(height);
+                                }
+                            } catch (NumberFormatException nfe) {
+                                //ignore
+                            }
+                        }
+                        wp.addItem(item);
+                        processImageURL(wp);
 
                     } else if (name == HTMLElementName.SCRIPT)
-                        process(linkReceiver, base, startTag.getAttributeValue("src"), null, false);
+                        process(linkReceiver, base, startTag.getAttributeValue("src"), null, wp, false);
                     else if (name == HTMLElementName.OBJECT)
-                        process(linkReceiver, base, startTag.getAttributeValue("data"), startTag.getAttributeValue("name"), true);
+                        process(linkReceiver, base, startTag.getAttributeValue("data"), startTag.getAttributeValue("name"), wp, true);
                     else if (name == HTMLElementName.A || name == HTMLElementName.AREA || name == HTMLElementName.LINK)
-                        process(linkReceiver, base, startTag.getAttributeValue("href"), null, true);
+                        process(linkReceiver, base, startTag.getAttributeValue("href"), null, wp, true);
                     else if (name == HTMLElementName.BASE) {
                         String s = startTag.getAttributeValue("href");
                         if (s != null) {
@@ -825,7 +916,8 @@ public class ITIHTMLParser<T> implements Parser<T> {
     public void setIndexParameters(String collectionName, Set<String> keywords) {
         this.collectionName = collectionName;
         this.keywords = keywords;
-        imageDAO = new MediaDAO<>(Image.class, collectionName);
+        manager = new DAOManager(collectionName);
+        //imageDAO = new MediaDAO<>(Image.class, collectionName);
     }
 
     public static void main(String arg[]) throws IllegalArgumentException, IOException, URISyntaxException, JSAPException, NoSuchAlgorithmException {
