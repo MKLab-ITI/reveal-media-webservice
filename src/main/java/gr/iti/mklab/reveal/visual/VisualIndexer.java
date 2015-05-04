@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.visual;
 
 import gr.iti.mklab.reveal.configuration.Configuration;
+import gr.iti.mklab.reveal.util.ImageUtils;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
@@ -124,11 +125,17 @@ public class VisualIndexer {
             InputStream input = entity.getContent();
             byte[] imageContent = IOUtils.toByteArray(input);
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageContent));
-            if (image != null) {
+            int width = image.getWidth();
+            int height = image.getHeight();
+            if (image != null && ImageUtils.isImageBigEnough(width, height)) {
                 ImageVectorization imvec = new ImageVectorization(id, image, targetLengthMax, maxNumPixels);
-                /*if (mediaItem.getWidth() == null && mediaItem.getHeight() == null) {
-                    mediaItem.setSize(image.getWidth(), image.getHeight());
-                }*/
+                if (media instanceof Image) {
+                    ((Image) media).setWidth(width);
+                    ((Image) media).setHeight(height);
+                } else if (media instanceof Video) {
+                    ((Video) media).setWidth(width);
+                    ((Video) media).setHeight(height);
+                }
                 ImageVectorizationResult imvr = imvec.call();
                 double[] vector = imvr.getImageVector();
                 if (vector == null || vector.length == 0) {

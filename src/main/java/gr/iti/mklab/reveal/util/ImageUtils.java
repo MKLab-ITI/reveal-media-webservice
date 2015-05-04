@@ -23,11 +23,15 @@ public class ImageUtils {
         return img != null && img.getWidth() >= MIN_WIDTH && img.getHeight() >= MIN_HEIGHT;
     }
 
-    public static boolean checkDimensions(int widht, int height){
-        return widht>=MIN_WIDTH && height>=MIN_HEIGHT;
+    public static boolean isImageBigEnough(int width, int height) {
+        return width >= MIN_WIDTH && height >= MIN_HEIGHT;
     }
 
-    public static boolean isImageUrl(String uri){
+    public static boolean checkDimensions(int widht, int height) {
+        return widht >= MIN_WIDTH && height >= MIN_HEIGHT;
+    }
+
+    public static boolean isImageUrl(String uri) {
         return imagePattern.matcher(uri).matches();
     }
 
