@@ -100,6 +100,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
     public Set<String> keywords = new HashSet<String>();
     public String collectionName;
     private DAOManager manager;
+
     //private MediaDAO<Image> imageDAO;
 
     static {
@@ -466,7 +467,9 @@ public class ITIHTMLParser<T> implements Parser<T> {
             item.setTitle(text);
             item.setWebPageUrl(wp.getUrl());
             item.setLastModifiedDate(wp.getLastModifiedDate());
-            item.setId("Web#" + resolvedStr.hashCode());
+            String itId = "Web#" + resolvedStr.hashCode();
+            item.setId(itId);
+            wp.setId(itId);
             item.setCrawlDate(wp.getCrawlDate());
             wp.addItem(item);
             processImageURL(wp);
@@ -481,7 +484,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
         if (image == null) return;
         String altText = image.getAlternateText();
         String imageUri = image.getUrl();
-        LOGGER.debug("Process image URL "+imageUri+" "+altText);
+        LOGGER.debug("Process image URL " + imageUri + " " + altText);
         if (altText == null || imageUri == null)
             return;
         boolean keywordFound = false;
@@ -621,6 +624,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
         @SuppressWarnings("resource")
         final StreamedSource streamedSource = new StreamedSource(new InputStreamReader(contentStream, charset));
+        streamedSource.setLogger(null);
         if (buffer != null) streamedSource.setBuffer(buffer);
         if (digestAppendable != null) digestAppendable.init(crossAuthorityDuplicates ? null : uri);
         URI base = uri;
@@ -657,15 +661,15 @@ public class ITIHTMLParser<T> implements Parser<T> {
                         }
                     }
 
-                    if(name == HTMLElementName.META){
+                    if (name == HTMLElementName.META) {
                         String nameAttr = startTag.getAttributeValue("name");
-                        if("description".equalsIgnoreCase(nameAttr)){
+                        if ("description".equalsIgnoreCase(nameAttr)) {
                             wp.setDescription(startTag.getAttributeValue("content"));
-                        }else if("author".equalsIgnoreCase(nameAttr)){
+                        } else if ("author".equalsIgnoreCase(nameAttr)) {
                             wp.setSource(startTag.getAttributeValue("content"));
-                        }else if("og:title".equalsIgnoreCase(nameAttr)){
+                        } else if ("og:title".equalsIgnoreCase(nameAttr)) {
                             wp.setTitle(startTag.getAttributeValue("content"));
-                        }else {
+                        } else {
                             if ("keywords".equalsIgnoreCase(nameAttr)) {
                                 String keywords = startTag.getAttributeValue("content");
                                 if (keywords != null) {
@@ -678,7 +682,10 @@ public class ITIHTMLParser<T> implements Parser<T> {
                     else if (name == HTMLElementName.IFRAME || name == HTMLElementName.FRAME || name == HTMLElementName.EMBED)
                         process(linkReceiver, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("name"), wp, true);
                     else if (name == HTMLElementName.IMG) {
-                        URI url = BURL.parse(startTag.getAttributeValue("src"));
+                        String IMGsrc = startTag.getAttributeValue("src");
+                        if(IMGsrc==null)
+                            continue;
+                        URI url = BURL.parse(IMGsrc);
                         if (url == null) continue;
                         URI resolved = base.resolve(url);
                         String resolveStr = resolved.toString();
@@ -688,7 +695,9 @@ public class ITIHTMLParser<T> implements Parser<T> {
                         item.setLastModifiedDate(webpageLastModifiedDate);
                         item.setCrawlDate(wp.getCrawlDate());
                         item.setUrl(resolveStr);
-                        item.setId("Web#" + resolveStr.hashCode());
+                        String gId = "Web#" + resolveStr.hashCode();
+                        item.setId(gId);
+                        wp.setId(gId);
                         if (startTag.getAttributeValue("width") != null && startTag.getAttributeValue("height") != null) {
                             try {
                                 int width = Integer.parseInt(startTag.getAttributeValue("width"));

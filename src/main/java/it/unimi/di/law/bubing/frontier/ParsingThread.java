@@ -18,8 +18,10 @@ package it.unimi.di.law.bubing.frontier;
  *
  */
 
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
+import gr.iti.mklab.reveal.crawler.LinkDetectionRunner;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
-import it.unimi.di.law.bubing.parser.HTMLParser;
 import it.unimi.di.law.bubing.parser.ITIHTMLParser;
 import it.unimi.di.law.bubing.parser.Parser;
 import it.unimi.di.law.bubing.parser.Parser.LinkReceiver;
@@ -40,6 +42,7 @@ import it.unimi.dsi.fastutil.shorts.Short2ShortMap;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.BufferOverflowException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +57,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A thread parsing pages retrieved by a {@link FetchingThread}.
- * <p>
+ * <p/>
  * <p>Instances of this class iteratively extract from {@link Frontier#results} (using polling and exponential backoff)
  * a {@link FetchData} that has been previously enqueued by a {@link FetchingThread}.
  * The content of the response is analyzed and the body of the response is possibly parsed, and its
@@ -62,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * Newly discovered (during parsing) URLs are {@linkplain Frontier#enqueue(ByteArrayList) enqueued to the frontier}. Then,
  * a signal is issued on the {@link FetchData}, so that the owner (a {@link FetchingThread}}
  * can work on a different URL or possibly {@link Workbench#release(VisitState) release the visit state}.
- * <p>
+ * <p/>
  * <p>At each step (fetching, parsing, following the URLs of a page, scheduling new URLs, storing) a
  * configurable {@link Filter} selects whether a URL is eligible for a specific activity.
  * This makes it possible a very fine-grained configuration of the crawl. BUbiNG will also check
@@ -266,12 +269,14 @@ public class ParsingThread extends Thread {
         this.parsers = new ArrayList<Parser<?>>(frontier.rc.parsers.size());
         for (Parser<?> parser : frontier.rc.parsers) {
             Parser p = parser.copy();
-            if(p instanceof ITIHTMLParser)
+            if (p instanceof ITIHTMLParser)
                 ((ITIHTMLParser) p).setIndexParameters(frontier.rc.collectionName, frontier.rc.keywords);
             this.parsers.add(p);
         }
         setPriority((Thread.NORM_PRIORITY + Thread.MIN_PRIORITY) / 2); // Below main threads
     }
+
+    private final BloomFilter<CharSequence> UNIQUE_URLS = BloomFilter.create(Funnels.unencodedCharsFunnel(), 100000);
 
     @SuppressWarnings("unchecked")
     @Override
@@ -280,7 +285,25 @@ public class ParsingThread extends Thread {
             final RuntimeConfiguration rc = frontier.rc;
             final FrontierEnqueuer frontierLinkReceiver = new FrontierEnqueuer(frontier, rc);
 
+            LinkDetectionRunner runner = new LinkDetectionRunner(frontier.rc.collectionName) {
+                @Override
+                public void processLink(String link) {
+                    try {
+                        if (!UNIQUE_URLS.mightContain(link)) {
+                            System.out.println("LinkDetectionRunner enqueue " + link);
+                            frontierLinkReceiver.enqueue(new URI(link));
+                            UNIQUE_URLS.put(link);
+                        }
+                    } catch (URISyntaxException use) {
+                        System.out.println("processLink error "+use);
+                    }catch(IndexOutOfBoundsException ioe){
+                        System.out.println("processLink error "+ioe);
+                    }
+                }
+            };
+
             for (; ; ) {
+                runner.enqueueLinks();
                 rc.ensureNotPaused();
 
                 FetchData fetchData;
@@ -367,7 +390,7 @@ public class ParsingThread extends Thread {
 
                     byte[] digest = null;
                     String guessedCharset = null;
-                    final LinkReceiver linkReceiver = rc.followFilter.apply(fetchData) ? new HTMLParser.SetLinkReceiver() : Parser.NULL_LINK_RECEIVER;
+                    final LinkReceiver linkReceiver = rc.followFilter.apply(fetchData) ? new ITIHTMLParser.SetLinkReceiver() : Parser.NULL_LINK_RECEIVER;
 
                     frontierLinkReceiver.init(visitState.schemeAuthority, visitState.robotsFilter);
                     final long streamLength = fetchData.response().getEntity().getContentLength();
@@ -474,10 +497,12 @@ public class ParsingThread extends Thread {
                     }
                 }
             }
+
         } catch (InterruptedException e) {
             if (LOGGER.isDebugEnabled()) LOGGER.debug(this + " was interrupted");
         } catch (Throwable t) {
             LOGGER.error("Unexpected exception", t);
         }
+
     }
 }	

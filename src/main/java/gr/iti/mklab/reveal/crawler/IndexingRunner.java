@@ -4,10 +4,12 @@ import gr.iti.mklab.reveal.configuration.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
+import gr.iti.mklab.simmo.core.documents.Webpage;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
+import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -21,6 +23,7 @@ public class IndexingRunner implements Runnable {
     private VisualIndexer _indexer;
     private MediaDAO<Image> imageDAO;
     private MediaDAO<Video> videoDAO;
+    private ObjectDAO<Webpage> pageDAO;
     private LocalDescriptors ld;
     private boolean isRunning = true;
 
@@ -28,6 +31,7 @@ public class IndexingRunner implements Runnable {
         _indexer = VisualIndexerFactory.getVisualIndexer(collection);
         imageDAO = new MediaDAO<>(Image.class, collection);
         videoDAO = new MediaDAO<>(Video.class, collection);
+        pageDAO = new ObjectDAO<>(Webpage.class, collection);
         ld = new LocalDescriptors();
         ld.setDescriptorType(LocalDescriptors.DESCRIPTOR_TYPE.SURF);
         ld.setFeatureEncoding(LocalDescriptors.FEATURE_ENCODING.Vlad);
@@ -56,6 +60,7 @@ public class IndexingRunner implements Runnable {
                         imageDAO.save(image);
                     } else {
                         imageDAO.delete(image);
+                        pageDAO.deleteById(image.getId());
                     }
                 }
                 for (Video video : videoList) {
@@ -63,7 +68,8 @@ public class IndexingRunner implements Runnable {
                         video.addAnnotation(ld);
                         videoDAO.save(video);
                     } else {
-                        videoDAO.delete(video);
+                        //videoDAO.delete(video);
+                        //pageDAO.deleteById(video.getId());
                     }
                 }
             }
