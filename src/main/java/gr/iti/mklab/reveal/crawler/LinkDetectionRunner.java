@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
  */
 public abstract class LinkDetectionRunner {
 
+    private long LAST_CALL = System.currentTimeMillis();
     private static int LAST_POSITION = 0;
     private static final int STEP = 1000;
     private ObjectDAO<Webpage> pageDAO;
@@ -22,18 +23,21 @@ public abstract class LinkDetectionRunner {
     }
 
     public void enqueueLinks() {
-        List<Webpage> pageList;
-        Pattern pattern = Pattern.compile("^Twitter", Pattern.CASE_INSENSITIVE);
-        //pageList = pageDAO.getItems((int) pageDAO.count() - LAST_POSITION, LAST_POSITION);
-        pageList = pageDAO.getDatastore().find(Webpage.class).field("_id").equal(pattern).offset(LAST_POSITION).limit(STEP).asList();
-
-        while (!pageList.isEmpty() && isRunning){
-            for (Webpage page : pageList) {
-                if (page.getId().startsWith("Twitter"))
-                    processLink(page.getUrl());
-            }
-            LAST_POSITION += STEP;
+        if(System.currentTimeMillis() - LAST_CALL>10000) {
+            LAST_CALL = System.currentTimeMillis();
+            List<Webpage> pageList;
+            Pattern pattern = Pattern.compile("^Twitter", Pattern.CASE_INSENSITIVE);
+            //pageList = pageDAO.getItems((int) pageDAO.count() - LAST_POSITION, LAST_POSITION);
             pageList = pageDAO.getDatastore().find(Webpage.class).field("_id").equal(pattern).offset(LAST_POSITION).limit(STEP).asList();
+            System.out.println("LAST_POSITION " + LAST_POSITION + " pageList.size " + pageList.size());
+            while (!pageList.isEmpty() && isRunning) {
+                for (Webpage page : pageList) {
+                    if (page.getId().startsWith("Twitter"))
+                        processLink(page.getUrl());
+                }
+                LAST_POSITION += STEP;
+                pageList = pageDAO.getDatastore().find(Webpage.class).field("_id").equal(pattern).offset(LAST_POSITION).limit(STEP).asList();
+            }
         }
     }
 

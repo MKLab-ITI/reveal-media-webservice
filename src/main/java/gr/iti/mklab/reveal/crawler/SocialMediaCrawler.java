@@ -102,6 +102,24 @@ public class SocialMediaCrawler implements Runnable {
             youtube.setSinceDate(cal.getTime());
             youtube.setSource("YouTube");
             feeds.add(youtube);
+            KeywordsFeed flickr = new KeywordsFeed();
+            flickr.addKeywords(new ArrayList(keywords));
+            flickr.setId("Flickr#1");
+            flickr.setSinceDate(cal.getTime());
+            flickr.setSource("Flickr");
+            feeds.add(flickr);
+            KeywordsFeed instagram = new KeywordsFeed();
+            instagram.addKeywords(new ArrayList(keywords));
+            instagram.setId("Instagram#1");
+            instagram.setSinceDate(cal.getTime());
+            instagram.setSource("Instagram");
+            feeds.add(instagram);
+            KeywordsFeed tumblr = new KeywordsFeed();
+            tumblr.addKeywords(new ArrayList(keywords));
+            tumblr.setId("Tumblr#1");
+            tumblr.setSinceDate(cal.getTime());
+            tumblr.setSource("Tumblr");
+            feeds.add(tumblr);
             Map<String, Set<Feed>> feedsPerSource = createFeedsPerSource(feeds);
 
             //Start the Subscribers

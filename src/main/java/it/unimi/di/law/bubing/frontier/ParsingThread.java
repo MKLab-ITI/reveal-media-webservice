@@ -285,7 +285,7 @@ public class ParsingThread extends Thread {
             final RuntimeConfiguration rc = frontier.rc;
             final FrontierEnqueuer frontierLinkReceiver = new FrontierEnqueuer(frontier, rc);
 
-            LinkDetectionRunner runner = new LinkDetectionRunner(frontier.rc.collectionName) {
+            LinkDetectionRunner detective = new LinkDetectionRunner(frontier.rc.collectionName) {
                 @Override
                 public void processLink(String link) {
                     try {
@@ -303,7 +303,7 @@ public class ParsingThread extends Thread {
             };
 
             for (; ; ) {
-                runner.enqueueLinks();
+                detective.enqueueLinks();
                 rc.ensureNotPaused();
 
                 FetchData fetchData;

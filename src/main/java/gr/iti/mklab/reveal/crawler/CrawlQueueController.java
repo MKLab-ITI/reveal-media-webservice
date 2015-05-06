@@ -232,7 +232,8 @@ public class CrawlQueueController {
         Date lastVideoInserted = null;
         if (imageDAO != null && imageDAO.count() > 0) {
             status.numImages = imageDAO.count();
-            status.image = getRepresentativeImage(imageDAO, status.getKeywords());
+            status.image = imageDAO.getItems(1, 0).get(0);
+            //status.image = getRepresentativeImage(imageDAO, status.getKeywords());
             List<Image> imgs = imageDAO.getDatastore().find(Image.class).order("-crawlDate").limit(100).asList();
             if (imgs != null && imgs.size() > 0)
                 lastImageInserted = imgs.get(0).getCrawlDate();
