@@ -25,14 +25,11 @@ import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PreDestroy;
-import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
@@ -41,9 +38,6 @@ import java.util.regex.Pattern;
 @Controller
 @RequestMapping("/mmapi")
 public class RevealController {
-
-
-    private static final Logger logger = LoggerFactory.getLogger(RevealController.class);
 
     protected CrawlQueueController crawlerCtrler;
 
@@ -56,7 +50,6 @@ public class RevealController {
         crawlerCtrler = new CrawlQueueController();
         nte = new NameThatEntity();
         nte.initPipeline(); //Should be called only once in the beggining
-        //solr = SolrManager.getInstance("http://localhost:8080/solr/WebPages");
     }
 
     @PreDestroy
