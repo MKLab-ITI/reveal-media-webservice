@@ -64,7 +64,7 @@ import org.apache.commons.math3.util.MathUtils;
  * A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise</a>
  * @since 3.2
  */
-public class DBSCANClusterer<T extends Clusterable> extends Clusterer<T> {
+public class DBSCANClustererIncr<T extends Clusterable> extends Clusterer<T> {
 
     /**
      * Maximum radius of the neighborhood to be considered.
@@ -99,7 +99,7 @@ public class DBSCANClusterer<T extends Clusterable> extends Clusterer<T> {
      * @param minPts minimum number of points needed for a cluster
      * @throws NotPositiveException if {@code eps < 0.0} or {@code minPts < 0}
      */
-    public DBSCANClusterer(final double eps, final int minPts)
+    public DBSCANClustererIncr(final double eps, final int minPts)
             throws NotPositiveException {
         this(eps, minPts, new EuclideanDistance());
     }
@@ -112,7 +112,7 @@ public class DBSCANClusterer<T extends Clusterable> extends Clusterer<T> {
      * @param measure the distance measure to use
      * @throws NotPositiveException if {@code eps < 0.0} or {@code minPts < 0}
      */
-    public DBSCANClusterer(final double eps, final int minPts, final DistanceMeasure measure)
+    public DBSCANClustererIncr(final double eps, final int minPts, final DistanceMeasure measure)
             throws NotPositiveException {
         super(measure);
 
@@ -190,18 +190,21 @@ public class DBSCANClusterer<T extends Clusterable> extends Clusterer<T> {
         // sanity checks
         MathUtils.checkNotNull(points);
 
-        final List<Cluster<T>> clusters = new ArrayList<Cluster<T>>();
-        clusters.addAll(existingClusters);
-        final Map<Clusterable, PointStatus> visited = new HashMap<Clusterable, PointStatus>();
+        final List<Cluster<T>> clusters = new ArrayList<>();
+        if(existingClusters!=null && !existingClusters.isEmpty())
+            clusters.addAll(existingClusters);
+        final Map<Clusterable, PointStatus> visited = new HashMap<>();
 
         for (final T point : points) {
 
             //First check if the point can be integrated into an existing cluster
-            for (final Cluster<T> cl : existingClusters) {
-                if (isNeighbor(point, cl.getPoints())) {
-                    visited.put(point, PointStatus.PART_OF_CLUSTER);
-                    cl.addPoint(point);
-                }
+            if (existingClusters != null && !existingClusters.isEmpty()) {
+                existingClusters.stream().forEach(cl -> {
+                    if (isNeighbor(point, cl.getPoints())) {
+                        visited.put(point, PointStatus.PART_OF_CLUSTER);
+                        cl.addPoint(point);
+                    }
+                });
             }
 
             if (visited.get(point) != null) {
