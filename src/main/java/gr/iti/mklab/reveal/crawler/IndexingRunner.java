@@ -61,6 +61,8 @@ public class IndexingRunner implements Runnable {
                     } else {
                         imageDAO.delete(image);
                         pageDAO.deleteById(image.getId());
+                        if (LinkDetectionRunner.LAST_POSITION > 0)
+                            LinkDetectionRunner.LAST_POSITION--;
                     }
                 }
                 for (Video video : videoList) {

@@ -412,7 +412,7 @@ public class RevealController {
                                                                      @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                                                      @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-        return clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).offset(offset).limit(count).asList();
+        return clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).order("-size").offset(offset).limit(count).asList();
     }
 
     private static class ClusterableMedia extends Media implements Clusterable {

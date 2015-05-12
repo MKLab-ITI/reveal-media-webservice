@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 public abstract class LinkDetectionRunner {
 
     private long LAST_CALL = System.currentTimeMillis();
-    private static int LAST_POSITION = 0;
+    public static int LAST_POSITION = 0;
     private static final int STEP = 1000;
     private ObjectDAO<Webpage> pageDAO;
     private static boolean isRunning = true;
