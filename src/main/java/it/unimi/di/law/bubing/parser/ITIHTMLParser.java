@@ -683,7 +683,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
                         process(linkReceiver, base, startTag.getAttributeValue("src"), startTag.getAttributeValue("name"), wp, true);
                     else if (name == HTMLElementName.IMG) {
                         String IMGsrc = startTag.getAttributeValue("src");
-                        if(IMGsrc==null)
+                        if (IMGsrc == null)
                             continue;
                         URI url = BURL.parse(IMGsrc);
                         if (url == null) continue;
@@ -702,7 +702,9 @@ public class ITIHTMLParser<T> implements Parser<T> {
                             try {
                                 int width = Integer.parseInt(startTag.getAttributeValue("width"));
                                 int height = Integer.parseInt(startTag.getAttributeValue("height"));
-                                if (ImageUtils.checkDimensions(width, height)) {
+                                if (ImageUtils.isImageSmall(width, height))
+                                    continue;
+                                else {
                                     item.setWidth(width);
                                     item.setHeight(height);
                                 }

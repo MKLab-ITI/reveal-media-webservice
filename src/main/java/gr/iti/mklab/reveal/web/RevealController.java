@@ -1,7 +1,9 @@
 package gr.iti.mklab.reveal.web;
 
+import gr.iti.mklab.reveal.clustering.ClusterableMedia;
+import gr.iti.mklab.reveal.clustering.ClusteringCallable;
 import gr.iti.mklab.reveal.clustering.DBSCANClustererIncr;
-import gr.iti.mklab.reveal.configuration.Configuration;
+import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.text.NameThatEntity;
 import gr.iti.mklab.reveal.text.TextPreprocessing;
@@ -21,8 +23,6 @@ import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.math3.ml.clustering.Cluster;
-import org.apache.commons.math3.ml.clustering.Clusterable;
-import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
@@ -34,6 +34,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.PreDestroy;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 
@@ -320,90 +322,17 @@ public class RevealController {
     ///////////////////////////////////////////////////////
 
 
+    private ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
+
     @RequestMapping(value = "/media/{collection}/cluster", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public boolean clusterCommandIncremental(@PathVariable(value = "collection") String collection,
-                                             @RequestParam(value = "eps", required = true, defaultValue = "1.0") double eps,
-                                             @RequestParam(value = "minpoints", required = true, defaultValue = "3") int minpoints,
-                                             @RequestParam(value = "count", required = true, defaultValue = "1000") int count) {
+    public String clusterCommandIncremental(@PathVariable(value = "collection") String collection,
+                                            @RequestParam(value = "eps", required = true, defaultValue = "1.0") double eps,
+                                            @RequestParam(value = "minpoints", required = true, defaultValue = "3") int minpoints,
 
-        Thread ct = new Thread(new ClusterRunner(collection, count, eps, minpoints));
-        ct.start();
-        return true;
-    }
-
-    private List<Cluster<ClusterableMedia>> existingClusters;
-
-    class ClusterRunner implements Runnable {
-
-        private String collection;
-        private int count;
-        private double eps;
-        private int minpoints;
-
-        ClusterRunner(String collection, int count, double eps, int minpoints) {
-            this.collection = collection;
-            this.count = count;
-            this.eps = eps;
-            this.minpoints = minpoints;
-        }
-
-        @Override
-        public void run() {
-            System.out.println("DBSCAN for " + collection + " eps= " + eps + " minpoints= " + minpoints);
-            List<ClusterableMedia> list = new ArrayList<>();
-            //images
-            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-            DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-
-            List<Image> images = imageDAO.getIndexedNotClustered(count);
-            images.stream().forEach(i -> {
-                Double[] vector = new Double[0];
-                try {
-                    vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
-                } catch (ExecutionException e) {
-                    //ignore
-                }
-                if (vector != null && vector.length == 1024)
-                    list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));
-
-            });
-            //videos
-            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
-            List<Video> videos = videoDAO.getIndexedNotClustered(count);
-            videos.stream().forEach(i -> {
-                Double[] vector = new Double[0];
-                try {
-                    vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
-                } catch (ExecutionException e) {
-                    //ignore
-                }
-                if (vector != null && vector.length == 1024)
-                    list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));
-
-            });
-            System.out.println("DBSCAN before calling cluster");
-            DBSCANClustererIncr<ClusterableMedia> clusterer = new DBSCANClustererIncr(eps, minpoints);
-            List<Cluster<ClusterableMedia>> centroids = clusterer.clusterIncremental(list, existingClusters);
-            clusterDAO.deleteByQuery(clusterDAO.createQuery());
-            System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
-            for (Cluster<ClusterableMedia> c : centroids) {
-                gr.iti.mklab.simmo.core.cluster.Cluster cluster = new gr.iti.mklab.simmo.core.cluster.Cluster();
-                cluster.setSize(c.getPoints().size());
-                c.getPoints().stream().forEach(clusterable -> {
-                    cluster.addMember(clusterable.item);
-                    Media media = clusterable.item;
-                    media.addAnnotation(new Clustered(cluster.getId()));
-                    if (media instanceof Image) {
-                        imageDAO.save((Image) media);
-                    } else {
-                        videoDAO.save((Video) media);
-                    }
-                });
-                clusterDAO.save(cluster);
-            }
-            existingClusters = centroids;
-        }
+                                            @RequestParam(value = "count", required = true, defaultValue = "1000") int count) throws RevealException {
+        clusteringExecutor.submit(new ClusteringCallable(collection, count, eps, minpoints));
+        return "Clustering command submitted";
     }
 
     @RequestMapping(value = "/clusters/{collection}", method = RequestMethod.GET, produces = "application/json")
@@ -414,23 +343,6 @@ public class RevealController {
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         return clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).order("-size").offset(offset).limit(count).asList();
     }
-
-    private static class ClusterableMedia extends Media implements Clusterable {
-
-        private double[] vector;
-        private Media item;
-
-        public ClusterableMedia(Media item, double[] vector) {
-            this.item = item;
-            this.vector = vector;
-        }
-
-        @Override
-        public double[] getPoint() {
-            return vector;
-        }
-    }
-
 
     ////////////////////////////////////////////////////////
     ///////// EXCEPTION HANDLING ///////////////////////////

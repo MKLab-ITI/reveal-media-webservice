@@ -1,6 +1,5 @@
 package gr.iti.mklab.reveal.crawler;
 
-import gr.iti.mklab.reveal.configuration.*;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.sm.*;
@@ -261,7 +260,7 @@ public class SocialMediaCrawler implements Runnable {
     public static void main(String[] args) throws Exception {
 
         String dbname = "new_arch";
-        gr.iti.mklab.reveal.configuration.Configuration.load("local.properties");
+        gr.iti.mklab.reveal.util.Configuration.load("local.properties");
         MorphiaManager.setup("127.0.0.1");
         VisualIndexer.init();
         IndexingRunner runner = new IndexingRunner(dbname);

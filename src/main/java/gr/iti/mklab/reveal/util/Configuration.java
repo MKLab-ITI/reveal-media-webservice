@@ -1,4 +1,4 @@
-package gr.iti.mklab.reveal.configuration;
+package gr.iti.mklab.reveal.util;
 
 
 import org.apache.commons.configuration.ConfigurationException;

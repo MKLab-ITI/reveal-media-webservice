@@ -1,11 +1,10 @@
 package gr.iti.mklab.reveal.visual;
 
-import gr.iti.mklab.reveal.configuration.Configuration;
+import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.util.ImageUtils;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
-import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.visual.aggregation.AbstractFeatureAggregator;
 import gr.iti.mklab.visual.aggregation.VladAggregatorMultipleVocabularies;

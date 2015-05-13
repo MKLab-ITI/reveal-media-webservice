@@ -1,6 +1,6 @@
 package gr.iti.mklab.reveal.crawler;
 
-import gr.iti.mklab.reveal.configuration.Configuration;
+import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;

@@ -27,8 +27,8 @@ public class ImageUtils {
         return width >= MIN_WIDTH && height >= MIN_HEIGHT;
     }
 
-    public static boolean checkDimensions(int widht, int height) {
-        return widht >= MIN_WIDTH && height >= MIN_HEIGHT;
+    public static boolean isImageSmall(int width, int height) {
+        return width > 0 && width < MIN_WIDTH && height > 0 && height < MIN_HEIGHT;
     }
 
     public static boolean isImageUrl(String uri) {
