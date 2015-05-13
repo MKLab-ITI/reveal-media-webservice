@@ -15,10 +15,14 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by kandreadou on 4/20/15.
+ * A runnable that indexes all non indexed images found in the specified collection
+ * and waits if there are no new images or videos to index
+ *
+ * @author kandreadou
  */
 public class IndexingRunner implements Runnable {
 
+    private final static int INDEXING_PERIOD = 30 * 1000;
     private final static int STEP = 100;
     private VisualIndexer _indexer;
     private MediaDAO<Image> imageDAO;
@@ -49,7 +53,7 @@ public class IndexingRunner implements Runnable {
 
             if (imageList.isEmpty() && videoList.isEmpty()) {
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(INDEXING_PERIOD);
                 } catch (InterruptedException ie) {
 
                 }

@@ -50,7 +50,7 @@ public class RevealAgent implements Runnable {
             Thread indexingThread = new Thread(runner);
             indexingThread.start();
             LOGGER.warn("###### After the indexing runner has been created");
-            System.out.println("###### After visual indexer has been created");
+            System.out.println("###### After the indexing runner has been created");
             File streamConfigFile = new File("/home/kandreadou/mklab/streams.conf.xml");
             StreamsManagerConfiguration config = StreamsManagerConfiguration.readFromFile(streamConfigFile);
             config.getStorageConfig("Mongodb").setParameter("mongodb.database", _request.getCollection());

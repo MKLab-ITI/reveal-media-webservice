@@ -16,7 +16,6 @@ public abstract class LinkDetectionRunner {
     public static int LAST_POSITION = 0;
     private static final int STEP = 1000;
     private ObjectDAO<Webpage> pageDAO;
-    private static boolean isRunning = true;
 
     public LinkDetectionRunner(String collection) throws ExecutionException {
         pageDAO = new ObjectDAO<>(Webpage.class, collection);
@@ -30,7 +29,7 @@ public abstract class LinkDetectionRunner {
             //pageList = pageDAO.getItems((int) pageDAO.count() - LAST_POSITION, LAST_POSITION);
             pageList = pageDAO.getDatastore().find(Webpage.class).field("_id").equal(pattern).offset(LAST_POSITION).limit(STEP).asList();
             System.out.println("LAST_POSITION " + LAST_POSITION + " pageList.size " + pageList.size());
-            while (!pageList.isEmpty() && isRunning) {
+            while (!pageList.isEmpty() ) {
                 for (Webpage page : pageList) {
                     if (page.getId().startsWith("Twitter"))
                         processLink(page.getUrl());
@@ -42,12 +41,4 @@ public abstract class LinkDetectionRunner {
     }
 
     public abstract void processLink(String link);
-
-    public static void main(String[] args) throws Exception {
-        /*Configuration.load("local.properties");
-        MorphiaManager.setup("127.0.0.1");
-        LinkDetectionRunner runner = new LinkDetectionRunner("texasshooting4");
-        Thread t = new Thread(runner);
-        t.start();*/
-    }
 }
