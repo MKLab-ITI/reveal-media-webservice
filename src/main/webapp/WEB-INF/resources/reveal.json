@@ -549,6 +549,36 @@
                     }
                 }
             }
+        },
+        "/verify": {
+            "get": {
+                "tags": [
+                    "verification"
+                ],
+                "summary": "Produces a manipulation report",
+                "description": "",
+                "operationId": "manipulationReport",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "url",
+                        "description": "The image url",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
         }
     },
     "definitions": {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>gr.iti.mklab</groupId>
+  <artifactId>forensics</artifactId>
+  <versioning>
+    <versions>
+      <version>0.1-SNAPSHOT</version>
+      <version>0.2-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20150515131240</lastUpdated>
+  </versioning>
+</metadata>

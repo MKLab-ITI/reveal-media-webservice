@@ -1,5 +1,7 @@
 package gr.iti.mklab.reveal.web;
 
+import ForensicsToolbox.ForensicAnalysis;
+import ForensicsToolbox.ToolboxAPI;
 import gr.iti.mklab.reveal.clustering.ClusterableMedia;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
 import gr.iti.mklab.reveal.clustering.DBSCANClustererIncr;
@@ -100,6 +102,16 @@ public class RevealController {
         List<NamedEntity> names = nte.tagIt(cleanedText);
         System.out.println("Named Entity time " + (System.currentTimeMillis() - now));
         return names;
+    }
+
+    ////////////////////////////////////////////////////////
+    ///////// MANIPULATION DETECTION     ///////////////////////////
+    ///////////////////////////////////////////////////////
+
+    @RequestMapping(value = "/media/verify", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public ForensicAnalysis verify(@RequestParam(value = "url", required = true) String url) throws Exception {
+            return ToolboxAPI.analyzeImage(url, "/tmp/reveal/images/");
     }
 
     ////////////////////////////////////////////////////////
@@ -355,9 +367,14 @@ public class RevealController {
         return ex;
     }
 
+
     public static void main(String[] args) throws Exception {
-        Configuration.load("local.properties");
-        MorphiaManager.setup("127.0.0.1");
+
+        //ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://eices.columbia.edu/files/2012/04/SEE-U_Main_Photo-540x359.jpg");
+
+
+        /*Configuration.load("local.properties");
+        CMorphiaManager.setup("127.0.0.1");
         VisualIndexer.init();
         String collection = "cameron4";
         List<ClusterableMedia> list = new ArrayList<>();
@@ -397,6 +414,6 @@ public class RevealController {
         }
         //existingClusters = centroids;
 
-        MorphiaManager.tearDown();
+        MorphiaManager.tearDown();*/
     }
 }

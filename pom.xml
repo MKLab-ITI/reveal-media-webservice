@@ -209,10 +209,19 @@
             <artifactId>multimedia-indexing</artifactId>
             <version>0.2</version>
         </dependency>
+         <dependency>
+                    <groupId>gr.iti.mklab</groupId>
+                    <artifactId>forensics</artifactId>
+                    <version>0.2-SNAPSHOT</version>
+                </dependency>
 
     </dependencies>
 
     <repositories>
+    <repository>
+        <id>repo</id>
+        <url>file://${project.basedir}/repo</url>
+    </repository>
         <repository>
             <id>oss-sonatype</id>
             <name>oss-sonatype</name>
