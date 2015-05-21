@@ -209,11 +209,22 @@
             <artifactId>multimedia-indexing</artifactId>
             <version>0.2</version>
         </dependency>
+        <!-- forensics libraries -->
          <dependency>
                     <groupId>gr.iti.mklab</groupId>
                     <artifactId>forensics</artifactId>
-                    <version>0.2-SNAPSHOT</version>
+                    <version>0.4-SNAPSHOT</version>
                 </dependency>
+         <dependency>
+         	<groupId>net.java.dev.jna</groupId>
+         	<artifactId>jna</artifactId>
+         	<version>4.1.0</version>
+         </dependency>
+        <dependency>
+            <groupId>org.ojalgo</groupId>
+            <artifactId>ojalgo</artifactId>
+            <version>37.1</version>
+        </dependency>
 
     </dependencies>
 
