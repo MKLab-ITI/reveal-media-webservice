@@ -18,6 +18,9 @@ public class Configuration {
     public static String LEARNING_FOLDER;
     public static String INDEX_SERVICE_HOST;
     public static String MONGO_HOST;
+    public static boolean ADD_SOCIAL_MEDIA;
+    public static String STREAM_CONF_FILE;
+    public static String MANIPULATION_REPORT_PATH;
 
     public static void load(String file) throws ConfigurationException {
         PropertiesConfiguration conf = new PropertiesConfiguration(file);
@@ -36,5 +39,8 @@ public class Configuration {
         LEARNING_FOLDER = conf.getProperty("learningFolder");
         INDEX_SERVICE_HOST = conf.getProperty("indexServiceHost");
         MONGO_HOST = conf.getProperty("mongoHost");
+        ADD_SOCIAL_MEDIA = Boolean.valueOf(conf.getProperty("getSocialMedia"));
+        STREAM_CONF_FILE = conf.getProperty("streamConfFile");
+        MANIPULATION_REPORT_PATH = conf.getProperty("manipulationReportPath");
     }
 }

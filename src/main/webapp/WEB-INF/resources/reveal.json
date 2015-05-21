@@ -12,7 +12,7 @@
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         }
     },
-    "host": "127.0.0.1:8080/reveal",
+    "host": "localhost:8080/reveal",
     "basePath": "/mmapi",
     "paths": {
         "/crawls/add": {
@@ -191,7 +191,7 @@
         "/media/{collection}": {
             "get": {
                 "tags": [
-                    "media v2"
+                    "media"
                 ],
                 "summary": "Get media items by count, offset and type",
                 "description": "",
@@ -246,7 +246,7 @@
         "/media/{collection}/{id}": {
             "get": {
                 "tags": [
-                    "media v2"
+                    "media"
                 ],
                 "summary": "Find media by id",
                 "description": "",
@@ -289,7 +289,7 @@
         "/media/{collection}/search": {
             "get": {
                 "tags": [
-                    "media v2"
+                    "media"
                 ],
                 "summary": "Search for items",
                 "description": "",
@@ -378,7 +378,7 @@
         "/media/{collection}/similar": {
             "get": {
                 "tags": [
-                    "media v2"
+                    "media"
                 ],
                 "summary": "Get similar items",
                 "description": "",
@@ -550,7 +550,7 @@
                 }
             }
         },
-        "/verify": {
+        "/media/verify": {
             "get": {
                 "tags": [
                     "verification"

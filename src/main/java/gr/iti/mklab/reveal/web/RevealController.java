@@ -2,9 +2,7 @@ package gr.iti.mklab.reveal.web;
 
 import ForensicsToolbox.ForensicAnalysis;
 import ForensicsToolbox.ToolboxAPI;
-import gr.iti.mklab.reveal.clustering.ClusterableMedia;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
-import gr.iti.mklab.reveal.clustering.DBSCANClustererIncr;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.text.NameThatEntity;
@@ -15,7 +13,6 @@ import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
 import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
-import gr.iti.mklab.simmo.core.annotations.Clustered;
 import gr.iti.mklab.simmo.core.annotations.NamedEntity;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
@@ -23,8 +20,6 @@ import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.math3.ml.clustering.Cluster;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
@@ -35,7 +30,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PreDestroy;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -111,7 +105,17 @@ public class RevealController {
     @RequestMapping(value = "/media/verify", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public ForensicAnalysis verify(@RequestParam(value = "url", required = true) String url) throws Exception {
-            return ToolboxAPI.analyzeImage(url, "/tmp/reveal/images/");
+        ForensicAnalysis fa = ToolboxAPI.analyzeImage(url, Configuration.MANIPULATION_REPORT_PATH);
+        if (fa.DQ_Lin_Output != null)
+            fa.DQ_Lin_Output = "http://localhost:8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
+        if (fa.Noise_Mahdian_Output != null)
+            fa.Noise_Mahdian_Output = "http://localhost:8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
+        final List<String> newGhostOutput = new ArrayList<>();
+        if (fa.GhostOutput != null) {
+            fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://localhost:8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
+        }
+        fa.GhostOutput = newGhostOutput;
+        return fa;
     }
 
     ////////////////////////////////////////////////////////
@@ -370,6 +374,18 @@ public class RevealController {
 
     public static void main(String[] args) throws Exception {
 
+        ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://nyulocal.com/wp-content/uploads/2015/02/oscars.1.jpg", "/tmp/reveal/images/");
+        if (fa.DQ_Lin_Output != null)
+            fa.DQ_Lin_Output = "http://localhost:8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
+        if (fa.Noise_Mahdian_Output != null)
+            fa.Noise_Mahdian_Output = "http://localhost:8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
+
+        final List<String> newGhostOutput = new ArrayList<>();
+        if (fa.GhostOutput != null) {
+            fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://localhost:8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
+        }
+        fa.GhostOutput = newGhostOutput;
+        int m = 5;
         //ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://eices.columbia.edu/files/2012/04/SEE-U_Main_Photo-540x359.jpg");
 
 
