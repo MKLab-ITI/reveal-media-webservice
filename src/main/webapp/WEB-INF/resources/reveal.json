@@ -478,6 +478,14 @@
                         "defaultValue": "3",
                         "required": true,
                         "type": "integer"
+                    },
+                    {
+                        "in": "query",
+                        "name": "count",
+                        "description": "The number of items to cluster",
+                        "defaultValue": "1000",
+                        "required": true,
+                        "type": "integer"
                     }
                 ],
                 "responses": {
