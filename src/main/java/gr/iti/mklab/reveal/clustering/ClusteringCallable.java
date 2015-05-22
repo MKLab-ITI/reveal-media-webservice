@@ -4,6 +4,7 @@ import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.annotations.Clustered;
+import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
 import gr.iti.mklab.simmo.core.cluster.Cluster;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
@@ -117,6 +118,8 @@ public class ClusteringCallable implements Callable<List<org.apache.commons.math
         MorphiaManager.setup("127.0.0.1");
         VisualIndexer.init();
         ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
-        clusteringExecutor.submit(new ClusteringCallable("cameron4", 500, 1.5, 2)).get();
+        clusteringExecutor.submit(new ClusteringCallable("camerona", 500, 0.9, 2)).get();
+        clusteringExecutor.shutdown();
+        MorphiaManager.tearDown();
     }
 }

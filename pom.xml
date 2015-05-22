@@ -209,6 +209,12 @@
             <artifactId>multimedia-indexing</artifactId>
             <version>0.2</version>
         </dependency>
+        <dependency>
+        	<groupId>com.rabbitmq</groupId>
+        	<artifactId>amqp-client</artifactId>
+        	<version>3.5.2</version>
+        </dependency>
+
         <!-- forensics libraries -->
          <dependency>
                     <groupId>gr.iti.mklab</groupId>

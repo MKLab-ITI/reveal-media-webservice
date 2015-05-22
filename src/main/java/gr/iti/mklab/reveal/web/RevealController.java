@@ -55,6 +55,7 @@ public class RevealController {
     @PreDestroy
     public void cleanUp() throws Exception {
         System.out.println("Spring Container destroy");
+        clusteringExecutor.shutdownNow();
         MorphiaManager.tearDown();
         if (crawlerCtrler != null)
             crawlerCtrler.shutdown();
@@ -374,7 +375,7 @@ public class RevealController {
 
     public static void main(String[] args) throws Exception {
 
-        ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://nyulocal.com/wp-content/uploads/2015/02/oscars.1.jpg", "/tmp/reveal/images/");
+        /*ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://nyulocal.com/wp-content/uploads/2015/02/oscars.1.jpg", "/tmp/reveal/images/");
         if (fa.DQ_Lin_Output != null)
             fa.DQ_Lin_Output = "http://localhost:8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
         if (fa.Noise_Mahdian_Output != null)
@@ -386,50 +387,14 @@ public class RevealController {
         }
         fa.GhostOutput = newGhostOutput;
         int m = 5;
-        //ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://eices.columbia.edu/files/2012/04/SEE-U_Main_Photo-540x359.jpg");
+        //ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://eices.columbia.edu/files/2012/04/SEE-U_Main_Photo-540x359.jpg");*/
 
 
-        /*Configuration.load("local.properties");
-        CMorphiaManager.setup("127.0.0.1");
+        Configuration.load("local.properties");
+        MorphiaManager.setup("127.0.0.1");
         VisualIndexer.init();
-        String collection = "cameron4";
-        List<ClusterableMedia> list = new ArrayList<>();
-        //images
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-        DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-
-        List<Image> images = imageDAO.getIndexedNotClustered(2000);
-        images.stream().forEach(i -> {
-            Double[] vector = new Double[0];
-            try {
-                vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
-            } catch (ExecutionException e) {
-                //ignore
-            }
-            if (vector != null && vector.length == 1024)
-                list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));
-
-        });
-
-        DBSCANClustererIncr<ClusterableMedia> clusterer = new DBSCANClustererIncr(1.1, 3);
-        List<Cluster<ClusterableMedia>> centroids = clusterer.clusterIncremental(list, null);
-        clusterDAO.deleteByQuery(clusterDAO.createQuery());
-        System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
-        for (Cluster<ClusterableMedia> c : centroids) {
-            gr.iti.mklab.simmo.core.cluster.Cluster cluster = new gr.iti.mklab.simmo.core.cluster.Cluster();
-            cluster.setSize(c.getPoints().size());
-            c.getPoints().stream().forEach(clusterable -> {
-                cluster.addMember(clusterable.item);
-                Media media = clusterable.item;
-                media.addAnnotation(new Clustered(cluster.getId()));
-                if (media instanceof Image) {
-                    imageDAO.save((Image) media);
-                }
-            });
-            clusterDAO.save(cluster);
-        }
-        //existingClusters = centroids;
-
-        MorphiaManager.tearDown();*/
+        ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
+        clusteringExecutor.submit(new ClusteringCallable("camerona", 60, 1.3, 2));
+        MorphiaManager.tearDown();
     }
 }

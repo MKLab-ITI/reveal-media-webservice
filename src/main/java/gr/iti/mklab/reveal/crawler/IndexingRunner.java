@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.crawler;
 
+import gr.iti.mklab.reveal.rabbitmq.RabbitMQPublisher;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
@@ -25,6 +26,7 @@ public class IndexingRunner implements Runnable {
     private final static int INDEXING_PERIOD = 30 * 1000;
     private final static int STEP = 100;
     private VisualIndexer _indexer;
+    private RabbitMQPublisher _publisher;
     private MediaDAO<Image> imageDAO;
     private MediaDAO<Video> videoDAO;
     private ObjectDAO<Webpage> pageDAO;
@@ -33,6 +35,7 @@ public class IndexingRunner implements Runnable {
 
     public IndexingRunner(String collection) throws ExecutionException {
         _indexer = VisualIndexerFactory.getVisualIndexer(collection);
+        _publisher = new RabbitMQPublisher("localhost", collection);
         imageDAO = new MediaDAO<>(Image.class, collection);
         videoDAO = new MediaDAO<>(Video.class, collection);
         pageDAO = new ObjectDAO<>(Webpage.class, collection);
@@ -62,6 +65,7 @@ public class IndexingRunner implements Runnable {
                     if (_indexer.index(image)) {
                         image.addAnnotation(ld);
                         imageDAO.save(image);
+                        _publisher.publish(MorphiaManager.getMorphia().toDBObject(image).toString());
                     } else {
                         imageDAO.delete(image);
                         pageDAO.deleteById(image.getId());
@@ -83,6 +87,7 @@ public class IndexingRunner implements Runnable {
     }
 
     public void stop() {
+        _publisher.close();
         isRunning = false;
     }
 
