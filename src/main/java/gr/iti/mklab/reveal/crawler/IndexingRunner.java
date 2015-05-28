@@ -32,6 +32,8 @@ public class IndexingRunner implements Runnable {
     private ObjectDAO<Webpage> pageDAO;
     private LocalDescriptors ld;
     private boolean isRunning = true;
+    private boolean shouldStop = false;
+    private boolean listsWereEmptyOnce = false;
 
     public IndexingRunner(String collection) throws ExecutionException {
         _indexer = VisualIndexerFactory.getVisualIndexer(collection);
@@ -48,14 +50,17 @@ public class IndexingRunner implements Runnable {
 
     @Override
     public void run() {
+        System.out.println("Indexing runner run");
         List<Image> imageList;
         List<Video> videoList;
-        while (isRunning) {
+        while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
             imageList = imageDAO.getNotVIndexed(STEP);
             videoList = videoDAO.getNotVIndexed(STEP);
+            System.out.println("image list size "+imageList.size());
 
             if (imageList.isEmpty() && videoList.isEmpty()) {
                 try {
+                    listsWereEmptyOnce = true;
                     Thread.sleep(INDEXING_PERIOD);
                 } catch (InterruptedException ie) {
 
@@ -89,6 +94,11 @@ public class IndexingRunner implements Runnable {
     public void stop() {
         _publisher.close();
         isRunning = false;
+    }
+
+    public void stopWhenFinished(){
+        _publisher.close();
+        shouldStop = true;
     }
 
     public static void main(String[] args) throws Exception {

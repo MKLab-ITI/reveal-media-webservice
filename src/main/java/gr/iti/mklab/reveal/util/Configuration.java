@@ -20,6 +20,7 @@ public class Configuration {
     public static String MONGO_HOST;
     public static boolean ADD_SOCIAL_MEDIA;
     public static String STREAM_CONF_FILE;
+    public static String GEO_CONF_FILE;
     public static String MANIPULATION_REPORT_PATH;
 
     public static void load(String file) throws ConfigurationException {
@@ -41,6 +42,7 @@ public class Configuration {
         MONGO_HOST = conf.getProperty("mongoHost");
         ADD_SOCIAL_MEDIA = Boolean.valueOf(conf.getProperty("getSocialMedia"));
         STREAM_CONF_FILE = conf.getProperty("streamConfFile");
+        GEO_CONF_FILE = conf.getProperty("geoConfFile");
         MANIPULATION_REPORT_PATH = conf.getProperty("manipulationReportPath");
     }
 }

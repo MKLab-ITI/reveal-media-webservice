@@ -3,6 +3,7 @@ package gr.iti.mklab.reveal.crawler;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
+import gr.iti.mklab.sm.StreamsManager2;
 import gr.iti.mklab.sm.streams.StreamsManagerConfiguration;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
@@ -53,13 +54,13 @@ public class RevealAgent implements Runnable {
             indexingThread.start();
             LOGGER.warn("###### After the indexing runner has been created");
             System.out.println("###### After the indexing runner has been created");
-            SocialMediaCrawler manager = null;
+            StreamsManager2 manager = null;
             Thread socialmediaCrawlerThread = null;
             if (Configuration.ADD_SOCIAL_MEDIA) {
                 File streamConfigFile = new File(Configuration.STREAM_CONF_FILE);
                 StreamsManagerConfiguration config = StreamsManagerConfiguration.readFromFile(streamConfigFile);
                 config.getStorageConfig("Mongodb").setParameter("mongodb.database", _request.getCollection());
-                manager = new SocialMediaCrawler(config);
+                manager = new StreamsManager2(config);
                 manager.open(_request.getKeywords());
                 socialmediaCrawlerThread = new Thread(manager);
                 socialmediaCrawlerThread.start();

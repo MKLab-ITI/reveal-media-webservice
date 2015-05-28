@@ -6,9 +6,9 @@ import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
-import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
+import gr.iti.mklab.sm.streams.StreamException;
 import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
@@ -31,6 +31,8 @@ import java.util.concurrent.TimeUnit;
  * Created by kandreadou on 12/18/14.
  */
 public class CrawlQueueController {
+
+    private Map<String, GeoCrawler> geoCrawlerMap = new HashMap<>();
     private DAO<CrawlJob, ObjectId> dao;
     private Poller poller;
 
@@ -53,11 +55,11 @@ public class CrawlQueueController {
         controller.submit(true, colName, keywords);
     }
 
-    public void shutdown() {
+    public void shutdown() throws Exception {
 
         poller.stopPolling();
         List<CrawlJob> list = getRunningCrawls();
-        for (CrawlJob job:list){
+        for (CrawlJob job : list) {
             cancel(job.getId());
         }
     }
@@ -68,28 +70,36 @@ public class CrawlQueueController {
      * @param collectionName
      */
     public synchronized CrawlJob submit(boolean isNew, String collectionName, Set<String> keywords) throws Exception {
-        System.out.println("CRAWL: submit "+collectionName+" keywords " + ArrayUtils.toString(keywords));
+        System.out.println("CRAWL: submit " + collectionName + " keywords " + ArrayUtils.toString(keywords));
         String crawlDataPath = Configuration.CRAWLS_DIR + collectionName;
         List<CrawlJob> requestsWithSameName = dao.getDatastore().find(CrawlJob.class).field("collection").equal(collectionName).asList();
         if (!isNew && (new File(crawlDataPath).exists() || requestsWithSameName.size() > 0))
             throw new Exception("The collection " + collectionName + " already exists. Choose a different name or mark not new");
         CrawlJob r = new CrawlJob(crawlDataPath, collectionName, keywords, isNew);
-        r.setState(Job.STATE.WAITING);
-        r.setLastStateChange(new Date());
-        r.setCreationDate(new Date());
         dao.save(r);
         tryLaunch();
         return r;
     }
 
-    public synchronized CrawlJob cancel(String id) {
+    public synchronized CrawlJob submit(String collectionName, double lon_min, double lat_min, double lon_max, double lat_max) throws Exception {
+        System.out.println("CRAWL: submit " + collectionName + " coordinates " + lon_min);
+        CrawlJob r = new CrawlJob(collectionName, lon_min, lat_min, lon_max, lat_max);
+        dao.save(r);
+        tryLaunch();
+        return r;
+    }
+
+    public synchronized CrawlJob cancel(String id) throws Exception {
         System.out.println("CRAWL: Cancel for id " + id);
         CrawlJob req = getCrawlRequest(id);
         System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
         req.setState(CrawlJob.STATE.STOPPING);
         req.setLastStateChange(new Date());
         dao.save(req);
-        cancelForName(req.getCollection());
+        if (req.getKeywords().isEmpty())
+            cancelGeoCrawl(req.getCollection());
+        else
+            cancelForName(req.getCollection());
         return req;
     }
 
@@ -100,7 +110,10 @@ public class CrawlQueueController {
         req.setState(CrawlJob.STATE.DELETING);
         req.setLastStateChange(new Date());
         dao.save(req);
-        cancelForName(req.getCollection());
+        if (req.getKeywords().isEmpty())
+            cancelGeoCrawl(req.getCollection());
+        else
+            cancelForName(req.getCollection());
         return req;
     }
 
@@ -121,7 +134,17 @@ public class CrawlQueueController {
 
     private void startCrawl(CrawlJob req) throws Exception {
         System.out.println("METHOD: Startcrawl " + req.getCollection() + " " + req.getState());
-        new Thread(new RevealAgent("127.0.0.1", 9999, req)).start();
+        if (req.getKeywords().isEmpty()) {
+            geoCrawlerMap.put(req.getCollection(), new GeoCrawler(req));
+        } else
+            new Thread(new RevealAgent("127.0.0.1", 9999, req)).start();
+    }
+
+    private void cancelGeoCrawl(String name) throws StreamException {
+        if (geoCrawlerMap.get(name) != null) {
+            geoCrawlerMap.get(name).stop();
+            geoCrawlerMap.remove(name);
+        }
     }
 
     /**

@@ -9,9 +9,12 @@ import java.util.Set;
 public final class Requests {
 
     /** {"collection":"germanwings","isNew":true,"keywords":["germanwings","crash"] } **/
+    /** {"collection":"paris","lon_min":2.282352,"lat_min":48.837379,"lon_max":2.394619,"lat_max":48.891358 } **/
     public class CrawlPostRequest {
 
         public Set<String> keywords = new HashSet<>();
+
+        public double lon_min, lat_min, lon_max, lat_max;
 
         public String collection;
 
