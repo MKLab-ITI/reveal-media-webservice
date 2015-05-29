@@ -48,7 +48,7 @@ public class RevealController {
     protected NameThatEntity nte;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/local.properties"));
+        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -112,12 +112,12 @@ public class RevealController {
     public ForensicAnalysis verify(@RequestParam(value = "url", required = true) String url) throws Exception {
         ForensicAnalysis fa = ToolboxAPI.analyzeImage(url, Configuration.MANIPULATION_REPORT_PATH);
         if (fa.DQ_Lin_Output != null)
-            fa.DQ_Lin_Output = "http://localhost:8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
+            fa.DQ_Lin_Output = "http://"+Configuration.INDEX_SERVICE_HOST+":8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
         if (fa.Noise_Mahdian_Output != null)
-            fa.Noise_Mahdian_Output = "http://localhost:8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
+            fa.Noise_Mahdian_Output = "http://"+Configuration.INDEX_SERVICE_HOST+":8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
         final List<String> newGhostOutput = new ArrayList<>();
         if (fa.GhostOutput != null) {
-            fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://localhost:8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
+            fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://"+Configuration.INDEX_SERVICE_HOST+":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
         }
         fa.GhostOutput = newGhostOutput;
         return fa;

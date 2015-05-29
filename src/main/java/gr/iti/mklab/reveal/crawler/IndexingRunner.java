@@ -14,6 +14,8 @@ import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A runnable that indexes all non indexed images found in the specified collection
@@ -37,7 +39,8 @@ public class IndexingRunner implements Runnable {
 
     public IndexingRunner(String collection) throws ExecutionException {
         _indexer = VisualIndexerFactory.getVisualIndexer(collection);
-        _publisher = new RabbitMQPublisher("localhost", collection);
+        if (Configuration.PUBLISH_RABBITMQ)
+            _publisher = new RabbitMQPublisher("localhost", collection);
         imageDAO = new MediaDAO<>(Image.class, collection);
         videoDAO = new MediaDAO<>(Video.class, collection);
         pageDAO = new ObjectDAO<>(Webpage.class, collection);
@@ -51,12 +54,11 @@ public class IndexingRunner implements Runnable {
     @Override
     public void run() {
         System.out.println("Indexing runner run");
-        List<Image> imageList;
-        List<Video> videoList;
         while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
-            imageList = imageDAO.getNotVIndexed(STEP);
-            videoList = videoDAO.getNotVIndexed(STEP);
-            System.out.println("image list size "+imageList.size());
+            final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
+            final List<Video> videoList = videoDAO.getNotVIndexed(STEP);
+            System.out.println("image list size " + imageList.size());
+            System.out.println("video list size " + imageList.size());
 
             if (imageList.isEmpty() && videoList.isEmpty()) {
                 try {
@@ -66,12 +68,16 @@ public class IndexingRunner implements Runnable {
 
                 }
             } else {
+
                 for (Image image : imageList) {
+                    System.out.println("Checking image "+image.getId());
                     if (_indexer.index(image)) {
                         image.addAnnotation(ld);
                         imageDAO.save(image);
-                        _publisher.publish(MorphiaManager.getMorphia().toDBObject(image).toString());
+                        if (_publisher != null)
+                            _publisher.publish(MorphiaManager.getMorphia().toDBObject(image).toString());
                     } else {
+                        System.out.println("Deleting image "+image.getId());
                         imageDAO.delete(image);
                         pageDAO.deleteById(image.getId());
                         if (LinkDetectionRunner.LAST_POSITION > 0)
@@ -83,21 +89,22 @@ public class IndexingRunner implements Runnable {
                         video.addAnnotation(ld);
                         videoDAO.save(video);
                     } else {
-                        //videoDAO.delete(video);
+                        videoDAO.delete(video);
                         //pageDAO.deleteById(video.getId());
                     }
                 }
+
             }
         }
+        if (_publisher != null)
+            _publisher.close();
     }
 
     public void stop() {
-        _publisher.close();
         isRunning = false;
     }
 
-    public void stopWhenFinished(){
-        _publisher.close();
+    public void stopWhenFinished() {
         shouldStop = true;
     }
 

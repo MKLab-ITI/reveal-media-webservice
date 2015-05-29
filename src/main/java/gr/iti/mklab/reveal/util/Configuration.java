@@ -22,6 +22,7 @@ public class Configuration {
     public static String STREAM_CONF_FILE;
     public static String GEO_CONF_FILE;
     public static String MANIPULATION_REPORT_PATH;
+    public static boolean PUBLISH_RABBITMQ;
 
     public static void load(String file) throws ConfigurationException {
         PropertiesConfiguration conf = new PropertiesConfiguration(file);
@@ -44,5 +45,6 @@ public class Configuration {
         STREAM_CONF_FILE = conf.getProperty("streamConfFile");
         GEO_CONF_FILE = conf.getProperty("geoConfFile");
         MANIPULATION_REPORT_PATH = conf.getProperty("manipulationReportPath");
+        PUBLISH_RABBITMQ = Boolean.parseBoolean(conf.getProperty("publish"));
     }
 }

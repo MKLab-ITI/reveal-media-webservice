@@ -93,6 +93,13 @@ public class VisualIndexer {
         return handler.getVector(id);
     }
 
+    /**
+     * Only return false if the image has to be deleted, if it is too small,
+     * not in cases of error
+     *
+     * @param media
+     * @return
+     */
     public boolean index(Media media) {
         boolean indexed = false;
         if (handler == null)
@@ -113,13 +120,13 @@ public class VisualIndexer {
             if (code < 200 || code >= 300) {
                 _logger.error("Failed fetch media item " + id + ". URL=" + url +
                         ". Http code: " + code + " Error: " + status.getReasonPhrase());
-                return indexed;
+                return false;
             }
             HttpEntity entity = response.getEntity();
             if (entity == null) {
                 _logger.error("Entity is null for " + id + ". URL=" + url +
                         ". Http code: " + code + " Error: " + status.getReasonPhrase());
-                return indexed;
+                return false;
             }
             InputStream input = entity.getContent();
             byte[] imageContent = IOUtils.toByteArray(input);
@@ -140,7 +147,8 @@ public class VisualIndexer {
                 if (vector == null || vector.length == 0) {
                     _logger.error("Error in feature extraction for " + id);
                 }
-                indexed = handler.index(id, vector);
+                handler.index(id, vector);
+                indexed = true;
             }
         } catch (Exception e) {
             //_logger.error(e.getMessage(), e);
