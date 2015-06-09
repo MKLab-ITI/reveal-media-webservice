@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 public class CrawlQueueController {
 
     private Map<String, GeoCrawler> geoCrawlerMap = new HashMap<>();
+    private Map<String, RevealAgent> agentMap = new HashMap<>();
     private DAO<CrawlJob, ObjectId> dao;
     private Poller poller;
 
@@ -136,8 +137,12 @@ public class CrawlQueueController {
         System.out.println("METHOD: Startcrawl " + req.getCollection() + " " + req.getState());
         if (req.getKeywords().isEmpty()) {
             geoCrawlerMap.put(req.getCollection(), new GeoCrawler(req));
-        } else
-            new Thread(new RevealAgent("127.0.0.1", 9999, req)).start();
+        } else {
+            RevealAgent ag = new RevealAgent("127.0.0.1", 9999, req);
+            agentMap.put(req.getCollection(), ag);
+            new Thread(ag).start();
+        }
+
     }
 
     private void cancelGeoCrawl(String name) throws StreamException {
@@ -151,9 +156,15 @@ public class CrawlQueueController {
      * Cancels the BUbiNG Agent listening to the specified port
      */
     private void cancelForName(String name) {
-        try {
+        System.out.println("Cancel for name " + name);
+        RevealAgent ag = agentMap.get(name);
+        if (ag == null) {
+            System.out.println("Agent is null");
+        } else
+            agentMap.get(name).stop();
+        /*try {
 //JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
-            JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
+            JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:9999/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
             MBeanServerConnection mbsc = cc.getMBeanServerConnection();
 //This information is available in jconsole
@@ -165,7 +176,7 @@ public class CrawlQueueController {
         } catch (Exception e) {
             System.out.println("Exception occurred: " + e.toString());
             e.printStackTrace();
-        }
+        }*/
     }
 
     //////////////////////////////////////////////////

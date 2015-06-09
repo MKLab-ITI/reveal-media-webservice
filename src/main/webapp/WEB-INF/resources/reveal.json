@@ -587,6 +587,66 @@
                     }
                 }
             }
+        },
+        "/media/{collection}/extract": {
+            "get": {
+                "tags": [
+                    "entities"
+                ],
+                "summary": "Extracts and ranks entities from the specified collection",
+                "description": "",
+                "operationId": "entitiesExtraction",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "collection",
+                        "description": "The collection name",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
+        "/media/{collection}/entities": {
+            "get": {
+                "tags": [
+                    "entities"
+                ],
+                "summary": "Gets the ranked entities for the specified collection",
+                "description": "",
+                "operationId": "getEntities",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "collection",
+                        "description": "The collection name",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
         }
     },
     "definitions": {

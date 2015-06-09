@@ -4,6 +4,7 @@ import ForensicsToolbox.ForensicAnalysis;
 import ForensicsToolbox.ToolboxAPI;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
 import gr.iti.mklab.reveal.crawler.IndexingRunner;
+import gr.iti.mklab.reveal.entitites.EntitiesExtractionCallable;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.text.NameThatEntity;
@@ -69,6 +70,36 @@ public class RevealController {
     ///////// NAMED ENTITIES     ///////////////////////////
     ///////////////////////////////////////////////////////
 
+    private ExecutorService entitiesExecutor = Executors.newSingleThreadExecutor();
+
+    /**
+     * Extracts named entities from all the collection items, ranks them by frequency and stores them in a new table
+     *
+     * @param collection
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping(value = "/media/{collection}/extract", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public String extractEntities(@PathVariable(value = "collection") String collection) throws Exception {
+        entitiesExecutor.submit(new EntitiesExtractionCallable(nte, collection));
+        return "Extracting entities";
+    }
+
+    /**
+     * Returns the ranked entities for the specified collection
+     *
+     * @param collection
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping(value = "/media/{collection}/entities", method = RequestMethod.POST, produces = "application/json")
+    @ResponseBody
+    public List<NamedEntity> entitiesForCollection(@PathVariable(value = "collection") String collection) throws Exception {
+        DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        return rankedEntities.find().asList();
+    }
+
     @RequestMapping(value = "/text/entities", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
     @ResponseBody
     public List<NamedEntity> entitiesFromString(@RequestBody Requests.EntitiesPostRequest req) throws Exception {
@@ -112,12 +143,12 @@ public class RevealController {
     public ForensicAnalysis verify(@RequestParam(value = "url", required = true) String url) throws Exception {
         ForensicAnalysis fa = ToolboxAPI.analyzeImage(url, Configuration.MANIPULATION_REPORT_PATH);
         if (fa.DQ_Lin_Output != null)
-            fa.DQ_Lin_Output = "http://"+Configuration.INDEX_SERVICE_HOST+":8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
+            fa.DQ_Lin_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
         if (fa.Noise_Mahdian_Output != null)
-            fa.Noise_Mahdian_Output = "http://"+Configuration.INDEX_SERVICE_HOST+":8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
+            fa.Noise_Mahdian_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
         final List<String> newGhostOutput = new ArrayList<>();
         if (fa.GhostOutput != null) {
-            fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://"+Configuration.INDEX_SERVICE_HOST+":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
+            fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
         }
         fa.GhostOutput = newGhostOutput;
         return fa;
@@ -256,10 +287,10 @@ public class RevealController {
                                  @PathVariable("id") String id) {
         Media result;
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-        result = imageDAO.get(new ObjectId(id).toString());
+        result = imageDAO.get(id);
         if (result == null) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
-            result = videoDAO.get(new ObjectId(id).toString());
+            result = videoDAO.get(id);
         }
         return result;
     }
@@ -284,7 +315,7 @@ public class RevealController {
                 Pattern p = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
                 Query<Image> q = imageDAO.createQuery();
                 q.and(
-                        q.criteria("lastModifiedDate").greaterThanOrEq(new Date(date)),
+                        q.criteria("crawlDate").greaterThanOrEq(new Date(date)),
                         q.criteria("width").greaterThanOrEq(w),
                         q.criteria("height").greaterThanOrEq(h),
                         q.or(
@@ -294,7 +325,7 @@ public class RevealController {
                 );
                 response.images = q.offset(offset).limit(count).asList();
             } else
-                response.images = imageDAO.search("lastModifiedDate", new Date(date), w, h, count, offset);
+                response.images = imageDAO.search("crawlDate", new Date(date), w, h, count, offset);
             response.numImages = imageDAO.count();
         }
         if (type == null || type.equalsIgnoreCase("video")) {
@@ -303,7 +334,7 @@ public class RevealController {
                 Pattern p = Pattern.compile(query);
                 Query<Video> q = videoDAO.createQuery();
                 q.and(
-                        q.criteria("lastModifiedDate").greaterThanOrEq(new Date(date)),
+                        q.criteria("crawlDate").greaterThanOrEq(new Date(date)),
                         q.criteria("width").greaterThanOrEq(w),
                         q.criteria("height").greaterThanOrEq(h),
                         q.or(
@@ -313,7 +344,7 @@ public class RevealController {
                 );
                 response.videos = q.offset(offset).limit(count).asList();
             } else
-                response.videos = videoDAO.search("creationDate", new Date(date), w, h, count, offset);
+                response.videos = videoDAO.search("crawlDate", new Date(date), w, h, count, offset);
             response.numVideos = videoDAO.count();
         }
         response.offset = offset;
@@ -324,6 +355,7 @@ public class RevealController {
     private String lastImageUrl2;
     private double lastThreshold2;
     private boolean isBusy2 = false;
+    private long lastCall = System.currentTimeMillis();
 
     @RequestMapping(value = "/media/{collection}/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
@@ -333,15 +365,21 @@ public class RevealController {
                                                                   @RequestParam(value = "count", required = false, defaultValue = "50") int count,
                                                                   @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
+            System.out.println("Find similar images " + imageurl);
+            if (System.currentTimeMillis() - lastCall > 10 * 1000)
+                isBusy2 = false;
             if (isBusy2)
                 return new ArrayList<>();
             if (!imageurl.equals(lastImageUrl2) || simList2 == null || (simList2 != null && offset + count > simList2.size()) || lastThreshold2 != threshold) {
+                System.out.println("Entering main block");
                 isBusy2 = true;
+                lastCall = System.currentTimeMillis();
                 MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collectionName);
                 MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collectionName);
                 lastThreshold2 = threshold;
                 lastImageUrl2 = imageurl;
                 List<JsonResultSet.JsonResult> temp = VisualIndexerFactory.getVisualIndexer(collectionName).findSimilar(imageurl, threshold);
+                System.out.println("Result num " + temp.size());
                 simList2 = new ArrayList<>(temp.size());
                 for (JsonResultSet.JsonResult r : temp) {
                     System.out.println("r.getExternalId " + r.getId());
@@ -422,11 +460,24 @@ public class RevealController {
         //ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://eices.columbia.edu/files/2012/04/SEE-U_Main_Photo-540x359.jpg");*/
 
 
-        Configuration.load("local.properties");
-        MorphiaManager.setup("127.0.0.1");
-        VisualIndexer.init();
+        Configuration.load("remote.properties");
+        MorphiaManager.setup("160.40.51.20");
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "fifa_blat");
+        List<Image> imgs = imageDAO.search("crawlDate", new Date(-1), 100, 100, 50, 0);
+        /*Pattern p = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
+        Query<Image> q = imageDAO.createQuery();
+        q.and(
+                q.criteria("lastModifiedDate").greaterThanOrEq(new Date(date)),
+                q.criteria("width").greaterThanOrEq(w),
+                q.criteria("height").greaterThanOrEq(h),
+                q.or(
+                        q.criteria("title").equal(p),
+                        q.criteria("description").equal(p)
+                )*/
+
+        /*VisualIndexer.init();
         ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
         clusteringExecutor.submit(new ClusteringCallable("camerona", 60, 1.3, 2));
-        MorphiaManager.tearDown();
+        MorphiaManager.tearDown();*/
     }
 }

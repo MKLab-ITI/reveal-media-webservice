@@ -36,6 +36,7 @@ public class RevealAgent implements Runnable {
     private final int _jmxPort;
     private CrawlJob _request;
     private DAO<CrawlJob, ObjectId> dao;
+    private Agent bubingAgent;
 
     public RevealAgent(String hostname, int jmxPort, CrawlJob request) {
         System.out.println("RevealAgent constructor for hostname " + hostname);
@@ -84,7 +85,7 @@ public class RevealAgent implements Runnable {
             rc.keywords = _request.getKeywords();
             rc.collectionName = _request.getCollection();
             LOGGER.warn("###### Agent for request id " + _request.getId() + " started");
-            new Agent(_hostname, _jmxPort, rc);
+            bubingAgent = new Agent(_hostname, _jmxPort, rc);
             LOGGER.warn("###### Agent for request id " + _request.getId() + " finished");
             _request = dao.findOne("_id", _request.getId());
             if (_request != null)
@@ -118,6 +119,10 @@ public class RevealAgent implements Runnable {
             LOGGER.error(e.getMessage(), e);
             System.out.println(e.getMessage());
         }
+    }
+
+    public void stop() {
+        bubingAgent.stop();
     }
 
     private void unregisterBeanForName(String name) {

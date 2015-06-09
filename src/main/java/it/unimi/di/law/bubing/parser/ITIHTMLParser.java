@@ -690,7 +690,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
                         URI resolved = base.resolve(url);
                         String resolveStr = resolved.toString();
                         Image item = new Image();
-                        item.setAlternateText(startTag.getAttributeValue("alt"));
+                        item.setTitle(startTag.getAttributeValue("alt"));
                         item.setWebPageUrl(uri.toString());
                         item.setLastModifiedDate(webpageLastModifiedDate);
                         item.setCrawlDate(wp.getCrawlDate());
