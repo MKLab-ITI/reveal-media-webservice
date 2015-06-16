@@ -15,6 +15,7 @@ import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
 import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.simmo.core.UserAccount;
 import gr.iti.mklab.simmo.core.annotations.NamedEntity;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
@@ -151,6 +152,9 @@ public class RevealController {
             fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
         }
         fa.GhostOutput = newGhostOutput;
+        if(fa.GhostGIFOutput!=null){
+            fa.GhostGIFOutput = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.GhostGIFOutput.substring(fa.GhostGIFOutput.lastIndexOf('/') + 1);
+        }
         return fa;
     }
 
@@ -299,6 +303,7 @@ public class RevealController {
     @ResponseBody
     public Responses.MediaResponse mediaItemsSearchV2(
             @PathVariable(value = "collection") String collection,
+            @RequestParam(value = "user", required = false) String username,
             @RequestParam(value = "date", required = false, defaultValue = "-1") long date,
             @RequestParam(value = "w", required = false, defaultValue = "0") int w,
             @RequestParam(value = "h", required = false, defaultValue = "0") int h,
@@ -307,44 +312,22 @@ public class RevealController {
             @RequestParam(value = "query", required = false) String query,
             @RequestParam(value = "type", required = false) String type) {
 
-
         Responses.MediaResponse response = new Responses.MediaResponse();
+
+        UserAccount account = null;
+        if (username != null) {
+            DAO<UserAccount, String> userDAO = new BasicDAO<>(UserAccount.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+            account = userDAO.findOne("username", username);
+        }
+
         if (type == null || type.equalsIgnoreCase("image")) {
             MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-            if (query != null) {
-                Pattern p = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
-                Query<Image> q = imageDAO.createQuery();
-                q.and(
-                        q.criteria("crawlDate").greaterThanOrEq(new Date(date)),
-                        q.criteria("width").greaterThanOrEq(w),
-                        q.criteria("height").greaterThanOrEq(h),
-                        q.or(
-                                q.criteria("title").equal(p),
-                                q.criteria("description").equal(p)
-                        )
-                );
-                response.images = q.offset(offset).limit(count).asList();
-            } else
-                response.images = imageDAO.search("crawlDate", new Date(date), w, h, count, offset);
+            response.images = imageDAO.search("crawlDate", new Date(date), w, h, count, offset, account, query);
             response.numImages = imageDAO.count();
         }
         if (type == null || type.equalsIgnoreCase("video")) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
-            if (query != null) {
-                Pattern p = Pattern.compile(query);
-                Query<Video> q = videoDAO.createQuery();
-                q.and(
-                        q.criteria("crawlDate").greaterThanOrEq(new Date(date)),
-                        q.criteria("width").greaterThanOrEq(w),
-                        q.criteria("height").greaterThanOrEq(h),
-                        q.or(
-                                q.criteria("title").equal(p),
-                                q.criteria("description").equal(p)
-                        )
-                );
-                response.videos = q.offset(offset).limit(count).asList();
-            } else
-                response.videos = videoDAO.search("crawlDate", new Date(date), w, h, count, offset);
+            response.videos = videoDAO.search("crawlDate", new Date(date), w, h, count, offset, account, query);
             response.numVideos = videoDAO.count();
         }
         response.offset = offset;
@@ -462,8 +445,16 @@ public class RevealController {
 
         Configuration.load("remote.properties");
         MorphiaManager.setup("160.40.51.20");
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "fifa_blat");
-        List<Image> imgs = imageDAO.search("crawlDate", new Date(-1), 100, 100, 50, 0);
+        DAO<UserAccount, String> userDAO = new BasicDAO<>(UserAccount.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("yemen").getName());
+        UserAccount account = userDAO.findOne("username", "wagon16");
+        System.out.println("Accounc id " + account.getId());
+
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "yemen");
+        List<Image> result =  imageDAO.search("crawlDate", new Date(0),0, 0, 100, 0, account, "t");
+
+        int m = 5;
+        //MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "fifa_blat");
+        //List<Image> imgs = imageDAO.search("crawlDate", new Date(-1), 100, 100, 50, 0);
         /*Pattern p = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
         Query<Image> q = imageDAO.createQuery();
         q.and(

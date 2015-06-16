@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 public class CrawlQueueController {
 
     private Map<String, GeoCrawler> geoCrawlerMap = new HashMap<>();
-    private Map<String, RevealAgent> agentMap = new HashMap<>();
     private DAO<CrawlJob, ObjectId> dao;
     private Poller poller;
 
@@ -139,7 +138,6 @@ public class CrawlQueueController {
             geoCrawlerMap.put(req.getCollection(), new GeoCrawler(req));
         } else {
             RevealAgent ag = new RevealAgent("127.0.0.1", 9999, req);
-            agentMap.put(req.getCollection(), ag);
             new Thread(ag).start();
         }
 
@@ -157,12 +155,7 @@ public class CrawlQueueController {
      */
     private void cancelForName(String name) {
         System.out.println("Cancel for name " + name);
-        RevealAgent ag = agentMap.get(name);
-        if (ag == null) {
-            System.out.println("Agent is null");
-        } else
-            agentMap.get(name).stop();
-        /*try {
+        try {
 //JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
             JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:9999/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
@@ -176,7 +169,7 @@ public class CrawlQueueController {
         } catch (Exception e) {
             System.out.println("Exception occurred: " + e.toString());
             e.printStackTrace();
-        }*/
+        }
     }
 
     //////////////////////////////////////////////////
@@ -312,7 +305,7 @@ public class CrawlQueueController {
             count = 2000;
         }
 
-        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 400, count, offset);
+        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 400, count, offset, null);
         if (res == null || res.size() == 0)
             return null;
         for (Image i : res) {

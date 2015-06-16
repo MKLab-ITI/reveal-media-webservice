@@ -38,7 +38,9 @@ public class IndexingRunner implements Runnable {
     private boolean listsWereEmptyOnce = false;
 
     public IndexingRunner(String collection) throws ExecutionException {
+        System.out.println("Creating IndexingRunner for collection "+collection);
         _indexer = VisualIndexerFactory.getVisualIndexer(collection);
+        System.out.println("After creating the indexer ");
         if (Configuration.PUBLISH_RABBITMQ)
             _publisher = new RabbitMQPublisher("localhost", collection);
         imageDAO = new MediaDAO<>(Image.class, collection);
@@ -49,6 +51,7 @@ public class IndexingRunner implements Runnable {
         ld.setFeatureEncoding(LocalDescriptors.FEATURE_ENCODING.Vlad);
         ld.setNumberOfFeatures(1024);
         ld.setFeatureEncodingLibrary("multimedia-indexing");
+        System.out.println("End of constructor ");
     }
 
     @Override
