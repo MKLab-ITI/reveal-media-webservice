@@ -2,6 +2,7 @@ package gr.iti.mklab.reveal.web;
 
 import ForensicsToolbox.ForensicAnalysis;
 import ForensicsToolbox.ToolboxAPI;
+import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
 import gr.iti.mklab.reveal.crawler.IndexingRunner;
 import gr.iti.mklab.reveal.entitites.EntitiesExtractionCallable;
@@ -152,7 +153,7 @@ public class RevealController {
             fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
         }
         fa.GhostOutput = newGhostOutput;
-        if(fa.GhostGIFOutput!=null){
+        if (fa.GhostGIFOutput != null) {
             fa.GhostGIFOutput = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.GhostGIFOutput.substring(fa.GhostGIFOutput.lastIndexOf('/') + 1);
         }
         return fa;
@@ -215,7 +216,7 @@ public class RevealController {
             //extract entities for the collection
             entitiesExecutor.submit(new EntitiesExtractionCallable(nte, job.getCollection()));
             //cluster collection items
-
+            clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 2.0, 2));
             return job;
         } catch (Exception ex) {
             throw new RevealException("Error when canceling", ex);
@@ -455,7 +456,7 @@ public class RevealController {
         System.out.println("Accounc id " + account.getId());
 
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "yemen");
-        List<Image> result =  imageDAO.search("crawlDate", new Date(0),0, 0, 100, 0, account, "t");
+        List<Image> result = imageDAO.search("crawlDate", new Date(0), 0, 0, 100, 0, account, "t");
 
         int m = 5;
         //MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "fifa_blat");
