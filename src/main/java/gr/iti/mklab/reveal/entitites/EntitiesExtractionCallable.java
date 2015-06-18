@@ -39,6 +39,9 @@ public class EntitiesExtractionCallable implements Callable<List<NamedEntity>> {
 
     private DAO<NamedEntity, String> entitiesDAO;
 
+    private final static int IMAGES_LOADED_PER_ITERATION = 10000;
+    private final static int RANKED_ENTITIES_MAX_NUM = 1000;
+
     public EntitiesExtractionCallable(NameThatEntity nte, String collection) {
         this.collection = collection;
         this.nte = nte;
@@ -47,29 +50,35 @@ public class EntitiesExtractionCallable implements Callable<List<NamedEntity>> {
 
     @Override
     public List<NamedEntity> call() throws Exception {
+
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-        List<Image> list = imageDAO.getItems(0, 10);
-        for (Image im : list) {
-            TextPreprocessing textPre = new TextPreprocessing(im.getAlternateText() + " " + im.getTitle() + " " + im.getDescription());
-            ArrayList<String> cleanedText = textPre.getCleanedSentences();
-            List<NamedEntity> entities = nte.tagIt(cleanedText);
-            for (NamedEntity ne : entities) {
-                im.addAnnotation(ne);
-                if (ENTITIES_MULTISET.add(ne.getToken().toLowerCase()))
-                    ENTITIES_MAP.put(ne.getToken().toLowerCase(), ne.getType());
+
+        for (int i = 0; i < imageDAO.count(); i += IMAGES_LOADED_PER_ITERATION) {
+            List<Image> list = imageDAO.getItems(IMAGES_LOADED_PER_ITERATION, i);
+            for (Image im : list) {
+                TextPreprocessing textPre = new TextPreprocessing(im.getAlternateText() + " " + im.getTitle() + " " + im.getDescription());
+                ArrayList<String> cleanedText = textPre.getCleanedSentences();
+                List<NamedEntity> entities = nte.tagIt(cleanedText);
+                for (NamedEntity ne : entities) {
+                    im.addAnnotation(ne);
+                    imageDAO.save(im);
+                    if (ENTITIES_MULTISET.add(ne.getToken().toLowerCase()))
+                        ENTITIES_MAP.put(ne.getToken().toLowerCase(), ne.getType());
+                }
             }
         }
+
+        int entitiesCount = 0;
+
         Iterable<Multiset.Entry<String>> cases =
                 Multisets.copyHighestCountFirst(ENTITIES_MULTISET).entrySet();
         for (Multiset.Entry<String> s : cases) {
-            if (s.getCount() < 10)
+            if (entitiesCount > RANKED_ENTITIES_MAX_NUM)
                 break;
             NamedEntity y = new NamedEntity(s.getElement(), ENTITIES_MAP.get(s.getElement()), s.getCount());
             entitiesDAO.save(y);
-            System.out.println(s.getElement() + " count " + s.getCount());
-
+            entitiesCount++;
         }
-
         return null;
     }
 

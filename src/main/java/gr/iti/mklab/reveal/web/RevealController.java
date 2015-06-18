@@ -50,7 +50,7 @@ public class RevealController {
     protected NameThatEntity nte;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
+        Configuration.load(getClass().getResourceAsStream("/local.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -211,7 +211,12 @@ public class RevealController {
     @ResponseBody
     public CrawlJob cancelCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
         try {
-            return crawlerCtrler.cancel(id);
+            CrawlJob job = crawlerCtrler.cancel(id);
+            //extract entities for the collection
+            entitiesExecutor.submit(new EntitiesExtractionCallable(nte, job.getCollection()));
+            //cluster collection items
+
+            return job;
         } catch (Exception ex) {
             throw new RevealException("Error when canceling", ex);
         }
@@ -240,7 +245,7 @@ public class RevealController {
     /**
      * Adds a collection with the specified name
      * <p/>
-     * Example: http://localhost:8090/reveal/mmapi/collections/add?name=re, defaultValue = "-1"vealsample
+     * Example: http://localhost:8090/reveal/mmapi/collections/add?name=revealsample
      *
      * @param name
      * @return

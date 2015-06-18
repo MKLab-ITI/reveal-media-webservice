@@ -305,7 +305,7 @@ public class CrawlQueueController {
             count = 2000;
         }
 
-        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 400, count, offset, null);
+        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 400, count, offset, null, null);
         if (res == null || res.size() == 0)
             return null;
         for (Image i : res) {
