@@ -85,7 +85,7 @@ public class VisualIndexer {
 
     public VisualIndexer(String collectionName) throws Exception {
         this.collection = collectionName;
-        createCollection(collectionName);
+        createCollection();
         handler = new VisualIndexHandler("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
     }
 
@@ -161,21 +161,42 @@ public class VisualIndexer {
         }
     }
 
-    public boolean createCollection(String name) throws Exception {
-        String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/add/" + name;
+    public boolean createCollection() throws Exception {
+        String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/add/" + collection;
         HttpGet httpget = new HttpGet(request.replaceAll(" ", "%20"));
         httpget.setConfig(_requestConfig);
         HttpResponse response = _httpclient.execute(httpget);
         StatusLine status = response.getStatusLine();
         int code = status.getStatusCode();
         if (code < 200 || code >= 300) {
-            _logger.error("Failed create collection with name " + name +
+            _logger.error("Failed create collection with name " + collection +
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
             return false;
         }
         HttpEntity entity = response.getEntity();
         if (entity == null) {
-            _logger.error("Entity is null for create collection " + name +
+            _logger.error("Entity is null for create collection " + collection +
+                    ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            return false;
+        }
+        return true;
+    }
+
+    public boolean deleteCollection() throws Exception {
+        String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/delete/" + collection;
+        HttpGet httpget = new HttpGet(request.replaceAll(" ", "%20"));
+        httpget.setConfig(_requestConfig);
+        HttpResponse response = _httpclient.execute(httpget);
+        StatusLine status = response.getStatusLine();
+        int code = status.getStatusCode();
+        if (code < 200 || code >= 300) {
+            _logger.error("Failed delete collection with name " + collection +
+                    ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            return false;
+        }
+        HttpEntity entity = response.getEntity();
+        if (entity == null) {
+            _logger.error("Entity is null for create collection " + collection +
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
             return false;
         }

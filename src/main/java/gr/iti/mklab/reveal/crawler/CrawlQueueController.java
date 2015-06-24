@@ -2,6 +2,7 @@ package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
+import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Video;
@@ -116,6 +117,8 @@ public class CrawlQueueController {
             dao.delete(req);
             //Delete the collection DB
             MorphiaManager.getDB(req.getCollection()).dropDatabase();
+            //Unload from memory
+            VisualIndexerFactory.getVisualIndexer(req.getCollection()).deleteCollection();
             //Delete the crawl and index folders
             FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
             FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));

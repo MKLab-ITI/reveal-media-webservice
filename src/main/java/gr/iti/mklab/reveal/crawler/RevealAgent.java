@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.sm.StreamsManager2;
@@ -96,6 +97,8 @@ public class RevealAgent implements Runnable {
                 dao.delete(_request);
                 //Delete the collection DB
                 MorphiaManager.getDB(_request.getCollection()).dropDatabase();
+                //Unload from memory
+                VisualIndexerFactory.getVisualIndexer(_request.getCollection()).deleteCollection();
                 //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(_request.getCrawlDataPath()));
                 FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + _request.getCollection()));
