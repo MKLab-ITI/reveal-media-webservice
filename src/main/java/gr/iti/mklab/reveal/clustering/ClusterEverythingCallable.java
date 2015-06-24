@@ -110,7 +110,7 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
         MorphiaManager.setup("127.0.0.1");
         VisualIndexer.init();
         ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
-        clusteringExecutor.submit(new ClusterEverythingCallable("grexit11", 2.9, 2)).get();
+        clusteringExecutor.submit(new ClusterEverythingCallable("grexit11", 1.3, 2)).get();
         clusteringExecutor.shutdown();
         MorphiaManager.tearDown();
     }

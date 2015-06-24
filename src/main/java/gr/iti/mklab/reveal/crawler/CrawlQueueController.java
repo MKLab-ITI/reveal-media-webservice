@@ -6,9 +6,11 @@ import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
+import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.sm.streams.StreamException;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
@@ -107,13 +109,25 @@ public class CrawlQueueController {
         System.out.println("CRAWL: Delete for id " + id);
         CrawlJob req = getCrawlRequest(id);
         System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
-        req.setState(CrawlJob.STATE.DELETING);
-        req.setLastStateChange(new Date());
-        dao.save(req);
-        if (req.getKeywords().isEmpty())
-            cancelGeoCrawl(req.getCollection());
-        else
-            cancelForName(req.getCollection());
+        if(req.getState() == CrawlJob.STATE.FINISHED){
+            req.setState(CrawlJob.STATE.DELETING);
+            req.setLastStateChange(new Date());
+            //Delete the request from the request DB
+            dao.delete(req);
+            //Delete the collection DB
+            MorphiaManager.getDB(req.getCollection()).dropDatabase();
+            //Delete the crawl and index folders
+            FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
+            FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
+        }else {
+            req.setState(CrawlJob.STATE.DELETING);
+            req.setLastStateChange(new Date());
+            dao.save(req);
+            if (req.getKeywords().isEmpty())
+                cancelGeoCrawl(req.getCollection());
+            else
+                cancelForName(req.getCollection());
+        }
         return req;
     }
 
@@ -157,7 +171,7 @@ public class CrawlQueueController {
         System.out.println("Cancel for name " + name);
         try {
 //JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
-            JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:9999/jmxrmi");
+            JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
             MBeanServerConnection mbsc = cc.getMBeanServerConnection();
 //This information is available in jconsole

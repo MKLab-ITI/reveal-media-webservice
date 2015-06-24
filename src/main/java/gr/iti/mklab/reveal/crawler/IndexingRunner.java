@@ -61,7 +61,7 @@ public class IndexingRunner implements Runnable {
             final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
             final List<Video> videoList = videoDAO.getNotVIndexed(STEP);
             System.out.println("image list size " + imageList.size());
-            System.out.println("video list size " + imageList.size());
+            System.out.println("video list size " + videoList.size());
 
             if (imageList.isEmpty() && videoList.isEmpty()) {
                 try {
@@ -96,7 +96,6 @@ public class IndexingRunner implements Runnable {
                         //pageDAO.deleteById(video.getId());
                     }
                 }
-
             }
         }
         if (_publisher != null)

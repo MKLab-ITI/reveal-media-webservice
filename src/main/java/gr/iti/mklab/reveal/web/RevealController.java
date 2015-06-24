@@ -51,7 +51,7 @@ public class RevealController {
     protected NameThatEntity nte;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/local.properties"));
+        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -216,7 +216,7 @@ public class RevealController {
             //extract entities for the collection
             entitiesExecutor.submit(new EntitiesExtractionCallable(nte, job.getCollection()));
             //cluster collection items
-            clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 2.0, 2));
+            clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 1.3, 2));
             return job;
         } catch (Exception ex) {
             throw new RevealException("Error when canceling", ex);
@@ -453,7 +453,7 @@ public class RevealController {
         MorphiaManager.setup("160.40.51.20");
         DAO<UserAccount, String> userDAO = new BasicDAO<>(UserAccount.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("yemen").getName());
         UserAccount account = userDAO.findOne("username", "wagon16");
-        System.out.println("Accounc id " + account.getId());
+        System.out.println("Account id " + account.getId());
 
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "yemen");
         List<Image> result = imageDAO.search("crawlDate", new Date(0), 0, 0, 100, 0, account, "t");

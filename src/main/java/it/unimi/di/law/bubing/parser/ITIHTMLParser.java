@@ -482,14 +482,14 @@ public class ITIHTMLParser<T> implements Parser<T> {
     public void processImageURL(Webpage wp) {
         Image image = (Image) wp.getItems().get(0);
         if (image == null) return;
-        String altText = image.getAlternateText();
+        String title = image.getTitle();
         String imageUri = image.getUrl();
-        LOGGER.debug("Process image URL " + imageUri + " " + altText);
-        if (altText == null || imageUri == null)
+        LOGGER.debug("Process image URL " + imageUri + " " + title);
+        if (title == null || imageUri == null)
             return;
         boolean keywordFound = false;
         for (String keyword : keywords) {
-            if ((altText != null && altText.toLowerCase().contains(keyword.toLowerCase())) || imageUri.toLowerCase().contains(keyword.toLowerCase())) {
+            if ((title != null && title.toLowerCase().contains(keyword.toLowerCase())) || imageUri.toLowerCase().contains(keyword.toLowerCase())) {
                 keywordFound = true;
                 break;
             }
