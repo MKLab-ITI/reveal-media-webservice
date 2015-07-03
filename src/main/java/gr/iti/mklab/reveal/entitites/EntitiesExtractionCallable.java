@@ -54,6 +54,7 @@ public class EntitiesExtractionCallable implements Callable<List<NamedEntity>> {
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
 
         for (int i = 0; i < imageDAO.count(); i += IMAGES_LOADED_PER_ITERATION) {
+            System.out.println("Entities iteration "+i);
             List<Image> list = imageDAO.getItems(IMAGES_LOADED_PER_ITERATION, i);
             for (Image im : list) {
                 TextPreprocessing textPre = new TextPreprocessing(im.getAlternateText() + " " + im.getTitle() + " " + im.getDescription());

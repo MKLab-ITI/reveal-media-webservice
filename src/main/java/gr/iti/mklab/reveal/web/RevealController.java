@@ -95,7 +95,7 @@ public class RevealController {
      * @return
      * @throws Exception
      */
-    @RequestMapping(value = "/media/{collection}/entities", method = RequestMethod.POST, produces = "application/json")
+    @RequestMapping(value = "/media/{collection}/entities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<NamedEntity> entitiesForCollection(@PathVariable(value = "collection") String collection) throws Exception {
         DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
@@ -142,21 +142,27 @@ public class RevealController {
 
     @RequestMapping(value = "/media/verify", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ForensicAnalysis verify(@RequestParam(value = "url", required = true) String url) throws Exception {
-        ForensicAnalysis fa = ToolboxAPI.analyzeImage(url, Configuration.MANIPULATION_REPORT_PATH);
-        if (fa.DQ_Lin_Output != null)
-            fa.DQ_Lin_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
-        if (fa.Noise_Mahdian_Output != null)
-            fa.Noise_Mahdian_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
-        final List<String> newGhostOutput = new ArrayList<>();
-        if (fa.GhostOutput != null) {
-            fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
+    public ForensicAnalysis verify(@RequestParam(value = "url", required = true) String url) throws RevealException {
+        try {
+            System.out.println("Verify image " + url);
+            ForensicAnalysis fa = ToolboxAPI.analyzeImage(url, Configuration.MANIPULATION_REPORT_PATH);
+            System.out.println("After analyze method");
+            if (fa.DQ_Lin_Output != null)
+                fa.DQ_Lin_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
+            if (fa.Noise_Mahdian_Output != null)
+                fa.Noise_Mahdian_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
+            final List<String> newGhostOutput = new ArrayList<>();
+            if (fa.GhostOutput != null) {
+                fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
+            }
+            fa.GhostOutput = newGhostOutput;
+            if (fa.GhostGIFOutput != null) {
+                fa.GhostGIFOutput = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.GhostGIFOutput.substring(fa.GhostGIFOutput.lastIndexOf('/') + 1);
+            }
+            return fa;
+        } catch (Exception ex) {
+            throw new RevealException(ex.getMessage(), ex);
         }
-        fa.GhostOutput = newGhostOutput;
-        if (fa.GhostGIFOutput != null) {
-            fa.GhostGIFOutput = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.GhostGIFOutput.substring(fa.GhostGIFOutput.lastIndexOf('/') + 1);
-        }
-        return fa;
     }
 
     ////////////////////////////////////////////////////////
@@ -413,11 +419,34 @@ public class RevealController {
 
     @RequestMapping(value = "/clusters/{collection}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<gr.iti.mklab.simmo.core.cluster.Cluster> getClusters(@PathVariable(value = "collection") String collection,
-                                                                     @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                                                     @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
+    public List<ClusterReduced> getClusters(@PathVariable(value = "collection") String collection,
+                                            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                            @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-        return clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).order("-size").offset(offset).limit(count).asList();
+        List<gr.iti.mklab.simmo.core.cluster.Cluster> clusters = clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).order("-size").offset(offset).limit(count).asList();
+        List<ClusterReduced> minimalList = new ArrayList<>(clusters.size());
+        for (gr.iti.mklab.simmo.core.cluster.Cluster c : clusters) {
+            ClusterReduced cr = new ClusterReduced();
+            cr.id = c.getId();
+            cr.members = c.getSize();
+            cr.item = (Image) c.getMembers().get(0);
+            minimalList.add(cr);
+        }
+        return minimalList;
+    }
+
+    @RequestMapping(value = "/clusters/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public gr.iti.mklab.simmo.core.cluster.Cluster getCluster(@PathVariable(value = "collection") String collection,
+                                                              @PathVariable(value = "id") String id) {
+        DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        return clusterDAO.get(id);
+    }
+
+    class ClusterReduced {
+        public String id;
+        public int members;
+        public Image item;
     }
 
     ////////////////////////////////////////////////////////
@@ -451,13 +480,8 @@ public class RevealController {
 
         Configuration.load("remote.properties");
         MorphiaManager.setup("160.40.51.20");
-        DAO<UserAccount, String> userDAO = new BasicDAO<>(UserAccount.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("yemen").getName());
-        UserAccount account = userDAO.findOne("username", "wagon16");
-        System.out.println("Account id " + account.getId());
-
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "yemen");
-        List<Image> result = imageDAO.search("crawlDate", new Date(0), 0, 0, 100, 0, account, "t");
-
+        DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("eurogroup").getName());
+        List<NamedEntity> list = rankedEntities.find().asList();
         int m = 5;
         //MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "fifa_blat");
         //List<Image> imgs = imageDAO.search("crawlDate", new Date(-1), 100, 100, 50, 0);

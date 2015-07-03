@@ -42,7 +42,7 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
 
     @Override
     public List<org.apache.commons.math3.ml.clustering.Cluster<ClusterableMedia>> call() throws Exception {
-        System.out.println("Cluster everyghing callable call method");
+        System.out.println("Cluster everything callable call method");
 
         DBSCANClustererIncr<ClusterableMedia> clusterer = new DBSCANClustererIncr(eps, minpoints);
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
@@ -53,6 +53,7 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
 
         //images
         for (int k = 0; k < imageDAO.count(); k += ITEMS_PER_ITERATION) {
+            System.out.println("Clustering images iteration "+k);
             List<ClusterableMedia> list = new ArrayList<>();
             List<Image> images = imageDAO.getItems(ITEMS_PER_ITERATION, k);
             images.stream().forEach(i -> {
@@ -69,6 +70,7 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
         }
         //videos
         for (int k = 0; k < videoDAO.count(); k += ITEMS_PER_ITERATION) {
+            System.out.println("Clustering videos iteration "+k);
             List<ClusterableMedia> list = new ArrayList<>();
             List<Video> videos = videoDAO.getItems(ITEMS_PER_ITERATION, k);
             videos.stream().forEach(i -> {
