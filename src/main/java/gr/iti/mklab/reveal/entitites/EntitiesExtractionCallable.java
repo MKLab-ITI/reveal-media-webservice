@@ -40,7 +40,7 @@ public class EntitiesExtractionCallable implements Callable<List<NamedEntity>> {
     private DAO<NamedEntity, String> entitiesDAO;
 
     private final static int IMAGES_LOADED_PER_ITERATION = 10000;
-    private final static int RANKED_ENTITIES_MAX_NUM = 1000;
+    private final static int RANKED_ENTITIES_MAX_NUM = 400;
 
     public EntitiesExtractionCallable(NameThatEntity nte, String collection) {
         this.collection = collection;

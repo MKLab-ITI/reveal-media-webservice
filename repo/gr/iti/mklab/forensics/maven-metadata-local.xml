@@ -4,13 +4,8 @@
   <artifactId>forensics</artifactId>
   <versioning>
     <versions>
-      <version>0.1-SNAPSHOT</version>
-      <version>0.2-SNAPSHOT</version>
-      <version>0.3-SNAPSHOT</version>
-      <version>0.4-SNAPSHOT</version>
-      <version>0.5-SNAPSHOT</version>
       <version>0.6-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20150616142145</lastUpdated>
+    <lastUpdated>20150706083027</lastUpdated>
   </versioning>
 </metadata>

@@ -367,6 +367,13 @@
                         "description": "A text query",
                         "required": false,
                         "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "sources",
+                        "description": "The desired sources, has to be a comma delimited string of social network strings, e.g. YouTube,Flickr",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -590,6 +597,24 @@
                         "description": "The cluster id",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "count",
+                        "description": "The number of items",
+                        "defaultValue": "50",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "description": "The offset",
+                        "defaultValue": "0",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {

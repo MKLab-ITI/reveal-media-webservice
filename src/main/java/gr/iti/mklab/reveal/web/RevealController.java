@@ -322,24 +322,28 @@ public class RevealController {
             @RequestParam(value = "count", required = false, defaultValue = "10") int count,
             @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(value = "query", required = false) String query,
-            @RequestParam(value = "type", required = false) String type) {
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "sources", required = false) String sources) {
 
         Responses.MediaResponse response = new Responses.MediaResponse();
-
         UserAccount account = null;
         if (username != null) {
             DAO<UserAccount, String> userDAO = new BasicDAO<>(UserAccount.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
             account = userDAO.findOne("username", username);
         }
+        List<String> sourcesList = null;
+        if(sources!=null){
+            sourcesList = Arrays.asList(sources.split(","));
+        }
 
         if (type == null || type.equalsIgnoreCase("image")) {
             MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-            response.images = imageDAO.search("crawlDate", new Date(date), w, h, count, offset, account, query);
+            response.images = imageDAO.search("crawlDate", new Date(date), w, h, count, offset, account, query, sourcesList);
             response.numImages = imageDAO.count();
         }
         if (type == null || type.equalsIgnoreCase("video")) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
-            response.videos = videoDAO.search("crawlDate", new Date(date), w, h, count, offset, account, query);
+            response.videos = videoDAO.search("crawlDate", new Date(date), w, h, count, offset, account, query, sourcesList);
             response.numVideos = videoDAO.count();
         }
         response.offset = offset;
@@ -438,9 +442,16 @@ public class RevealController {
     @RequestMapping(value = "/clusters/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public gr.iti.mklab.simmo.core.cluster.Cluster getCluster(@PathVariable(value = "collection") String collection,
-                                                              @PathVariable(value = "id") String id) {
+                                                              @PathVariable(value = "id") String id,
+                                                              @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                              @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-        return clusterDAO.get(id);
+        gr.iti.mklab.simmo.core.cluster.Cluster c = clusterDAO.get(id);
+        if (offset < c.getSize())
+            c.setMembers(c.getMembers().subList(offset, c.getSize() < offset + count ? c.getSize() : offset + count));
+        else
+            c = new gr.iti.mklab.simmo.core.cluster.Cluster();
+        return c;
     }
 
     class ClusterReduced {
@@ -480,11 +491,14 @@ public class RevealController {
 
         Configuration.load("remote.properties");
         MorphiaManager.setup("160.40.51.20");
-        DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("eurogroup").getName());
-        List<NamedEntity> list = rankedEntities.find().asList();
+        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "eurogroup");
+        List<String> s = new ArrayList<>();
+        s.add("Twitter");
+        List<Image> imgs = imageDAO.search("crawlDate", null, 100, 100, 50, 0, null, null, s);
+        //DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("eurogroup").getName());
+        //List<NamedEntity> list = rankedEntities.find().asList();
         int m = 5;
-        //MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "fifa_blat");
-        //List<Image> imgs = imageDAO.search("crawlDate", new Date(-1), 100, 100, 50, 0);
+
         /*Pattern p = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
         Query<Image> q = imageDAO.createQuery();
         q.and(
