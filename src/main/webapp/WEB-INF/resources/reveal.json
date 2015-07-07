@@ -481,7 +481,7 @@
                         "in": "query",
                         "name": "eps",
                         "description": "The eps for the DBSCAN clustering algorithm",
-                        "defaultValue": "1.0",
+                        "defaultValue": "1.2",
                         "required": true,
                         "type": "double"
                     },
