@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.clustering;
 
+import com.aliasi.tokenizer.TokenizerFactory;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
@@ -35,7 +36,7 @@ public class ClusteringCallable implements Callable<List<org.apache.commons.math
     private double eps;
     private int minpoints;
 
-    public ClusteringCallable(String collection, int count, double eps, int minpoints){
+    public ClusteringCallable(String collection, int count, double eps, int minpoints) {
         this.collection = collection;
         this.count = count;
         this.eps = eps;
@@ -45,6 +46,7 @@ public class ClusteringCallable implements Callable<List<org.apache.commons.math
     @Override
     public List<org.apache.commons.math3.ml.clustering.Cluster<ClusterableMedia>> call() throws Exception {
         System.out.println("DBSCAN for " + collection + " eps= " + eps + " minpoints= " + minpoints + " count= " + count);
+        TokenizerFactory tokFactory = new NormalizedTokenizerFactory();
         //First get the existing clusters for this collection
         DAO<Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         List<Cluster> clustersINDB = clusterDAO.find().asList();
@@ -66,6 +68,7 @@ public class ClusteringCallable implements Callable<List<org.apache.commons.math
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
 
         List<Image> images = imageDAO.getIndexedNotClustered(count);
+        System.out.println("Indexed not clustered images "+images.size());
         images.stream().forEach(i -> {
             Double[] vector = new Double[0];
             try {
@@ -80,6 +83,7 @@ public class ClusteringCallable implements Callable<List<org.apache.commons.math
         //videos
         MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
         List<Video> videos = videoDAO.getIndexedNotClustered(count);
+        System.out.println("Indexed not clustered videos "+videos.size());
         videos.stream().forEach(i -> {
             Double[] vector = new Double[0];
             try {
@@ -96,19 +100,29 @@ public class ClusteringCallable implements Callable<List<org.apache.commons.math
         clusterDAO.deleteByQuery(clusterDAO.createQuery());
         System.out.println("DBSCAN NUMBER OF CLUSTERS " + centroids.size());
         for (org.apache.commons.math3.ml.clustering.Cluster<ClusterableMedia> c : centroids) {
+            List<Media> initial = new ArrayList<>();
             gr.iti.mklab.simmo.core.cluster.Cluster cluster = new gr.iti.mklab.simmo.core.cluster.Cluster();
             cluster.setSize(c.getPoints().size());
             c.getPoints().stream().forEach(clusterable -> {
-                cluster.addMember(clusterable.item);
+                //cluster.addMember(clusterable.item);
                 Media media = clusterable.item;
                 media.addAnnotation(new Clustered(cluster.getId()));
+                initial.add(media);
                 if (media instanceof Image) {
                     imageDAO.save((Image) media);
                 } else {
                     videoDAO.save((Video) media);
                 }
             });
-            clusterDAO.save(cluster);
+            System.out.println("Initial size " + initial.size());
+            List<Media> filteredNomralized = TextDeduplication.filterNormalizedDuplicates(initial, tokFactory);
+            System.out.println("After normalization size " + filteredNomralized.size());
+            List<Media> filteredJaccard = TextDeduplication.filterMediaJaccard(filteredNomralized, tokFactory, 0.5);
+            System.out.println("After jaccard size " + filteredJaccard.size());
+            filteredJaccard.stream().forEach(m -> cluster.addMember(m));
+            cluster.setSize(filteredJaccard.size());
+            if (cluster.getSize() < 100)
+                clusterDAO.save(cluster);
         }
         return centroids;
     }

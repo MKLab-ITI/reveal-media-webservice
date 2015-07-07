@@ -489,7 +489,7 @@
                         "in": "query",
                         "name": "minpoints",
                         "description": "The minimum number of points required to form a dense region",
-                        "defaultValue": "3",
+                        "defaultValue": "2",
                         "required": true,
                         "type": "integer"
                     },

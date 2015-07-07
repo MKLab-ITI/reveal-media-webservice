@@ -414,7 +414,7 @@ public class RevealController {
     @ResponseBody
     public String clusterCommandIncremental(@PathVariable(value = "collection") String collection,
                                             @RequestParam(value = "eps", required = true, defaultValue = "1.2") double eps,
-                                            @RequestParam(value = "minpoints", required = true, defaultValue = "3") int minpoints,
+                                            @RequestParam(value = "minpoints", required = true, defaultValue = "2") int minpoints,
 
                                             @RequestParam(value = "count", required = true, defaultValue = "1000") int count) throws RevealException {
         clusteringExecutor.submit(new ClusteringCallable(collection, count, eps, minpoints));
@@ -445,15 +445,12 @@ public class RevealController {
                                                               @PathVariable(value = "id") String id,
                                                               @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                                               @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
-        System.out.println("getCluster() "+id+" offset "+offset+" count "+count);
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         gr.iti.mklab.simmo.core.cluster.Cluster c = clusterDAO.get(id);
-        System.out.println("after cluster c");
         if (offset < c.getMembers().size())
             c.setMembers(c.getMembers().subList(offset, c.getMembers().size() < offset + count ? c.getMembers().size() : offset + count));
         else
             c = new gr.iti.mklab.simmo.core.cluster.Cluster();
-        System.out.println("before return c");
         return c;
     }
 
