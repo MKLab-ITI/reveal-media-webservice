@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class CrawlQueueController {
 
+    private StreamManagerClient streamManager;
     private Map<String, GeoCrawler> geoCrawlerMap = new HashMap<>();
     private DAO<CrawlJob, ObjectId> dao;
     private Poller poller;
@@ -42,6 +43,8 @@ public class CrawlQueueController {
     public CrawlQueueController() {
         // Creates a DAO object to persist submitted crawl requests
         dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
+        // the client for handling the stream manager social media crawler
+        streamManager = new StreamManagerClient("http://" + Configuration.INDEX_SERVICE_HOST + ":8080");
         // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();
@@ -110,7 +113,7 @@ public class CrawlQueueController {
         System.out.println("CRAWL: Delete for id " + id);
         CrawlJob req = getCrawlRequest(id);
         System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
-        if(req.getState() == CrawlJob.STATE.FINISHED){
+        if (req.getState() == CrawlJob.STATE.FINISHED) {
             req.setState(CrawlJob.STATE.DELETING);
             req.setLastStateChange(new Date());
             //Delete the request from the request DB
@@ -122,7 +125,7 @@ public class CrawlQueueController {
             //Delete the crawl and index folders
             FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
             FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
-        }else {
+        } else {
             req.setState(CrawlJob.STATE.DELETING);
             req.setLastStateChange(new Date());
             dao.save(req);
@@ -152,12 +155,11 @@ public class CrawlQueueController {
     private void startCrawl(CrawlJob req) throws Exception {
         System.out.println("METHOD: Startcrawl " + req.getCollection() + " " + req.getState());
         if (req.getKeywords().isEmpty()) {
-            geoCrawlerMap.put(req.getCollection(), new GeoCrawler(req));
+            geoCrawlerMap.put(req.getCollection(), new GeoCrawler(req, streamManager));
         } else {
-            RevealAgent ag = new RevealAgent("127.0.0.1", 9999, req);
+            RevealAgent ag = new RevealAgent("127.0.0.1", 9999, req, streamManager);
             new Thread(ag).start();
         }
-
     }
 
     private void cancelGeoCrawl(String name) throws StreamException {
@@ -322,7 +324,7 @@ public class CrawlQueueController {
             count = 2000;
         }
 
-        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 400, count, offset, null, null);
+        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 400, count, offset, null, null, null);
         if (res == null || res.size() == 0)
             return null;
         for (Image i : res) {

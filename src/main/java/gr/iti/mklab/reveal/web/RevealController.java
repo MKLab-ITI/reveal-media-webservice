@@ -1,10 +1,10 @@
 package gr.iti.mklab.reveal.web;
 
-import ForensicsToolbox.ForensicAnalysis;
-import ForensicsToolbox.ToolboxAPI;
+import ForensicsToolbox.*;
 import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
 import gr.iti.mklab.reveal.crawler.IndexingRunner;
+import gr.iti.mklab.reveal.crawler.StreamManagerClient;
 import gr.iti.mklab.reveal.entitites.EntitiesExtractionCallable;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
@@ -51,7 +51,7 @@ public class RevealController {
     protected NameThatEntity nte;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
+        Configuration.load(getClass().getResourceAsStream("/local.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -160,6 +160,58 @@ public class RevealController {
                 fa.GhostGIFOutput = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.GhostGIFOutput.substring(fa.GhostGIFOutput.lastIndexOf('/') + 1);
             }
             return fa;
+        } catch (Exception ex) {
+            throw new RevealException(ex.getMessage(), ex);
+        }
+    }
+
+    @RequestMapping(value = "/media/verify/ghost", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public GhostAnalysis verifyGhost(@RequestParam(value = "url", required = true) String url) throws RevealException {
+        try {
+            System.out.println("Verify ghost image " + url);
+            GhostAnalysis ga = ToolboxAPI.getImageGhost(url, Configuration.MANIPULATION_REPORT_PATH);
+            System.out.println("After ghost analyze method");
+
+            final List<String> newGhostOutput = new ArrayList<>();
+            if (ga.GhostOutput != null) {
+                ga.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
+            }
+            ga.GhostOutput = newGhostOutput;
+            if (ga.GhostGIFOutput != null) {
+                ga.GhostGIFOutput = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + ga.GhostGIFOutput.substring(ga.GhostGIFOutput.lastIndexOf('/') + 1);
+            }
+            return ga;
+        } catch (Exception ex) {
+            throw new RevealException(ex.getMessage(), ex);
+        }
+    }
+
+    @RequestMapping(value = "/media/verify/dq", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public DQAnalysis verifyDQ(@RequestParam(value = "url", required = true) String url) throws RevealException {
+        try {
+            System.out.println("Verify dq image " + url);
+            DQAnalysis dq = ToolboxAPI.getImageDQ(url, Configuration.MANIPULATION_REPORT_PATH);
+            System.out.println("After dq analyze method");
+            if (dq.DQ_Lin_Output != null)
+                dq.DQ_Lin_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + dq.DQ_Lin_Output.substring(dq.DQ_Lin_Output.lastIndexOf('/') + 1);
+            return dq;
+        } catch (Exception ex) {
+            throw new RevealException(ex.getMessage(), ex);
+        }
+    }
+
+    @RequestMapping(value = "/media/verify/noisemahdian", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public NoiseMahdianAnalysis verifyNoiseMahdian(@RequestParam(value = "url", required = true) String url) throws RevealException {
+        try {
+            System.out.println("Verify dq image " + url);
+            NoiseMahdianAnalysis nm = ToolboxAPI.getImageMahdianNoise(url, Configuration.MANIPULATION_REPORT_PATH);
+            System.out.println("After dq analyze method");
+            if (nm.Noise_Mahdian_Output != null)
+                nm.Noise_Mahdian_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + nm.Noise_Mahdian_Output.substring(nm.Noise_Mahdian_Output.lastIndexOf('/') + 1);
+            return nm;
         } catch (Exception ex) {
             throw new RevealException(ex.getMessage(), ex);
         }

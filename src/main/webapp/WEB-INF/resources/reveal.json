@@ -12,7 +12,7 @@
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         }
     },
-    "host": "160.40.51.20:8080/revealv2",
+    "host": "127.0.0.1:8080/revealv2",
     "basePath": "/mmapi",
     "paths": {
         "/crawls/add": {
@@ -641,6 +641,96 @@
                 "summary": "Produces a manipulation report",
                 "description": "",
                 "operationId": "manipulationReport",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "url",
+                        "description": "The image url",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
+        "/media/verify/ghost": {
+            "get": {
+                "tags": [
+                    "verification"
+                ],
+                "summary": "Produces a ghost analysis report",
+                "description": "",
+                "operationId": "ghostAnalysis",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "url",
+                        "description": "The image url",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
+        "/media/verify/dq": {
+            "get": {
+                "tags": [
+                    "verification"
+                ],
+                "summary": "Produces a dq analysis",
+                "description": "",
+                "operationId": "getDQreport",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "url",
+                        "description": "The image url",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
+        "/media/verify/noisemahdian": {
+            "get": {
+                "tags": [
+                    "verification"
+                ],
+                "summary": "Produces a noise mahdian analysis",
+                "description": "",
+                "operationId": "noiseMahdianReport",
                 "consumes": [
                     "application/json"
                 ],

@@ -35,15 +35,17 @@ public class RevealAgent implements Runnable {
 
     private final String _hostname;
     private final int _jmxPort;
+    private final StreamManagerClient _manager;
     private CrawlJob _request;
     private DAO<CrawlJob, ObjectId> dao;
     private Agent bubingAgent;
 
-    public RevealAgent(String hostname, int jmxPort, CrawlJob request) {
+    public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
         System.out.println("RevealAgent constructor for hostname " + hostname);
         _hostname = hostname;
         _jmxPort = jmxPort;
         _request = request;
+        _manager = manager;
     }
 
     @Override
@@ -56,16 +58,17 @@ public class RevealAgent implements Runnable {
             indexingThread.start();
             LOGGER.warn("###### After the indexing runner has been created");
             System.out.println("###### After the indexing runner has been created");
-            StreamsManager2 manager = null;
-            Thread socialmediaCrawlerThread = null;
+            //StreamsManager2 manager = null;
+            //Thread socialmediaCrawlerThread = null;
             if (Configuration.ADD_SOCIAL_MEDIA) {
-                File streamConfigFile = new File(Configuration.STREAM_CONF_FILE);
+                _manager.addAllKeywordFeeds(_request.getKeywords(), _request.getCollection());
+                /*File streamConfigFile = new File(Configuration.STREAM_CONF_FILE);
                 StreamsManagerConfiguration config = StreamsManagerConfiguration.readFromFile(streamConfigFile);
                 config.getStorageConfig("Mongodb").setParameter("mongodb.database", _request.getCollection());
                 manager = new StreamsManager2(config);
                 manager.open(_request.getKeywords());
                 socialmediaCrawlerThread = new Thread(manager);
-                socialmediaCrawlerThread.start();
+                socialmediaCrawlerThread.start();*/
             }
             // Mark the request as running
             dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
@@ -113,8 +116,9 @@ public class RevealAgent implements Runnable {
             runner.stop();
             indexingThread.interrupt();
             if (Configuration.ADD_SOCIAL_MEDIA) {
-                manager.close();
-                socialmediaCrawlerThread.interrupt();
+                //manager.close();
+                //socialmediaCrawlerThread.interrupt();
+                _manager.deleteAllFeeds(false, _request.getCollection());
             }
             LOGGER.warn("###### unregister bean for name");
             unregisterBeanForName(_request.getCollection());

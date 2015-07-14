@@ -2,22 +2,22 @@
 <metadata modelVersion="1.1.0">
   <groupId>gr.iti.mklab</groupId>
   <artifactId>forensics</artifactId>
-  <version>0.6-SNAPSHOT</version>
+  <version>0.7-SNAPSHOT</version>
   <versioning>
     <snapshot>
       <localCopy>true</localCopy>
     </snapshot>
-    <lastUpdated>20150706083027</lastUpdated>
+    <lastUpdated>20150708141306</lastUpdated>
     <snapshotVersions>
       <snapshotVersion>
         <extension>jar</extension>
-        <value>0.6-SNAPSHOT</value>
-        <updated>20150706083027</updated>
+        <value>0.7-SNAPSHOT</value>
+        <updated>20150708141306</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>pom</extension>
-        <value>0.6-SNAPSHOT</value>
-        <updated>20150706083027</updated>
+        <value>0.7-SNAPSHOT</value>
+        <updated>20150708141306</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
