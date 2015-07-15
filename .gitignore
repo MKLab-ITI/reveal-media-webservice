@@ -9,6 +9,7 @@
 *.iws
 out/
 artifacts/
+overlays/
 smb:/
 
 # Mac

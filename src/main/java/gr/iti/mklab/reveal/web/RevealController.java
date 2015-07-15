@@ -3,8 +3,6 @@ package gr.iti.mklab.reveal.web;
 import ForensicsToolbox.*;
 import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
-import gr.iti.mklab.reveal.crawler.IndexingRunner;
-import gr.iti.mklab.reveal.crawler.StreamManagerClient;
 import gr.iti.mklab.reveal.entitites.EntitiesExtractionCallable;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
@@ -24,22 +22,16 @@ import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
-import gr.iti.mklab.sm.StreamsManager2;
-import gr.iti.mklab.sm.streams.StreamsManagerConfiguration;
-import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
-import org.mongodb.morphia.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PreDestroy;
-import java.io.File;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 
 
 @Controller
@@ -51,7 +43,7 @@ public class RevealController {
     protected NameThatEntity nte;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/local.properties"));
+        Configuration.load(getClass().getResourceAsStream("/docker.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -215,27 +207,6 @@ public class RevealController {
         } catch (Exception ex) {
             throw new RevealException(ex.getMessage(), ex);
         }
-    }
-
-    ////////////////////////////////////////////////////////
-    ///////// GEO-BASED CRAWLING     ///////////////////////////
-    ///////////////////////////////////////////////////////
-
-    @RequestMapping(value = "/media/geocrawl", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public String geocrawl(@RequestParam(value = "lon_min", required = true) double lon_min,
-                           @RequestParam(value = "lat_min", required = true) double lat_min,
-                           @RequestParam(value = "lon_max", required = true) double lon_max,
-                           @RequestParam(value = "lat_max", required = true) double lat_max,
-                           @RequestParam(value = "collection", required = true) String collection) throws Exception {
-        StreamsManagerConfiguration config = StreamsManagerConfiguration.readFromFile(new File(Configuration.GEO_CONF_FILE));
-        StreamsManager2 manager = new StreamsManager2(config);
-        config.getStorageConfig("Mongodb").setParameter("mongodb.database", collection);
-        manager.open(lon_min, lat_min, lon_max, lat_max);
-        new Thread(manager).start();
-        new Thread(new IndexingRunner(collection)).start();
-        //TODO: This later thread is never stopped :(
-        return "Geocrawl launched";
     }
 
     ////////////////////////////////////////////////////////
