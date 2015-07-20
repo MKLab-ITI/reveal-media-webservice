@@ -288,7 +288,7 @@
                             <path>/crawler</path>
                         </configuration>
                     </plugin>
-                    <plugin>
+                    <!--<plugin>
                         <artifactId>maven-enforcer-plugin</artifactId>
                         <version>1.0.1</version>
                         <executions>
@@ -308,7 +308,7 @@
                                 </configuration>
                             </execution>
                         </executions>
-                    </plugin>
+                    </plugin>-->
                 </plugins>
             </build>
         </profile>
