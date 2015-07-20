@@ -1,4 +1,7 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>eu.revealv2</groupId>
@@ -6,23 +9,20 @@
     <packaging>war</packaging>
     <version>1.1-SNAPSHOT</version>
     <name>crawler</name>
-
     <properties>
         <spring.version>4.1.0.RELEASE</spring.version>
         <mongo.host>160.40.51.28</mongo.host>
     </properties>
-
-
     <dependencies>
-    <dependency>
-    	<groupId>com.google.guava</groupId>
-    	<artifactId>guava</artifactId>
-    	<version>18.0</version>
-    </dependency>
         <dependency>
-          <groupId>gr.iti.mklab</groupId>
-          <artifactId>simmo-stream-manager</artifactId>
-          <version>0.3-SNAPSHOT</version>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>18.0</version>
+        </dependency>
+        <dependency>
+            <groupId>gr.iti.mklab</groupId>
+            <artifactId>simmo-stream-manager</artifactId>
+            <version>0.3-SNAPSHOT</version>
         </dependency>
         <!-- Spring -->
         <dependency>
@@ -50,7 +50,6 @@
             <artifactId>aspectjweaver</artifactId>
             <version>1.6.1</version>
         </dependency>
-
         <!-- Servlet -->
         <dependency>
             <groupId>javax.servlet</groupId>
@@ -70,7 +69,6 @@
             <version>1.2</version>
             <scope>provided</scope>
         </dependency>
-
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework</groupId>
@@ -78,14 +76,12 @@
             <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.8.2</version>
             <scope>test</scope>
         </dependency>
-
         <!-- text indexing dependencies -->
         <dependency>
             <groupId>com.aliasi</groupId>
@@ -114,7 +110,6 @@
             <artifactId>boilerpipe</artifactId>
             <version>1.1.0</version>
         </dependency>
-
         <!-- bubing dependencies -->
         <dependency>
             <groupId>commons-codec</groupId>
@@ -126,7 +121,6 @@
             <artifactId>nekohtml</artifactId>
             <version>1.9.13</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
@@ -152,16 +146,16 @@
             <artifactId>jarchivelib</artifactId>
             <version>0.6.0</version>
         </dependency>
-       <dependency>
-                   <groupId>it.unimi.dsi</groupId>
-                   <artifactId>fastutil</artifactId>
-                   <version>6.5.9</version>
-               </dependency>
-               <dependency>
-                   <groupId>it.unimi.dsi</groupId>
-                   <artifactId>dsiutils</artifactId>
-                   <version>2.1.10</version>
-               </dependency>
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+            <version>6.5.9</version>
+        </dependency>
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>dsiutils</artifactId>
+            <version>2.1.10</version>
+        </dependency>
         <dependency>
             <groupId>it.unimi.di.law</groupId>
             <artifactId>jai4j</artifactId>
@@ -202,7 +196,6 @@
             <artifactId>webgraph</artifactId>
             <version>3.4.3</version>
         </dependency>
-
         <!-- gr.iti.mklab libraries -->
         <dependency>
             <groupId>eu.socialsensor</groupId>
@@ -210,35 +203,39 @@
             <version>0.2</version>
         </dependency>
         <dependency>
-        	<groupId>com.rabbitmq</groupId>
-        	<artifactId>amqp-client</artifactId>
-        	<version>3.5.2</version>
+            <groupId>com.rabbitmq</groupId>
+            <artifactId>amqp-client</artifactId>
+            <version>3.5.2</version>
         </dependency>
-
         <!-- forensics libraries -->
-         <dependency>
-                    <groupId>gr.iti.mklab</groupId>
-                    <artifactId>forensics</artifactId>
-                    <version>0.7-SNAPSHOT</version>
-                </dependency>
-         <dependency>
-         	<groupId>net.java.dev.jna</groupId>
-         	<artifactId>jna</artifactId>
-         	<version>4.1.0</version>
-         </dependency>
+        <!--<dependency><groupId>gr.iti.mklab</groupId><artifactId>forensics</artifactId><version>0.7-SNAPSHOT</version></dependency>-->
+        <dependency>
+            <groupId>eu.reveal</groupId>
+            <artifactId>multimedia-manipulation-toolbox</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>4.1.0</version>
+        </dependency>
         <dependency>
             <groupId>org.ojalgo</groupId>
             <artifactId>ojalgo</artifactId>
             <version>37.1</version>
         </dependency>
-
     </dependencies>
-
     <repositories>
-    <repository>
-        <id>repo</id>
-        <url>file://${project.basedir}/repo</url>
-    </repository>
+        <!--<repository><id>repo</id><url>file://${project.basedir}/repo</url></repository>-->
+        <repository>
+            <id>reveal-maven-repo</id>
+            <name>reveal-maven-repo</name>
+            <url>http://prometheus.atc.gr:8080/nexus/content/repositories/releases</url>
+            <snapshots>
+                <updatePolicy>always</updatePolicy>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
         <repository>
             <id>oss-sonatype</id>
             <name>oss-sonatype</name>

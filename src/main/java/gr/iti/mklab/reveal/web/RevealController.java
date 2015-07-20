@@ -198,9 +198,9 @@ public class RevealController {
     @ResponseBody
     public NoiseMahdianAnalysis verifyNoiseMahdian(@RequestParam(value = "url", required = true) String url) throws RevealException {
         try {
-            System.out.println("Verify dq image " + url);
+            System.out.println("Verify noisemahdian image " + url);
             NoiseMahdianAnalysis nm = ToolboxAPI.getImageMahdianNoise(url, Configuration.MANIPULATION_REPORT_PATH);
-            System.out.println("After dq analyze method");
+            System.out.println("After noisemahdian analyze method");
             if (nm.Noise_Mahdian_Output != null)
                 nm.Noise_Mahdian_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + nm.Noise_Mahdian_Output.substring(nm.Noise_Mahdian_Output.lastIndexOf('/') + 1);
             return nm;
