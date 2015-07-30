@@ -25,6 +25,7 @@ import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -261,7 +262,7 @@ public class RevealController {
     /**
      * @return a list of CrawlRequests that are either RUNNING or WAITING
      */
-    @RequestMapping(value = "/crawls/status", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/crawls/status", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public List<Responses.CrawlStatus> getCrawlerStatus() {
         List<Responses.CrawlStatus> s = crawlerCtrler.getActiveCrawls();
