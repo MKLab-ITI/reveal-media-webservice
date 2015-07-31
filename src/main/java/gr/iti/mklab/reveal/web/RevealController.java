@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.web;
 
 import ForensicsToolbox.*;
+import com.google.gson.Gson;
 import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
 import gr.iti.mklab.reveal.entitites.EntitiesExtractionCallable;
@@ -214,11 +215,12 @@ public class RevealController {
     ///////// CRAWLER            ///////////////////////////
     ///////////////////////////////////////////////////////
 
-    @RequestMapping(value = "/crawls/add", method = RequestMethod.POST, consumes = "application/json", produces="application/json")
+    @RequestMapping(value = "/crawls/add", method = RequestMethod.GET, produces="application/json")
     @ResponseBody
-    public CrawlJob submitCrawlingJob(@RequestBody CrawlPostRequest request) throws RevealException {
+    public CrawlJob submitCrawlingJob(@RequestParam(value = "text", required = true) String json) throws RevealException {
         try {
-            //return crawlerCtrler.submit(false, request.getCollection(), null);
+            Gson gson = new Gson();
+            CrawlPostRequest request = gson.fromJson(json, CrawlPostRequest.class);
             if (request.getKeywords() == null || request.getKeywords().isEmpty())
                 return crawlerCtrler.submit(request.getCollection(), request.getLon_min(), request.getLat_min(), request.getLon_max(), request.getLat_max());
             else

@@ -16,7 +16,7 @@
     "basePath": "/mmapi",
     "paths": {
         "/crawls/add": {
-            "post": {
+            "get": {
                 "tags": [
                     "crawls"
                 ],
@@ -31,9 +31,9 @@
                 ],
                 "parameters": [
                     {
-                        "in": "body",
-                        "name": "body",
-                        "description": "Crawl parameters",
+                        "in": "query",
+                        "name": "text",
+                        "description": "json text",
                         "required": true,
                         "type": "string"
                     }
