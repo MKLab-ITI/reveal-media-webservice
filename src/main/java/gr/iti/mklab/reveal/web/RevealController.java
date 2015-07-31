@@ -214,15 +214,17 @@ public class RevealController {
     ///////// CRAWLER            ///////////////////////////
     ///////////////////////////////////////////////////////
 
-    @RequestMapping(value = "/crawls/add", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
+    @RequestMapping(value = "/crawls/add", method = RequestMethod.POST, consumes = "application/json", produces="application/json")
     @ResponseBody
-    public CrawlJob submitCrawlingJob(@RequestBody Requests.CrawlPostRequest request) throws RevealException {
+    public CrawlJob submitCrawlingJob(@RequestBody CrawlPostRequest request) throws RevealException {
         try {
-            if (request.keywords == null || request.keywords.isEmpty())
-                return crawlerCtrler.submit(request.collection, request.lon_min, request.lat_min, request.lon_max, request.lat_max);
+            //return crawlerCtrler.submit(false, request.getCollection(), null);
+            if (request.getKeywords() == null || request.getKeywords().isEmpty())
+                return crawlerCtrler.submit(request.getCollection(), request.getLon_min(), request.getLat_min(), request.getLon_max(), request.getLat_max());
             else
-                return crawlerCtrler.submit(request.isNew, request.collection, request.keywords);
+                return crawlerCtrler.submit(request.isNew(), request.getCollection(), request.getKeywords());
         } catch (Exception ex) {
+            System.out.println(ex);
             throw new RevealException(ex.getMessage(), ex);
         }
     }

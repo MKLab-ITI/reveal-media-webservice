@@ -15,9 +15,9 @@ public class Responses {
 
     public static class IndexResponse {
 
-        protected boolean success = false;
+        public boolean success = false;
 
-        protected String message;
+        public String message;
 
         public IndexResponse(boolean success, String message) {
             this.success = success;
@@ -31,9 +31,9 @@ public class Responses {
 
     public static class SimilarityResponse {
 
-        protected double distance;
+        public double distance;
 
-        protected Media item;
+        public Media item;
 
         public SimilarityResponse(Media item, double distance) throws MalformedURLException {
             this.item = item;
@@ -65,15 +65,15 @@ public class Responses {
     }
 
     public static class MediaResponse {
-        protected List<Image> images = new ArrayList<>();
+        public List<Image> images = new ArrayList<>();
 
-        protected List<Video> videos = new ArrayList<>();
+        public List<Video> videos = new ArrayList<>();
 
-        protected long numImages;
+        public long numImages;
 
-        protected long numVideos;
+        public long numVideos;
 
-        protected long offset;
+        public long offset;
     }
 
     public static class CrawlStatus extends CrawlJob {
