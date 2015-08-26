@@ -12,7 +12,7 @@
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         }
     },
-    "host": "127.0.0.1:8080/revealv2",
+    "host": "160.40.51.20:8080/revealv2",
     "basePath": "/mmapi",
     "paths": {
         "/crawls/add": {

@@ -42,15 +42,11 @@ public class RevealController {
 
     protected CrawlQueueController crawlerCtrler;
 
-    protected NameThatEntity nte;
-
     public RevealController() throws Exception {
         Configuration.load(getClass().getResourceAsStream("/docker.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
-        nte = new NameThatEntity();
-        nte.initPipeline(); //Should be called only once in the beggining
     }
 
     @PreDestroy
@@ -78,7 +74,7 @@ public class RevealController {
     @RequestMapping(value = "/media/{collection}/extract", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public String extractEntities(@PathVariable(value = "collection") String collection) throws Exception {
-        entitiesExecutor.submit(new EntitiesExtractionCallable(nte, collection));
+        entitiesExecutor.submit(new EntitiesExtractionCallable(collection));
         return "Extracting entities";
     }
 
@@ -96,7 +92,7 @@ public class RevealController {
         return rankedEntities.find().asList();
     }
 
-    @RequestMapping(value = "/text/entities", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
+    /*@RequestMapping(value = "/text/entities", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
     @ResponseBody
     public List<NamedEntity> entitiesFromString(@RequestBody Requests.EntitiesPostRequest req) throws Exception {
         TextPreprocessing textPre = new TextPreprocessing(req.text);
@@ -128,7 +124,7 @@ public class RevealController {
         List<NamedEntity> names = nte.tagIt(cleanedText);
         System.out.println("Named Entity time " + (System.currentTimeMillis() - now));
         return names;
-    }
+    }*/
 
     ////////////////////////////////////////////////////////
     ///////// MANIPULATION DETECTION     ///////////////////////////
@@ -248,7 +244,7 @@ public class RevealController {
         try {
             CrawlJob job = crawlerCtrler.cancel(id);
             //extract entities for the collection
-            entitiesExecutor.submit(new EntitiesExtractionCallable(nte, job.getCollection()));
+            entitiesExecutor.submit(new EntitiesExtractionCallable(job.getCollection()));
             //cluster collection items
             clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 1.3, 2));
             return job;

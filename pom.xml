@@ -89,17 +89,6 @@
             <version>4.0.1</version>
         </dependency>
         <dependency>
-            <groupId>edu.stanford.nlp</groupId>
-            <artifactId>stanford-corenlp</artifactId>
-            <version>3.4.1</version>
-        </dependency>
-        <dependency>
-            <groupId>edu.stanford.nlp</groupId>
-            <artifactId>stanford-corenlp</artifactId>
-            <version>3.4.1</version>
-            <classifier>models</classifier>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.3.2</version>
@@ -239,9 +228,27 @@
         	<artifactId>jackson-annotations</artifactId>
         	<version>2.6.0</version>
         </dependency>
+         <!-- The relation extraction module -->
+        <dependency>
+        			<groupId>iit.demokritos</groupId>
+        			<artifactId>RelationDiscovery</artifactId>
+        			<version>0.0.1</version>
+        		</dependency>
     </dependencies>
     <repositories>
         <!--<repository><id>repo</id><url>file://${project.basedir}/repo</url></repository>-->
+        <!-- Demokritos repository for the relation extraction module -->
+        <repository>
+        			<releases>
+        				<enabled>true</enabled>
+        				<updatePolicy>always</updatePolicy>
+        				<checksumPolicy>warn</checksumPolicy>
+        			</releases>
+        			<id>demokritos-reveal</id>
+        			<name>demokritos-reveal</name>
+        			<url>http://idefix.iit.demokritos.gr/maven2</url>
+        			<layout>default</layout>
+        		</repository>
         <repository>
             <id>reveal-maven-repo</id>
             <name>reveal-maven-repo</name>
