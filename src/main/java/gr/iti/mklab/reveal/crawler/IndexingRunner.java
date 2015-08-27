@@ -12,6 +12,7 @@ import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +38,7 @@ public class IndexingRunner implements Runnable {
     private boolean shouldStop = false;
     private boolean listsWereEmptyOnce = false;
 
-    public IndexingRunner(String collection) throws ExecutionException {
+    public IndexingRunner(String collection) throws ExecutionException, IOException {
         System.out.println("Creating IndexingRunner for collection "+collection);
         _indexer = VisualIndexerFactory.getVisualIndexer(collection);
         System.out.println("After creating the indexer ");

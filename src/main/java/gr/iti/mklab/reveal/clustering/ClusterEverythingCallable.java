@@ -16,6 +16,7 @@ import org.apache.commons.math3.ml.clustering.Cluster;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -65,6 +66,8 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
                     vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
                 } catch (ExecutionException e) {
                     //ignore
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
                 if (vector != null && vector.length == 1024)
                     list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));
@@ -82,6 +85,8 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
                     vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
                 } catch (ExecutionException e) {
                     //ignore
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
                 if (vector != null && vector.length == 1024)
                     list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));

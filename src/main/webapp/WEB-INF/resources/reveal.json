@@ -812,6 +812,36 @@
                     }
                 }
             }
+        },
+        "/media/{collection}/relations": {
+            "get": {
+                "tags": [
+                    "relations"
+                ],
+                "summary": "Gets the relations among named entities for the specified collection",
+                "description": "",
+                "operationId": "getRelations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "collection",
+                        "description": "The collection name",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
         }
     },
     "definitions": {

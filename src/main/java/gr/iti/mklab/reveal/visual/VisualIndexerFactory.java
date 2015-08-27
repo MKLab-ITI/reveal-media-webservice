@@ -4,6 +4,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +27,7 @@ public class VisualIndexerFactory {
                     });
 
 
-    public static VisualIndexer getVisualIndexer(String collection) throws ExecutionException {
+    public static VisualIndexer getVisualIndexer(String collection) throws ExecutionException, IOException {
         return INDEXERS_CACHE.get(collection);
     }
 }

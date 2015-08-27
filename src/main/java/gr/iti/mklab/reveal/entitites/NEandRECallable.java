@@ -3,12 +3,15 @@ package gr.iti.mklab.reveal.entitites;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
+
 import gr.demokritos.iit.api.API;
 import gr.demokritos.iit.ner.NamedEntityList;
+import gr.demokritos.iit.re.Relation;
 import gr.demokritos.iit.re.RelationCounter;
-import gr.iti.mklab.reveal.text.NameThatEntity;
-import gr.iti.mklab.reveal.text.TextPreprocessing;
+import gr.demokritos.iit.re.RelationList;
+import gr.iti.mklab.simmo.core.Association;
 import gr.iti.mklab.simmo.core.annotations.NamedEntity;
+import gr.iti.mklab.simmo.core.associations.TextualRelation;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
@@ -16,12 +19,7 @@ import org.apache.axis.utils.StringUtils;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,7 +27,7 @@ import java.util.concurrent.Executors;
 /**
  * Created by kandreadou on 6/4/15.
  */
-public class EntitiesExtractionCallable implements Callable<List<NamedEntity>> {
+public class NEandRECallable implements Callable<List<NamedEntity>> {
 
     private String collection;
 
@@ -40,15 +38,17 @@ public class EntitiesExtractionCallable implements Callable<List<NamedEntity>> {
     /**
      * A HashMap to store entity strings and tokens
      */
-    private Map<String, String> ENTITIES_MAP = new HashMap<>();
+    private Map<String, NamedEntity> ENTITIES_MAP = new HashMap<>();
 
     private DAO<NamedEntity, String> entitiesDAO;
+    private DAO<Association, String> associationDAO;
 
-    private final static int RANKED_ENTITIES_MAX_NUM = 400;
+    //private final static int RANKED_ENTITIES_MAX_NUM = 400;
 
-    public EntitiesExtractionCallable(String collection) {
+    public NEandRECallable(String collection) {
         this.collection = collection;
         entitiesDAO = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        associationDAO = new BasicDAO<>(Association.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
     }
 
     @Override
@@ -56,37 +56,52 @@ public class EntitiesExtractionCallable implements Callable<List<NamedEntity>> {
 
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
         List<Image> list = imageDAO.getItems((int)imageDAO.count(), 0);
+        //List<Image> list = imageDAO.getItems(1000, 0);
         HashMap<String, NamedEntityList> REmap = new HashMap<>();
 
-        for(Image i:list){
-            if(!StringUtils.isEmpty(i.getTitle())) {
+        for (Image i : list) {
+            if (!StringUtils.isEmpty(i.getTitle())) {
                 NamedEntityList entities = API.NER(i.getTitle(), API.FORMAT.TEXT_CERTH_TWEET, false);
-                //REmap.put(i.getTitle(), entities);
+                REmap.put(i.getTitle(), entities);
                 for (gr.demokritos.iit.ner.NamedEntity ne : entities) {
                     NamedEntity simmoNE = new NamedEntity(ne.getText(), ne.getType());
                     simmoNE.setId(ne.getID());
                     i.addAnnotation(simmoNE);
                     imageDAO.save(i);
                     if (ENTITIES_MULTISET.add(simmoNE.getToken().toLowerCase()))
-                        ENTITIES_MAP.put(simmoNE.getToken().toLowerCase(), ne.getType());
+                        ENTITIES_MAP.put(simmoNE.getToken().toLowerCase(), simmoNE);
                 }
             }
         }
 
-        int entitiesCount = 0;
+        //int entitiesCount = 0;
 
         Iterable<Multiset.Entry<String>> cases =
                 Multisets.copyHighestCountFirst(ENTITIES_MULTISET).entrySet();
         for (Multiset.Entry<String> s : cases) {
-            if (entitiesCount > RANKED_ENTITIES_MAX_NUM)
-                break;
-            NamedEntity y = new NamedEntity(s.getElement(), ENTITIES_MAP.get(s.getElement()), s.getCount());
+            //if (entitiesCount > RANKED_ENTITIES_MAX_NUM)
+            //break;
+            NamedEntity y = ENTITIES_MAP.get(s.getElement());
+            y.setCount(s.getCount());
             entitiesDAO.save(y);
-            entitiesCount++;
+            //entitiesCount++;
         }
 
-        //RelationCounter counter = API.RE(REmap, API.FORMAT.TEXT_CERTH_TWEET);
-        //counter.prettyPrint();
+        RelationCounter counter = API.RE(REmap, API.FORMAT.TEXT_CERTH_TWEET);
+        System.out.println("### RELATIONS COUNT ### "+counter.getGroups().size());
+        for (RelationList rl : counter.getGroups().values()) {
+            for (Relation r : rl) {
+                gr.demokritos.iit.ner.NamedEntity subject = r.getSubject();
+                gr.demokritos.iit.ner.NamedEntity argument = r.getArgument();
+                String relation = r.getRelationText();
+                NamedEntity subjectSIMMO = new NamedEntity(subject.getText(), subject.getType());
+                subjectSIMMO.setId(subject.getID());
+                NamedEntity argumentSIMMO = new NamedEntity(argument.getText(), argument.getType());
+                argumentSIMMO.setId(argument.getID());
+                TextualRelation textualRelation = new TextualRelation(subjectSIMMO, argumentSIMMO, relation);
+                associationDAO.save(textualRelation);
+            }
+        }
         return null;
     }
 
@@ -96,7 +111,7 @@ public class EntitiesExtractionCallable implements Callable<List<NamedEntity>> {
         //NameThatEntity nte = new NameThatEntity();
         //nte.initPipeline();
         ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
-        clusteringExecutor.submit(new EntitiesExtractionCallable("earthquake")).get();
+        clusteringExecutor.submit(new NEandRECallable("earthquake")).get();
         clusteringExecutor.shutdown();
         MorphiaManager.tearDown();
     }

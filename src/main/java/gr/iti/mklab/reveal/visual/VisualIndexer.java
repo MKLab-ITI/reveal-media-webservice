@@ -28,7 +28,9 @@ import org.slf4j.LoggerFactory;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -83,7 +85,7 @@ public class VisualIndexer {
     private VisualIndexHandler handler;
     private String collection;
 
-    public VisualIndexer(String collectionName) throws Exception {
+    public VisualIndexer(String collectionName) throws IOException {
         this.collection = collectionName;
         createCollection();
         handler = new VisualIndexHandler("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
@@ -161,7 +163,7 @@ public class VisualIndexer {
         }
     }
 
-    public boolean createCollection() throws Exception {
+    public boolean createCollection() throws IOException {
         String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/add/" + collection;
         HttpGet httpget = new HttpGet(request.replaceAll(" ", "%20"));
         httpget.setConfig(_requestConfig);

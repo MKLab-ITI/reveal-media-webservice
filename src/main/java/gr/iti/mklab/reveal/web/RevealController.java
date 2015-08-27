@@ -4,23 +4,24 @@ import ForensicsToolbox.*;
 import com.google.gson.Gson;
 import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
-import gr.iti.mklab.reveal.entitites.EntitiesExtractionCallable;
+import gr.iti.mklab.reveal.entitites.NEandRECallable;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
-import gr.iti.mklab.reveal.text.NameThatEntity;
-import gr.iti.mklab.reveal.text.TextPreprocessing;
-import gr.iti.mklab.reveal.text.htmlsegmentation.BoilerpipeContentExtraction;
-import gr.iti.mklab.reveal.text.htmlsegmentation.Content;
 
 import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.simmo.core.Association;
 import gr.iti.mklab.simmo.core.UserAccount;
+import gr.iti.mklab.simmo.core.annotations.Clustered;
 import gr.iti.mklab.simmo.core.annotations.NamedEntity;
+import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
+import gr.iti.mklab.simmo.core.associations.TextualRelation;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
+import gr.iti.mklab.simmo.core.morphia.AssociationDAO;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import org.mongodb.morphia.dao.BasicDAO;
@@ -74,7 +75,7 @@ public class RevealController {
     @RequestMapping(value = "/media/{collection}/extract", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public String extractEntities(@PathVariable(value = "collection") String collection) throws Exception {
-        entitiesExecutor.submit(new EntitiesExtractionCallable(collection));
+        entitiesExecutor.submit(new NEandRECallable(collection));
         return "Extracting entities";
     }
 
@@ -89,12 +90,33 @@ public class RevealController {
     @ResponseBody
     public List<NamedEntity> entitiesForCollection(@PathVariable(value = "collection") String collection) throws Exception {
         DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-        return rankedEntities.find().asList();
+        return rankedEntities.find().asList().subList(0, 300);
+    }
+
+    /**
+     * Returns the textual relations among named entities
+     *
+     * @param collection
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping(value = "/media/{collection}/relations", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<TextualRelation> relationsForCollection(@PathVariable(value = "collection") String collection) throws Exception {
+        AssociationDAO associationDAO = new AssociationDAO(collection);
+        List<Association> assList = associationDAO.getDatastore().find(Association.class).disableValidation().filter("associations.className in", TextualRelation.class.getName()).
+                limit(300).asList();
+        List<TextualRelation> trlist = new ArrayList<>(assList.size());
+        assList.stream().forEach(association ->
+                        trlist.add(((TextualRelation) association))
+        );
+        return trlist;
     }
 
     /*@RequestMapping(value = "/text/entities", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
     @ResponseBody
     public List<NamedEntity> entitiesFromString(@RequestBody Requests.EntitiesPostRequest req) throws Exception {
+
         TextPreprocessing textPre = new TextPreprocessing(req.text);
         // Get the cleaned text
         ArrayList<String> cleanedText = textPre.getCleanedSentences();
@@ -211,7 +233,7 @@ public class RevealController {
     ///////// CRAWLER            ///////////////////////////
     ///////////////////////////////////////////////////////
 
-    @RequestMapping(value = "/crawls/add", method = RequestMethod.GET, produces="application/json")
+    @RequestMapping(value = "/crawls/add", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public CrawlJob submitCrawlingJob(@RequestParam(value = "text", required = true) String json) throws RevealException {
         try {
@@ -244,7 +266,7 @@ public class RevealController {
         try {
             CrawlJob job = crawlerCtrler.cancel(id);
             //extract entities for the collection
-            entitiesExecutor.submit(new EntitiesExtractionCallable(job.getCollection()));
+            entitiesExecutor.submit(new NEandRECallable(job.getCollection()));
             //cluster collection items
             clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 1.3, 2));
             return job;
@@ -356,7 +378,7 @@ public class RevealController {
             account = userDAO.findOne("username", username);
         }
         List<String> sourcesList = null;
-        if(sources!=null){
+        if (sources != null) {
             sourcesList = Arrays.asList(sources.split(","));
         }
 

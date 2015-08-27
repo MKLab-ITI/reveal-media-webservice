@@ -21,6 +21,8 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.File;
+import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.Date;
 
 /**
@@ -50,7 +52,12 @@ public class RevealAgent implements Runnable {
         try {
             LOGGER.warn("###### REVEAL agent run method");
             System.out.println("###### REVEAL agent run method");
-            IndexingRunner runner = new IndexingRunner(_request.getCollection());
+            IndexingRunner runner = null;
+            try {
+                runner = new IndexingRunner(_request.getCollection());
+            } catch (IOException ex) {
+                //ignore
+            }
             Thread indexingThread = new Thread(runner);
             indexingThread.start();
             LOGGER.warn("###### After the indexing runner has been created");
