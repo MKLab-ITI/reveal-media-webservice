@@ -26,6 +26,7 @@ import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
+import org.mongodb.morphia.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -104,7 +105,7 @@ public class RevealController {
     @ResponseBody
     public List<TextualRelation> relationsForCollection(@PathVariable(value = "collection") String collection) throws Exception {
         AssociationDAO associationDAO = new AssociationDAO(collection);
-        List<Association> assList = associationDAO.getDatastore().find(Association.class).disableValidation().filter("associations.className in", TextualRelation.class.getName()).
+        List<Association> assList = associationDAO.getDatastore().find(Association.class).disableValidation().filter("className", TextualRelation.class.getName()).
                 limit(300).asList();
         List<TextualRelation> trlist = new ArrayList<>(assList.size());
         assList.stream().forEach(association ->
@@ -535,12 +536,20 @@ public class RevealController {
         //ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://eices.columbia.edu/files/2012/04/SEE-U_Main_Photo-540x359.jpg");*/
 
 
-        Configuration.load("remote.properties");
+        //Configuration.load("remote.properties");
         MorphiaManager.setup("160.40.51.20");
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "eurogroup");
-        List<String> s = new ArrayList<>();
-        s.add("Twitter");
-        List<Image> imgs = imageDAO.search("crawlDate", null, 100, 100, 50, 0, null, null, s);
+        AssociationDAO associationDAO = new AssociationDAO("syria_migrants");
+        List<Association> assList = associationDAO.getDatastore().find(Association.class).disableValidation().filter("className", TextualRelation.class.getName()).
+                limit(300).asList();
+        List<TextualRelation> trlist = new ArrayList<>(assList.size());
+        assList.stream().forEach(association ->
+                        trlist.add(((TextualRelation) association))
+        );
+
+        //MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "eurogroup");
+        //List<String> s = new ArrayList<>();
+        //s.add("Twitter");
+        //List<Image> imgs = imageDAO.search("crawlDate", null, 100, 100, 50, 0, null, null, s);
         //DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("eurogroup").getName());
         //List<NamedEntity> list = rankedEntities.find().asList();
         int m = 5;

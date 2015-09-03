@@ -305,8 +305,8 @@
                         <artifactId>tomcat7-maven-plugin</artifactId>
                         <version>2.2</version>
                         <configuration>
-                            <server>squall-1</server>
-                            <url>http://squall-1.atc.gr:49203/manager/text</url>
+                            <server>storm-1</server>
+                            <url>http://storm-1.atc.gr:49200/manager/text</url>
                             <path>/crawler</path>
                         </configuration>
                     </plugin>

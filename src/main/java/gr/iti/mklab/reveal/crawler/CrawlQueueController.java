@@ -79,7 +79,7 @@ public class CrawlQueueController {
         System.out.println("CRAWL: submit " + collectionName + " keywords " + ArrayUtils.toString(keywords));
         String crawlDataPath = Configuration.CRAWLS_DIR + collectionName;
         List<CrawlJob> requestsWithSameName = dao.getDatastore().find(CrawlJob.class).field("collection").equal(collectionName).asList();
-        if (!isNew && (new File(crawlDataPath).exists() || requestsWithSameName.size() > 0))
+        if (isNew && (new File(crawlDataPath).exists() || requestsWithSameName.size() > 0))
             throw new Exception("The collection " + collectionName + " already exists. Choose a different name or mark not new");
         CrawlJob r = new CrawlJob(crawlDataPath, collectionName, keywords, isNew);
         dao.save(r);
