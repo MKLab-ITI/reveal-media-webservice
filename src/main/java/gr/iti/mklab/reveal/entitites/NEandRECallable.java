@@ -4,6 +4,7 @@ import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
 
+
 import gr.demokritos.iit.api.API;
 import gr.demokritos.iit.ner.NamedEntityList;
 import gr.demokritos.iit.re.Relation;
@@ -40,6 +41,15 @@ public class NEandRECallable implements Callable<List<NamedEntity>> {
      */
     private Map<String, NamedEntity> ENTITIES_MAP = new HashMap<>();
 
+    /**
+     * A Multiset to store frequencies for relations
+     */
+    public Multiset<String> RELATIONS_MULTISET = ConcurrentHashMultiset.create();
+    /**
+     * A HashMap to store relation
+     */
+    private Map<String, Relation> RELATIONS_MAP = new HashMap<>();
+
     private DAO<NamedEntity, String> entitiesDAO;
     private DAO<Association, String> associationDAO;
 
@@ -55,7 +65,7 @@ public class NEandRECallable implements Callable<List<NamedEntity>> {
     public List<NamedEntity> call() throws Exception {
 
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-        List<Image> list = imageDAO.getItems((int)imageDAO.count(), 0);
+        List<Image> list = imageDAO.getItems((int) imageDAO.count(), 0);
         //List<Image> list = imageDAO.getItems(1000, 0);
         HashMap<String, NamedEntityList> REmap = new HashMap<>();
 
@@ -88,19 +98,32 @@ public class NEandRECallable implements Callable<List<NamedEntity>> {
         }
 
         RelationCounter counter = API.RE(REmap, API.FORMAT.TEXT_CERTH_TWEET);
-        System.out.println("### RELATIONS COUNT ### "+counter.getGroups().size());
+
+        System.out.println("### RELATIONS COUNT ### " + counter.getGroups().size());
         for (RelationList rl : counter.getGroups().values()) {
             for (Relation r : rl) {
-                gr.demokritos.iit.ner.NamedEntity subject = r.getSubject();
-                gr.demokritos.iit.ner.NamedEntity argument = r.getArgument();
-                String relation = r.getRelationText();
-                NamedEntity subjectSIMMO = new NamedEntity(subject.getText(), subject.getType());
-                subjectSIMMO.setId(subject.getID());
-                NamedEntity argumentSIMMO = new NamedEntity(argument.getText(), argument.getType());
-                argumentSIMMO.setId(argument.getID());
-                TextualRelation textualRelation = new TextualRelation(subjectSIMMO, argumentSIMMO, relation);
-                associationDAO.save(textualRelation);
+                if (entitiesDAO.exists("_id", r.getSubject().getID()) && entitiesDAO.exists("_id", r.getArgument().getID())) {
+                    int count = counter.getCount(r.getLabel());
+                    RELATIONS_MULTISET.add(r.getLabel(), count);
+                    RELATIONS_MAP.put(r.getLabel(), r);
+
+                }
             }
+        }
+
+        Iterable<Multiset.Entry<String>> rankedRelations =
+                Multisets.copyHighestCountFirst(RELATIONS_MULTISET).entrySet();
+        for (Multiset.Entry<String> s : rankedRelations) {
+            Relation r = RELATIONS_MAP.get(s.getElement());
+            gr.demokritos.iit.ner.NamedEntity subject = r.getSubject();
+            gr.demokritos.iit.ner.NamedEntity argument = r.getArgument();
+            String relation = r.getRelationText();
+            NamedEntity subjectSIMMO = new NamedEntity(subject.getText(), subject.getType());
+            subjectSIMMO.setId(subject.getID());
+            NamedEntity argumentSIMMO = new NamedEntity(argument.getText(), argument.getType());
+            argumentSIMMO.setId(argument.getID());
+            TextualRelation textualRelation = new TextualRelation(subjectSIMMO, argumentSIMMO, relation, s.getCount());
+            associationDAO.save(textualRelation);
         }
         return null;
     }
