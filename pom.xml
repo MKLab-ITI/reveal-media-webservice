@@ -11,7 +11,7 @@
     <name>crawler</name>
     <properties>
         <spring.version>4.1.0.RELEASE</spring.version>
-        <mongo.host>160.40.51.28</mongo.host>
+        <mongo.host>160.40.51.20</mongo.host>
     </properties>
     <dependencies>
         <dependency>
@@ -193,9 +193,9 @@
         </dependency>
         <!-- gr.iti.mklab libraries -->
         <dependency>
-            <groupId>eu.socialsensor</groupId>
-            <artifactId>multimedia-indexing</artifactId>
-            <version>0.2</version>
+            <groupId>gr.iti.mklab</groupId>
+            <artifactId>mklab-multimedia-indexing</artifactId>
+            <version>0.1</version>
         </dependency>
         <dependency>
             <groupId>com.rabbitmq</groupId>
@@ -203,12 +203,12 @@
             <version>3.5.2</version>
         </dependency>
         <!-- forensics libraries -->
-        <!--<dependency><groupId>gr.iti.mklab</groupId><artifactId>forensics</artifactId><version>0.7-SNAPSHOT</version></dependency>-->
-        <dependency>
+        <dependency><groupId>gr.iti.mklab</groupId><artifactId>forensics</artifactId><version>0.7-SNAPSHOT</version></dependency>
+        <!--<dependency>
             <groupId>eu.reveal</groupId>
             <artifactId>multimedia-manipulation-toolbox</artifactId>
             <version>1.0</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
@@ -242,7 +242,7 @@
         		</dependency>
     </dependencies>
     <repositories>
-        <!--<repository><id>repo</id><url>file://${project.basedir}/repo</url></repository>-->
+        <repository><id>repo</id><url>file://${project.basedir}/repo</url></repository>
         <!-- Demokritos repository for the relation extraction module -->
         <repository>
         			<releases>
@@ -255,7 +255,7 @@
         			<url>http://idefix.iit.demokritos.gr/maven2</url>
         			<layout>default</layout>
         		</repository>
-        <repository>
+        <!--<repository>
             <id>reveal-maven-repo</id>
             <name>reveal-maven-repo</name>
             <url>http://prometheus.atc.gr:8080/nexus/content/repositories/releases</url>
@@ -263,7 +263,7 @@
                 <updatePolicy>always</updatePolicy>
                 <enabled>true</enabled>
             </snapshots>
-        </repository>
+        </repository>-->
         <repository>
             <id>oss-sonatype</id>
             <name>oss-sonatype</name>

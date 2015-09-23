@@ -50,8 +50,8 @@ public class VisualIndexer {
     public static void init() throws Exception {
 
         _requestConfig = RequestConfig.custom()
-                .setSocketTimeout(60000)
-                .setConnectTimeout(60000)
+                .setSocketTimeout(180000)
+                .setConnectTimeout(180000)
                 .build();
         PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
         _httpclient = HttpClients.custom()
