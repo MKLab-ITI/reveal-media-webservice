@@ -1,6 +1,6 @@
 { "swagger": 2.0,
     "info": {
-        "description": "Reveal web service using the SNOW dataset",
+        "description": "Reveal web service",
         "version": "1.0.0",
         "title": "Reveal",
         "termsOfService": "http://revealproject.eu/",
@@ -12,7 +12,7 @@
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         }
     },
-    "host": "160.40.51.20:8080/crawler",
+    "host": "127.0.0.1:8080/crawler",
     "basePath": "/mmapi",
     "paths": {
         "/crawls/add": {

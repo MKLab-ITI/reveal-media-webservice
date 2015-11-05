@@ -45,7 +45,7 @@ public class RevealController {
     protected CrawlQueueController crawlerCtrler;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
+        Configuration.load(getClass().getResourceAsStream("/docker.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -475,7 +475,7 @@ public class RevealController {
                                             @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         List<gr.iti.mklab.simmo.core.cluster.Cluster> clusters = clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).order("-size").offset(offset).limit(count).asList();
-        List<ClusterReduced> minimalList = new ArrayList<>(clusters.size());
+        List<ClusterReduced> minimalList = new ArrayList<ClusterReduced>(clusters.size());
         for (gr.iti.mklab.simmo.core.cluster.Cluster c : clusters) {
             ClusterReduced cr = new ClusterReduced();
             cr.id = c.getId();

@@ -3,6 +3,7 @@ package gr.iti.mklab.reveal.crawler;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
+import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
@@ -52,11 +53,17 @@ public class RevealAgent implements Runnable {
         try {
             LOGGER.warn("###### REVEAL agent run method");
             System.out.println("###### REVEAL agent run method");
+            // Mark the request as running
+            dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
             IndexingRunner runner = null;
             try {
                 runner = new IndexingRunner(_request.getCollection());
-            } catch (IOException ex) {
-                //ignore
+            } catch (Exception ex) {
+                System.out.println("###### Cathing exception in run method");
+                // If there is an error, change the state and return
+                _request.setState(CrawlJob.STATE.WAITING);
+                dao.save(_request);
+                return;
             }
             Thread indexingThread = new Thread(runner);
             indexingThread.start();
@@ -65,8 +72,6 @@ public class RevealAgent implements Runnable {
             if (Configuration.ADD_SOCIAL_MEDIA) {
                 _manager.addAllKeywordFeeds(_request.getKeywords(), _request.getCollection());
             }
-            // Mark the request as running
-            dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
             _request.setState(CrawlJob.STATE.RUNNING);
             _request.setLastStateChange(new Date());
             dao.save(_request);

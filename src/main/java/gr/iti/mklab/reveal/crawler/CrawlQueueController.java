@@ -31,7 +31,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by kandreadou on 12/18/14.
+ * A controller to monitor crawls. The maximum number of simultaneous crawls
+ * is defined in the properties files, in the numCrawls property
  */
 public class CrawlQueueController {
 
@@ -141,7 +142,7 @@ public class CrawlQueueController {
         List<CrawlJob> list = getRunningCrawls();
         System.out.println("Running crawls list size " + list.size());
 
-        if (list.size() >= 2)
+        if (list.size() >= Configuration.NUM_CRAWLS)
             return;
         List<CrawlJob> waitingList = getWaitingCrawls();
         if (waitingList.isEmpty())
@@ -233,8 +234,8 @@ public class CrawlQueueController {
         Query<CrawlJob> q = dao.createQuery();
         q.or(
                 q.criteria("requestState").equal(CrawlJob.STATE.RUNNING),
-                q.criteria("requestState").equal(CrawlJob.STATE.STOPPING),
-                q.criteria("requestState").equal(CrawlJob.STATE.DELETING),
+                //q.criteria("requestState").equal(CrawlJob.STATE.STOPPING),
+                //q.criteria("requestState").equal(CrawlJob.STATE.DELETING),
                 q.criteria("requestState").equal(CrawlJob.STATE.STARTING)
         );
         return q.asList();
