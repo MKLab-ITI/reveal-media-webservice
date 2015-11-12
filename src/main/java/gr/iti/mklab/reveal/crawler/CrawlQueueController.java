@@ -99,14 +99,18 @@ public class CrawlQueueController {
     public synchronized CrawlJob cancel(String id) throws Exception {
         System.out.println("CRAWL: Cancel for id " + id);
         CrawlJob req = getCrawlRequest(id);
-        System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
-        req.setState(CrawlJob.STATE.STOPPING);
-        req.setLastStateChange(new Date());
-        dao.save(req);
-        if (req.getKeywords().isEmpty())
-            cancelGeoCrawl(req.getCollection());
-        else
-            cancelForName(req.getCollection());
+        if(CrawlJob.STATE.RUNNING == req.getState()) {
+            System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
+            req.setState(CrawlJob.STATE.STOPPING);
+            req.setLastStateChange(new Date());
+            dao.save(req);
+            if (req.getKeywords().isEmpty())
+                cancelGeoCrawl(req.getCollection());
+            else
+                cancelForName(req.getCollection());
+        }else{
+            System.out.println("CrawlRequest state "+req.getState()+". You can only stop RUNNING crawls");
+        }
         return req;
     }
 
@@ -126,7 +130,7 @@ public class CrawlQueueController {
             //Delete the crawl and index folders
             FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
             FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
-        } else {
+        } else if(CrawlJob.STATE.RUNNING == req.getState()) {
             req.setState(CrawlJob.STATE.DELETING);
             req.setLastStateChange(new Date());
             dao.save(req);
@@ -134,6 +138,8 @@ public class CrawlQueueController {
                 cancelGeoCrawl(req.getCollection());
             else
                 cancelForName(req.getCollection());
+        }else{
+            System.out.println("CrawlRequest state "+req.getState()+". You can only delete RUNNING or FINISHED crawls");
         }
         return req;
     }

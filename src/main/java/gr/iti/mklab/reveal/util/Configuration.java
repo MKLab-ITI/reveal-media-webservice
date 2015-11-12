@@ -19,8 +19,6 @@ public class Configuration {
     public static String INDEX_SERVICE_HOST;
     public static String MONGO_HOST;
     public static boolean ADD_SOCIAL_MEDIA;
-    public static String STREAM_CONF_FILE;
-    public static String GEO_CONF_FILE;
     public static String MANIPULATION_REPORT_PATH;
     public static boolean PUBLISH_RABBITMQ;
     public static int NUM_CRAWLS;
@@ -43,8 +41,6 @@ public class Configuration {
         INDEX_SERVICE_HOST = conf.getProperty("indexServiceHost");
         MONGO_HOST = conf.getProperty("mongoHost");
         ADD_SOCIAL_MEDIA = Boolean.valueOf(conf.getProperty("getSocialMedia"));
-        STREAM_CONF_FILE = conf.getProperty("streamConfFile");
-        GEO_CONF_FILE = conf.getProperty("geoConfFile");
         MANIPULATION_REPORT_PATH = conf.getProperty("manipulationReportPath");
         PUBLISH_RABBITMQ = Boolean.parseBoolean(conf.getProperty("publish"));
         NUM_CRAWLS = Integer.parseInt(conf.getProperty("numCrawls", "2"));

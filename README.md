@@ -30,8 +30,6 @@ The properties file defines the following generic configuration settings:
 - indexServiceHost: Where the [visual indexing webservice is hosted][7]
 - mongoHost: Where MongoDB is hosted
 - getSocialMedia: True to also crawl for social media using the [simmo-stream-manager web service][6]
-- streamConfFile: The social stream configuration file for the [simmo-stream-manager web service][6] in case getSocialMedia is true. Otherwise this parameter is not used
-- geoConfFile: The geo stream configuration file for the [simmo-stream-manager web service][6] in case getSocialMedia is true. Otherwise this parameter is not used
 - manipulationReportPath: Where the forensics component's output is saved
 - publish: If true, the output is published to RabbitMQ
 - numCrawls: The maximum number of simultaneous crawls
@@ -39,9 +37,9 @@ The properties file defines the following generic configuration settings:
 
 #### Architecture
 
-The ```RevealAgent``` controls and initializes the crawler and all necessary additional components, the visual indexing module for instance. Every new crawler instance starts in a new Thread and is independant of the other instances. The BUbiNG crawler itsels is a JMX agent, which means that all instances can be configured and monitored at runtime using jconsole. Although starting the crawler instance is equivalent to a new thread creation, stopping uses the dedicated JMX '''stop()''' command.
+The ```RevealAgent``` controls and initializes the crawler and all necessary additional components, the visual indexing module for instance. Every new crawler instance starts in a new Thread and is independant of the other instances. The BUbiNG crawler itsels is a JMX agent, which means that all instances can be configured and monitored at runtime using jconsole. Although starting the crawler instance is equivalent to a new thread creation, stopping uses the dedicated JMX ```stop()``` command.
 
-The '''CrawlQueueController''' is responisble for starting new crawl jobs, stopping running cralw jobs and generally for monitoring the crawler queue. Every crawl job starts at WAITING state. The '''CrawlQueueController''' checks the queue every 1 minute or whenever a new crawl job is submitted. If there is an empty slot, if the currently running crawls are less then the numCrawls property specified above, a new crawl thread is launched. Until the initilization is finished the crawl job is in STARTING state, this might last a couple of minutes and the crawl job should not be stopped at this point. The next step is the RUNNING state. A crawl job can be stopped or deleted. Deletion means that the collected data and the visual index are also deleted. The termination also takes a couple of minutes so during this time the crawl job is in STOPPING or DELETING state. Deleted crawl jobs disappear from the queue but stopped ones still stay there in FINISHED state.
+The ```CrawlQueueController``` is responisble for starting new crawl jobs, stopping running crawl jobs and generally for monitoring the crawler queue. Every crawl job starts at ```WAITING``` state. The ```CrawlQueueController``` checks the queue every 1 minute or whenever a new crawl job is submitted. If there is an empty slot, if the currently running crawls are less then the numCrawls property specified above, a new crawl thread is launched. Until the initilization is finished the crawl job is in ```STARTING``` state, this might last a couple of minutes and the crawl job should not be stopped at this point. The next step is the ```RUNNING``` state. A crawl job can be stopped or deleted. Deletion means that the collected data and the visual index are also deleted. The termination also takes a couple of minutes so during this time the crawl job is in ```STOPPING``` or ```DELETING``` state. Deleted crawl jobs disappear from the queue but stopped ones still stay there in ```FINISHED``` state.
 
 Important note:  The whole text package is obsolete. Now we are using iit.demokritos maven dependency instead. I'm just leaving the code as a reference but it can as well be deleted.
 
