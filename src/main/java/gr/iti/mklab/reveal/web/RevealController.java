@@ -21,6 +21,7 @@ import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
+import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.AssociationDAO;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
@@ -266,10 +267,13 @@ public class RevealController {
     public CrawlJob cancelCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
         try {
             CrawlJob job = crawlerCtrler.cancel(id);
-            //extract entities for the collection
-            entitiesExecutor.submit(new NEandRECallable(job.getCollection()));
-            //cluster collection items
-            clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 1.3, 2));
+            // Check that it is stopping, because cancel is not always successful
+            if(job.getState() == CrawlJob.STATE.STOPPING) {
+                //extract entities for the collection
+                entitiesExecutor.submit(new NEandRECallable(job.getCollection()));
+                //cluster collection items
+                clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 1.3, 2));
+            }
             return job;
         } catch (Exception ex) {
             throw new RevealException("Error when canceling", ex);

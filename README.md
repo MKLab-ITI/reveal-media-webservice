@@ -45,6 +45,13 @@ Important note:  The whole text package is obsolete. Now we are using iit.demokr
 
 The crawler has the possibility of also crawling social media by using the [simmo-stream-manager web service][6]. This can be configured in the properties file, as mentioned before.
 
+#### The Requests
+
+For the representation of our RESTful API, we use [swagger][8]. This is done by exposing a properly formatted json file, readable by swagger, as part of the web service and also deploying [swagger ui][9] on tomcat.
+Since JSON-P does not allow asynchronous POST requests, all the API requests are GET.
+For instance to add a crawl, one should do a get request to http://127.0.0.1:8080/crawler/mmapi/crawls/add using a json object as a parameter in the following form ```{"collection":"testing","isNew":true,"keywords":["germanwings","crash"] }```
+
+
 [1]:  http://law.di.unimi.it/software.php#bubing
 [2]:  http://www.quantware.ups-tlse.fr/FETNADINE/papers/P4.8.pdf
 [3]:  http://wwwconference.org/proceedings/www2014/companion/p227.pdf
@@ -52,3 +59,5 @@ The crawler has the possibility of also crawling social media by using the [simm
 [5]:  https://search.maven.org/#artifactdetails|it.unimi.di.law|bubing|0.9.11|jar
 [6]:  https://github.com/MKLab-ITI/simmo-stream-manager
 [7]:  https://github.com/MKLab-ITI/multimedia-webservice
+[8]:  http://swagger.io/
+[9]:  http://swagger.io/swagger-ui/
