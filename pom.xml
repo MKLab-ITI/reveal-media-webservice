@@ -197,18 +197,17 @@
             <artifactId>mklab-multimedia-indexing</artifactId>
             <version>0.1</version>
         </dependency>
+        <!-- forensics libraries -->
+        <dependency>
+            <groupId>gr.iti.mklab</groupId>
+            <artifactId>image-forensics</artifactId>
+            <version>0.3</version>
+        </dependency>
         <dependency>
             <groupId>com.rabbitmq</groupId>
             <artifactId>amqp-client</artifactId>
             <version>3.5.2</version>
         </dependency>
-        <!-- forensics libraries -->
-        <dependency><groupId>gr.iti.mklab</groupId><artifactId>forensics</artifactId><version>0.7-SNAPSHOT</version></dependency>
-        <!--<dependency>
-            <groupId>eu.reveal</groupId>
-            <artifactId>multimedia-manipulation-toolbox</artifactId>
-            <version>1.0</version>
-        </dependency>-->
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
