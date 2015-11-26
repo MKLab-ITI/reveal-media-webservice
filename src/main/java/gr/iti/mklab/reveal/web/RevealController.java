@@ -25,6 +25,7 @@ import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.AssociationDAO;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
+import jdk.nashorn.internal.runtime.regexp.joni.Config;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
@@ -46,7 +47,7 @@ public class RevealController {
     protected CrawlQueueController crawlerCtrler;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/docker.properties"));
+        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -153,6 +154,61 @@ public class RevealController {
     ////////////////////////////////////////////////////////
     ///////// MANIPULATION DETECTION     ///////////////////////////
     ///////////////////////////////////////////////////////
+
+
+    @RequestMapping(value = "/media/verificationreport/addurl", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public String addverification(@RequestParam(value = "url", required = true) String url) throws RevealException {
+        try {
+            System.out.println("Received new URL. Downloading...");
+            String URL=ReportManagement.DownloadURL(url, Configuration.MANIPULATION_REPORT_PATH);
+            System.out.println("Downloaded.");
+            return URL;
+        } catch (Exception ex) {
+            throw new RevealException((ex.getMessage()), ex);
+        }
+    }
+
+    @RequestMapping(value = "/media/verificationreport/generatereport", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public String generateReport(@RequestParam(value = "hash", required = true) String hash) throws RevealException {
+        try {
+            System.out.println("Received new hash for analysis. Beginning...");
+            String ReportResult=ReportManagement.CreateReport(hash, Configuration.MANIPULATION_REPORT_PATH,Configuration.MAX_GHOST_IMAGE_SMALL_DIM,Configuration.NUM_GHOST_THREADS,Configuration.FORENSIC_PROCESS_TIMEOUT);
+            System.out.println("Analysis complete with message: " + ReportResult);
+            return ReportResult;
+        } catch (Exception ex) {
+            throw new RevealException((ex.getMessage()), ex);
+        }
+    }
+
+    @RequestMapping(value = "/media/verificationreport/getreport", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public ForensicReport returnReport(@RequestParam(value = "hash", required = true) String hash) throws RevealException {
+        try {
+            System.out.println("Producing forensic report...");
+            ForensicReport Report=ReportManagement.GetReport(hash);
+            if (Report!=null) {
+            if (Report.ELA_Report.completed)
+                Report.ELA_Report.Map=Report.ELA_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+            if (Report.DQ_Report.completed)
+                Report.DQ_Report.Map=Report.DQ_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+            if (Report.DisplayImage!=null)
+                Report.DisplayImage=Report.DisplayImage.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+            if (Report.NoiseDW_Report.completed)
+                Report.NoiseDW_Report.Map=Report.NoiseDW_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+            if (Report.Ghost_Report.completed) {
+                for (int GhostInd = 0; GhostInd < Report.Ghost_Report.Maps.size(); GhostInd++) {
+                    Report.Ghost_Report.Maps.set(GhostInd, Report.Ghost_Report.Maps.get(GhostInd).replace(Configuration.MANIPULATION_REPORT_PATH, "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/"));
+                }
+            }
+            }
+            return Report;
+
+        } catch (Exception ex) {
+            throw new RevealException((ex.getMessage()), ex);
+        }
+    }
 
     @RequestMapping(value = "/media/verify", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody

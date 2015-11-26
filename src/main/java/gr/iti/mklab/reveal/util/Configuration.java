@@ -22,6 +22,9 @@ public class Configuration {
     public static String MANIPULATION_REPORT_PATH;
     public static boolean PUBLISH_RABBITMQ;
     public static int NUM_CRAWLS;
+    public static int NUM_GHOST_THREADS;
+    public static long FORENSIC_PROCESS_TIMEOUT;
+    public static int MAX_GHOST_IMAGE_SMALL_DIM;
 
     public static void load(String file) throws ConfigurationException {
         PropertiesConfiguration conf = new PropertiesConfiguration(file);
@@ -44,5 +47,8 @@ public class Configuration {
         MANIPULATION_REPORT_PATH = conf.getProperty("manipulationReportPath");
         PUBLISH_RABBITMQ = Boolean.parseBoolean(conf.getProperty("publish"));
         NUM_CRAWLS = Integer.parseInt(conf.getProperty("numCrawls", "2"));
+        NUM_GHOST_THREADS=Integer.parseInt(conf.getProperty("numGhostThreads", "3"));
+        FORENSIC_PROCESS_TIMEOUT=Long.parseLong(conf.getProperty("ForensicProcessTimeout", "30000"));
+        MAX_GHOST_IMAGE_SMALL_DIM=Integer.parseInt(conf.getProperty("MaxGhostImageSmallDimension", "768"));
     }
 }

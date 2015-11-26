@@ -12,7 +12,7 @@
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         }
     },
-    "host": "127.0.0.1:8080/crawler",
+    "host": "160.40.51.20:8080/revealv2",
     "basePath": "/mmapi",
     "paths": {
         "/crawls/add": {
@@ -629,6 +629,97 @@
                     },
                     "400": {
                         "description": "Invalid ID supplied"
+                    }
+                }
+            }
+        },
+
+        "/media/verificationreport/addurl":{
+            "get": {
+                "tags": [
+                    "verification v2"
+                ],
+                "summary": "Downloads a url, adds an empty verification entry to MongoDB and returns the hash key",
+                "description": "",
+                "operationId": "manipulationReport",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "url",
+                        "description": "The image url",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
+        "/media/verificationreport/generatereport":{
+            "get": {
+                "tags": [
+                    "verification v2"
+                ],
+                "summary": "Accepts a hash key corresponding to a downloaded unprocessed MongoDB entry and initiates forensic processing",
+                "description": "",
+                "operationId": "manipulationReport",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "hash",
+                        "description": "The hash corresponding to the URL",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
+        "/media/verificationreport/getreport":{
+            "get": {
+                "tags": [
+                    "verification v2"
+                ],
+                "summary": "Accepts a hash key corresponding to a downloaded unprocessed MongoDB entry and returns the (partial, complete or null) corresponding report",
+                "description": "",
+                "operationId": "manipulationReport",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "hash",
+                        "description": "The hash corresponding to the URL",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
                     }
                 }
             }
