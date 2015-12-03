@@ -202,6 +202,11 @@ public class RevealController {
                     Report.Ghost_Report.Maps.set(GhostInd, Report.Ghost_Report.Maps.get(GhostInd).replace(Configuration.MANIPULATION_REPORT_PATH, "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/"));
                 }
             }
+                if (Report.BLK_Report.completed)
+                    Report.BLK_Report.Map=Report.BLK_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+                if (Report.MedianNoise_Report.completed)
+                    Report.MedianNoise_Report.Map=Report.MedianNoise_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+
             }
             return Report;
 
