@@ -47,7 +47,7 @@ public class RevealController {
     protected CrawlQueueController crawlerCtrler;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
+        Configuration.load(getClass().getResourceAsStream("/local.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
