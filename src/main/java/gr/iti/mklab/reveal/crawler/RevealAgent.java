@@ -90,10 +90,10 @@ public class RevealAgent implements Runnable {
             //Add the dogpile links
     		SeedURLSource dogpile = new DogpileSource();
     		Set<String> dogpileUrls = dogpile.getSeedURLs(_request.getKeywords());
-            additional.addProperty("dogpile", dogpileUrls.toArray(new String[dogpileUrls.size()]));
+            //additional.addProperty("dogpile", dogpileUrls.toArray(new String[dogpileUrls.size()]));
 
             LOGGER.warn("###### Starting Agent for request id " + _request.getId() + " and collection name " + _request.getCollection());
-            RuntimeConfiguration rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional));
+            RuntimeConfiguration rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional), dogpileUrls);
             rc.keywords = _request.getKeywords();
             rc.collectionName = _request.getCollection();
             LOGGER.warn("###### Agent for request id " + _request.getId() + " started");

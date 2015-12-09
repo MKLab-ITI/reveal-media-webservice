@@ -344,7 +344,7 @@ public class RuntimeConfiguration {
 		else blackListedHostHashes.add( spec.trim().hashCode() );				
 	}
 
-	public RuntimeConfiguration( final StartupConfiguration startupConfiguration ) throws ConfigurationException, IOException {
+	public RuntimeConfiguration( final StartupConfiguration startupConfiguration, Set<String> additionalSeeds ) throws ConfigurationException, IOException {
 		try {
 			crawlIsNew = startupConfiguration.crawlIsNew;
 			name = startupConfiguration.name;
@@ -396,7 +396,7 @@ public class RuntimeConfiguration {
 			spamDetectionPeriodicity = startupConfiguration.spamDetectionPeriodicity;
 
 			final List<Iterator<URI>> seedSequence = new ArrayList<Iterator<URI>>(); 
-			Iterator<String> additionalSeedsIterator = Arrays.asList(startupConfiguration.dogpile).iterator();
+			Iterator<String> additionalSeedsIterator = additionalSeeds.iterator();
 			seedSequence.add( new Iterator<URI>() {
 				@Override
 				public boolean hasNext() { return additionalSeedsIterator.hasNext();}

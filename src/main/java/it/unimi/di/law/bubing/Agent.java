@@ -689,7 +689,7 @@ public class Agent extends JGroupsJobManager<BubingJob> {
 			additional.addProperty( "crawlIsNew", Boolean.valueOf( jsapResult.getBoolean( "new" ) ) );
 			if ( jsapResult.userSpecified( "rootDir" ) ) additional.addProperty( "rootDir", jsapResult.getString( "rootDir" ) );
 
-			new Agent( host, port, new RuntimeConfiguration( new StartupConfiguration( jsapResult.getString( "properties" ), additional ) ) );
+			new Agent( host, port, new RuntimeConfiguration( new StartupConfiguration( jsapResult.getString( "properties" ), additional ), null ) );
 			System.exit( 0 ); // Kills remaining FetchingThread instances, if any.
 	}
 }
