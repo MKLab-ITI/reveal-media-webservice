@@ -18,8 +18,6 @@ package it.unimi.di.law.bubing;
  *
  */
 
-
-import gr.iti.mklab.reveal.visual.VisualIndexer;
 import it.unimi.di.law.bubing.frontier.ParsingThread;
 import it.unimi.di.law.bubing.parser.Parser;
 import it.unimi.di.law.bubing.spam.SpamDetector;
@@ -398,6 +396,15 @@ public class RuntimeConfiguration {
 			spamDetectionPeriodicity = startupConfiguration.spamDetectionPeriodicity;
 
 			final List<Iterator<URI>> seedSequence = new ArrayList<Iterator<URI>>(); 
+			Iterator<String> additionalSeedsIterator = Arrays.asList(startupConfiguration.dogpile).iterator();
+			seedSequence.add( new Iterator<URI>() {
+				@Override
+				public boolean hasNext() { return additionalSeedsIterator.hasNext();}
+				@Override
+				public URI next() { return handleSeedURL( new MutableString(additionalSeedsIterator.next() )); }
+				@Override
+				public void remove() { throw new UnsupportedOperationException(); }
+			} );
 			for( String spec : startupConfiguration.seed ) {
 				if ( spec.length() == 0 ) continue; // Skip empty lines
 				if ( spec.startsWith( "file:" ) ) {

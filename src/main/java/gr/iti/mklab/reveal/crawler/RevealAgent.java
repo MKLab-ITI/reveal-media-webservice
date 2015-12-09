@@ -1,5 +1,7 @@
 package gr.iti.mklab.reveal.crawler;
 
+import gr.iti.mklab.reveal.crawler.seeds.DogpileSource;
+import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
@@ -25,6 +27,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by kandreadou on 2/10/15.
@@ -83,6 +87,10 @@ public class RevealAgent implements Runnable {
             additional.addProperty("weight", "1");
             //NOTE: This is new
             additional.addProperty("rootDir", Configuration.CRAWLS_DIR + _request.getCollection());
+            //Add the dogpile links
+    		SeedURLSource dogpile = new DogpileSource();
+    		Set<String> dogpileUrls = dogpile.getSeedURLs(_request.getKeywords());
+            additional.addProperty("dogpile", dogpileUrls.toArray(new String[dogpileUrls.size()]));
 
             LOGGER.warn("###### Starting Agent for request id " + _request.getId() + " and collection name " + _request.getCollection());
             RuntimeConfiguration rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional));

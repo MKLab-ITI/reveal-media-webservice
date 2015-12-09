@@ -33,3 +33,10 @@
 2015-08-21 14:26:19 WARN  HttpMethodBase:682 - Going to buffer response body of large or unknown size. Using getResponseBodyAsStream instead is recommended.
 2015-08-21 14:26:19 WARN  HttpMethodBase:682 - Going to buffer response body of large or unknown size. Using getResponseBodyAsStream instead is recommended.
 2015-08-21 14:26:20 WARN  HttpMethodBase:682 - Going to buffer response body of large or unknown size. Using getResponseBodyAsStream instead is recommended.
+2015-12-02 17:08:41 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT
+2015-12-02 17:13:06 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT
+2015-12-02 17:13:07 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT
+2015-12-02 17:22:35 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT
+2015-12-02 17:23:48 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT
+2015-12-02 17:26:04 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT
+2015-12-02 17:37:26 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT

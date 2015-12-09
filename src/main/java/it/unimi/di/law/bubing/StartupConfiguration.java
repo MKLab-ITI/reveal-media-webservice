@@ -221,6 +221,9 @@ public class StartupConfiguration {
 	 * it is assumed to point to an ASCII file containing on each line a seed URL. */
 	@ManyValuesSpecification
 	public String[] seed;
+	
+	/** An array of additional seed urls from dogpile search engine **/
+	public String[] dogpile;
 
 	/** An IPv4 address that should be blacklisted (i.e., not crawled). If it starts with <samp>file:</samp>,
 	 * it is assumed to point to an ASCII file containing on each line a blacklisted IPv4 address. */
