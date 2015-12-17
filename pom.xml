@@ -199,7 +199,7 @@
 		<dependency>
 			<groupId>gr.iti.mklab</groupId>
 			<artifactId>image-forensics</artifactId>
-			<version>0.5-SNAPSHOT</version>
+			<version>0.55-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.rabbitmq</groupId>
@@ -245,10 +245,6 @@
 		</dependency>
 	</dependencies>
 	<repositories>
-		<repository>
-			<id>repo</id>
-			<url>file://${project.basedir}/repo</url>
-		</repository>
 		<!-- Demokritos repository for the relation extraction module -->
 		<repository>
 			<releases>
