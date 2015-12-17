@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
@@ -144,8 +145,12 @@ public class VisualIndexer {
                     ((Video) media).setWidth(width);
                     ((Video) media).setHeight(height);
                 }
+                imvec.setDebug(true);
+                System.out.println("beginning vectorization");
                 ImageVectorizationResult imvr = imvec.call();
+                System.out.println("Vectorization called properly");
                 double[] vector = imvr.getImageVector();
+                System.out.println("imvr collected properly");
                 if (vector == null || vector.length == 0) {
                     _logger.error("Error in feature extraction for " + id);
                 }
@@ -153,7 +158,7 @@ public class VisualIndexer {
                 indexed = true;
             }
         } catch (Exception e) {
-            //_logger.error(e.getMessage(), e);
+            _logger.error(e.getMessage(), e);
 
         } finally {
             if (httpget != null) {

@@ -47,7 +47,7 @@ public class RevealController {
     protected CrawlQueueController crawlerCtrler;
 
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/local.properties"));
+        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
         VisualIndexer.init();
         crawlerCtrler = new CrawlQueueController();
@@ -186,7 +186,7 @@ public class RevealController {
     @ResponseBody
     public ForensicReport returnReport(@RequestParam(value = "hash", required = true) String hash) throws RevealException {
         try {
-            System.out.println("Producing forensic report...");
+            System.out.println("Request for forensic report received, hash=" + hash + ".");
             ForensicReport Report=ReportManagement.GetReport(hash);
             if (Report!=null) {
             if (Report.ELA_Report.completed)
@@ -501,6 +501,7 @@ public class RevealController {
                     if (found != null)
                         simList2.add(new Responses.SimilarityResponse(found, r.getRank()));
                 }
+                System.out.println("Exiting main block");
             }
             isBusy2 = false;
             if (simList2.size() < count)
