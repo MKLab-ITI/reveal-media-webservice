@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>gr.iti.mklab</groupId>
 			<artifactId>simmo-stream-manager</artifactId>
-			<version>0.3.2-SNAPSHOT</version>
+			<version>0.3.4-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.google.guava</groupId>
