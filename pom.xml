@@ -193,13 +193,13 @@
 		<dependency>
 			<groupId>gr.iti.mklab</groupId>
 			<artifactId>mklab-multimedia-indexing</artifactId>
-			<version>0.1</version>
+			<version>0.2</version>
 		</dependency>
 		<!-- forensics libraries -->
 		<dependency>
 			<groupId>gr.iti.mklab</groupId>
 			<artifactId>image-forensics</artifactId>
-			<version>0.55-SNAPSHOT</version>
+			<version>0.57-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.rabbitmq</groupId>
