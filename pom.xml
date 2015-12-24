@@ -243,6 +243,32 @@
 			<artifactId>jwbf</artifactId>
 			<version>4.0.0-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>net.sf.jung</groupId>
+			<artifactId>jung-graph-impl</artifactId>
+			<version>2.0.1</version>
+		</dependency>
+		<dependency>
+    		<groupId>info.debatty</groupId>
+    		<artifactId>java-string-similarity</artifactId>
+    		<version>RELEASE</version>
+		</dependency>
+		<dependency>
+    		<groupId>info.debatty</groupId>
+    		<artifactId>java-graphs</artifactId>
+    		<version>RELEASE</version>
+		</dependency>
+		<dependency>
+    		<groupId>info.debatty</groupId>
+    		<artifactId>java-lsh</artifactId>
+    		<version>RELEASE</version>
+		</dependency>
+
+		<dependency>
+			<groupId>edu.ucla.sspace</groupId>
+			<artifactId>sspace</artifactId>
+			<version>2.0.4</version>
+		</dependency>
 	</dependencies>
 	<repositories>
 		<!-- Demokritos repository for the relation extraction module -->

@@ -40,3 +40,385 @@
 2015-12-02 17:23:48 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT
 2015-12-02 17:26:04 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT
 2015-12-02 17:37:26 WARN  ResponseProcessCookies:129 - Invalid cookie header: "Set-Cookie: WMF-Last-Access=02-Dec-2015;Path=/;HttpOnly;Expires=Sun, 03 Jan 2016 12:00:00 GMT". Invalid 'expires' attribute: Sun, 03 Jan 2016 12:00:00 GMT
+2015-12-23 12:52:39 INFO  cluster:71 - Cluster created with settings {hosts=[localhost:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 12:52:39 INFO  cluster:76 - Exception in monitor thread while connecting to server localhost:27017
+com.mongodb.MongoSocketOpenException: Exception opening socket
+	at com.mongodb.connection.SocketStream.open(SocketStream.java:63)
+	at com.mongodb.connection.InternalStreamConnection.open(InternalStreamConnection.java:114)
+	at com.mongodb.connection.DefaultServerMonitor$ServerMonitorRunnable.run(DefaultServerMonitor.java:127)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.net.ConnectException: Connection refused
+	at java.net.PlainSocketImpl.socketConnect(Native Method)
+	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:350)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:206)
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:188)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+	at java.net.Socket.connect(Socket.java:589)
+	at com.mongodb.connection.SocketStreamHelper.initialize(SocketStreamHelper.java:50)
+	at com.mongodb.connection.SocketStream.open(SocketStream.java:58)
+	... 3 more
+2015-12-23 12:52:39 INFO  cluster:71 - No server chosen by ReadPreferenceServerSelector{readPreference=primary} from cluster description ClusterDescription{type=UNKNOWN, connectionMode=SINGLE, all=[ServerDescription{address=localhost:27017, type=UNKNOWN, state=CONNECTING, exception={com.mongodb.MongoSocketOpenException: Exception opening socket}, caused by {java.net.ConnectException: Connection refused}}]}. Waiting for 30000 ms before timing out
+2015-12-23 12:53:09 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 12:53:09 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9692}] to 160.40.51.20:27017
+2015-12-23 12:53:09 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=755785}
+2015-12-23 12:53:09 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:9693}] to 160.40.51.20:27017
+2015-12-23 12:54:28 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 12:54:28 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9696}] to 160.40.51.20:27017
+2015-12-23 12:54:28 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=787435}
+2015-12-23 12:59:36 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 12:59:36 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9697}] to 160.40.51.20:27017
+2015-12-23 12:59:36 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=735420}
+2015-12-23 13:03:22 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:03:22 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9782}] to 160.40.51.20:27017
+2015-12-23 13:03:22 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=748852}
+2015-12-23 13:03:22 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:9783}] to 160.40.51.20:27017
+2015-12-23 13:03:55 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:03:55 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9784}] to 160.40.51.20:27017
+2015-12-23 13:03:55 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=749651}
+2015-12-23 13:03:55 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:9785}] to 160.40.51.20:27017
+2015-12-23 13:04:11 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:04:12 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9786}] to 160.40.51.20:27017
+2015-12-23 13:04:12 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=906818}
+2015-12-23 13:04:12 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:9787}] to 160.40.51.20:27017
+2015-12-23 13:06:19 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:06:19 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9812}] to 160.40.51.20:27017
+2015-12-23 13:06:19 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=701915}
+2015-12-23 13:07:37 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:07:37 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9819}] to 160.40.51.20:27017
+2015-12-23 13:07:37 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=796371}
+2015-12-23 13:08:14 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:08:15 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9828}] to 160.40.51.20:27017
+2015-12-23 13:08:15 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=745293}
+2015-12-23 13:08:15 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:9829}] to 160.40.51.20:27017
+2015-12-23 13:09:05 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:09:05 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9892}] to 160.40.51.20:27017
+2015-12-23 13:09:05 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=866316}
+2015-12-23 13:09:05 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:9893}] to 160.40.51.20:27017
+2015-12-23 13:10:08 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:10:08 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:9914}] to 160.40.51.20:27017
+2015-12-23 13:10:08 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=753306}
+2015-12-23 13:10:08 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:9915}] to 160.40.51.20:27017
+2015-12-23 13:14:14 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:14:14 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10018}] to 160.40.51.20:27017
+2015-12-23 13:14:14 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=705232}
+2015-12-23 13:14:14 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10019}] to 160.40.51.20:27017
+2015-12-23 13:16:04 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:16:04 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10026}] to 160.40.51.20:27017
+2015-12-23 13:16:04 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=797462}
+2015-12-23 13:16:04 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10027}] to 160.40.51.20:27017
+2015-12-23 13:19:39 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:19:39 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10034}] to 160.40.51.20:27017
+2015-12-23 13:19:39 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=650228}
+2015-12-23 13:19:39 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10035}] to 160.40.51.20:27017
+2015-12-23 13:20:18 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:20:18 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10036}] to 160.40.51.20:27017
+2015-12-23 13:20:18 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=718323}
+2015-12-23 13:20:19 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10037}] to 160.40.51.20:27017
+2015-12-23 13:20:35 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:20:35 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10038}] to 160.40.51.20:27017
+2015-12-23 13:20:36 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=765776}
+2015-12-23 13:20:36 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10039}] to 160.40.51.20:27017
+2015-12-23 13:39:05 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:39:05 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10043}] to 160.40.51.20:27017
+2015-12-23 13:39:05 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=768456}
+2015-12-23 13:39:05 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10044}] to 160.40.51.20:27017
+2015-12-23 13:39:19 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:39:19 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10045}] to 160.40.51.20:27017
+2015-12-23 13:39:19 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=890587}
+2015-12-23 13:39:19 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10046}] to 160.40.51.20:27017
+2015-12-23 13:40:50 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 13:40:50 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10049}] to 160.40.51.20:27017
+2015-12-23 13:40:50 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=597973}
+2015-12-23 13:40:50 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10050}] to 160.40.51.20:27017
+2015-12-23 14:51:10 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 14:51:10 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10065}] to 160.40.51.20:27017
+2015-12-23 14:51:10 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=800364}
+2015-12-23 14:51:10 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10066}] to 160.40.51.20:27017
+2015-12-23 14:51:28 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 14:51:28 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10067}] to 160.40.51.20:27017
+2015-12-23 14:51:28 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=713885}
+2015-12-23 14:51:28 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10068}] to 160.40.51.20:27017
+2015-12-23 14:58:24 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 14:58:24 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10071}] to 160.40.51.20:27017
+2015-12-23 14:58:24 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=798841}
+2015-12-23 14:58:24 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10072}] to 160.40.51.20:27017
+2015-12-23 14:58:57 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 14:58:57 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10073}] to 160.40.51.20:27017
+2015-12-23 14:58:57 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=723960}
+2015-12-23 14:58:58 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10074}] to 160.40.51.20:27017
+2015-12-23 15:01:03 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:01:04 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10075}] to 160.40.51.20:27017
+2015-12-23 15:01:04 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=793807}
+2015-12-23 15:01:04 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10076}] to 160.40.51.20:27017
+2015-12-23 15:01:28 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:01:28 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10077}] to 160.40.51.20:27017
+2015-12-23 15:01:28 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=759099}
+2015-12-23 15:01:28 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10078}] to 160.40.51.20:27017
+2015-12-23 15:06:23 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:06:23 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10079}] to 160.40.51.20:27017
+2015-12-23 15:06:23 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=809060}
+2015-12-23 15:06:23 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10080}] to 160.40.51.20:27017
+2015-12-23 15:10:43 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:10:43 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10081}] to 160.40.51.20:27017
+2015-12-23 15:10:43 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=748185}
+2015-12-23 15:10:43 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10082}] to 160.40.51.20:27017
+2015-12-23 15:12:00 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:12:01 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10083}] to 160.40.51.20:27017
+2015-12-23 15:12:01 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=832167}
+2015-12-23 15:12:01 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10084}] to 160.40.51.20:27017
+2015-12-23 15:12:54 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:12:54 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10085}] to 160.40.51.20:27017
+2015-12-23 15:12:54 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=751087}
+2015-12-23 15:12:54 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10086}] to 160.40.51.20:27017
+2015-12-23 15:33:18 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:33:18 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10093}] to 160.40.51.20:27017
+2015-12-23 15:33:18 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=857506}
+2015-12-23 15:33:18 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10094}] to 160.40.51.20:27017
+2015-12-23 15:34:35 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:34:35 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10095}] to 160.40.51.20:27017
+2015-12-23 15:34:35 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=1097907}
+2015-12-23 15:34:35 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10096}] to 160.40.51.20:27017
+2015-12-23 15:38:21 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:38:21 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10099}] to 160.40.51.20:27017
+2015-12-23 15:38:21 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=5531276}
+2015-12-23 15:38:21 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10100}] to 160.40.51.20:27017
+2015-12-23 15:39:44 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:39:44 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10101}] to 160.40.51.20:27017
+2015-12-23 15:39:44 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=812279}
+2015-12-23 15:39:44 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10102}] to 160.40.51.20:27017
+2015-12-23 15:41:28 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:41:28 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10147}] to 160.40.51.20:27017
+2015-12-23 15:41:28 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=840612}
+2015-12-23 15:41:28 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10148}] to 160.40.51.20:27017
+2015-12-23 15:42:25 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:42:25 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10229}] to 160.40.51.20:27017
+2015-12-23 15:42:25 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=765315}
+2015-12-23 15:42:25 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10230}] to 160.40.51.20:27017
+2015-12-23 15:43:36 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:43:36 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10331}] to 160.40.51.20:27017
+2015-12-23 15:43:36 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=676514}
+2015-12-23 15:43:36 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10332}] to 160.40.51.20:27017
+2015-12-23 15:59:14 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:59:14 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10943}] to 160.40.51.20:27017
+2015-12-23 15:59:14 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=919405}
+2015-12-23 15:59:14 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10944}] to 160.40.51.20:27017
+2015-12-23 15:59:52 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 15:59:52 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10945}] to 160.40.51.20:27017
+2015-12-23 15:59:52 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=727814}
+2015-12-23 15:59:52 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10946}] to 160.40.51.20:27017
+2015-12-23 16:03:57 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:03:57 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10955}] to 160.40.51.20:27017
+2015-12-23 16:03:57 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=722871}
+2015-12-23 16:03:57 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10956}] to 160.40.51.20:27017
+2015-12-23 16:23:17 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:23:17 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10959}] to 160.40.51.20:27017
+2015-12-23 16:23:17 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=736142}
+2015-12-23 16:23:17 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10960}] to 160.40.51.20:27017
+2015-12-23 16:23:44 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:23:44 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10961}] to 160.40.51.20:27017
+2015-12-23 16:23:44 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=817755}
+2015-12-23 16:23:44 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10962}] to 160.40.51.20:27017
+2015-12-23 16:24:33 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:24:33 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10963}] to 160.40.51.20:27017
+2015-12-23 16:24:33 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=881594}
+2015-12-23 16:24:33 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10964}] to 160.40.51.20:27017
+2015-12-23 16:32:01 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:32:01 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:10985}] to 160.40.51.20:27017
+2015-12-23 16:32:01 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=695553}
+2015-12-23 16:32:01 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:10986}] to 160.40.51.20:27017
+2015-12-23 16:37:35 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:37:35 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11383}] to 160.40.51.20:27017
+2015-12-23 16:37:35 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=818375}
+2015-12-23 16:37:35 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11384}] to 160.40.51.20:27017
+2015-12-23 16:43:28 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:43:28 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11687}] to 160.40.51.20:27017
+2015-12-23 16:43:28 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=715844}
+2015-12-23 16:43:28 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11688}] to 160.40.51.20:27017
+2015-12-23 16:46:38 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:46:39 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11689}] to 160.40.51.20:27017
+2015-12-23 16:46:39 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=853956}
+2015-12-23 16:46:39 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11690}] to 160.40.51.20:27017
+2015-12-23 16:48:52 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:48:52 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11693}] to 160.40.51.20:27017
+2015-12-23 16:48:52 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=905589}
+2015-12-23 16:48:52 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11694}] to 160.40.51.20:27017
+2015-12-23 16:53:45 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:53:45 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11695}] to 160.40.51.20:27017
+2015-12-23 16:53:45 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=771781}
+2015-12-23 16:53:45 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11696}] to 160.40.51.20:27017
+2015-12-23 16:55:51 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:55:51 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11703}] to 160.40.51.20:27017
+2015-12-23 16:55:51 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=736900}
+2015-12-23 16:55:52 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11704}] to 160.40.51.20:27017
+2015-12-23 16:57:04 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 16:57:04 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11705}] to 160.40.51.20:27017
+2015-12-23 16:57:04 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=840686}
+2015-12-23 16:57:04 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11706}] to 160.40.51.20:27017
+2015-12-23 17:06:03 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:06:03 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11709}] to 160.40.51.20:27017
+2015-12-23 17:06:03 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=824303}
+2015-12-23 17:06:03 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11710}] to 160.40.51.20:27017
+2015-12-23 17:06:29 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:06:29 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11711}] to 160.40.51.20:27017
+2015-12-23 17:06:29 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=653707}
+2015-12-23 17:06:29 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11712}] to 160.40.51.20:27017
+2015-12-23 17:11:05 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:11:06 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11713}] to 160.40.51.20:27017
+2015-12-23 17:11:06 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=788458}
+2015-12-23 17:11:06 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11714}] to 160.40.51.20:27017
+2015-12-23 17:11:47 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:11:47 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11715}] to 160.40.51.20:27017
+2015-12-23 17:11:47 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=914804}
+2015-12-23 17:11:47 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11716}] to 160.40.51.20:27017
+2015-12-23 17:12:10 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:12:10 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11717}] to 160.40.51.20:27017
+2015-12-23 17:12:10 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=694969}
+2015-12-23 17:12:10 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11718}] to 160.40.51.20:27017
+2015-12-23 17:16:34 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:16:34 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11719}] to 160.40.51.20:27017
+2015-12-23 17:16:34 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=730181}
+2015-12-23 17:16:34 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11720}] to 160.40.51.20:27017
+2015-12-23 17:17:38 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:17:39 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11723}] to 160.40.51.20:27017
+2015-12-23 17:17:39 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=784191}
+2015-12-23 17:17:39 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11724}] to 160.40.51.20:27017
+2015-12-23 17:19:13 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:19:14 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11725}] to 160.40.51.20:27017
+2015-12-23 17:19:14 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=723786}
+2015-12-23 17:19:14 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11726}] to 160.40.51.20:27017
+2015-12-23 17:20:40 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:20:40 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11727}] to 160.40.51.20:27017
+2015-12-23 17:20:40 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=648094}
+2015-12-23 17:20:40 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11728}] to 160.40.51.20:27017
+2015-12-23 17:21:30 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:21:30 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11729}] to 160.40.51.20:27017
+2015-12-23 17:21:30 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=1268095}
+2015-12-23 17:21:30 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11730}] to 160.40.51.20:27017
+2015-12-23 17:27:13 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:27:13 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11731}] to 160.40.51.20:27017
+2015-12-23 17:27:13 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=816589}
+2015-12-23 17:27:13 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11732}] to 160.40.51.20:27017
+2015-12-23 17:28:47 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:28:47 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11733}] to 160.40.51.20:27017
+2015-12-23 17:28:47 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=723067}
+2015-12-23 17:28:47 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11734}] to 160.40.51.20:27017
+2015-12-23 17:33:27 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:33:28 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11737}] to 160.40.51.20:27017
+2015-12-23 17:33:28 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=860538}
+2015-12-23 17:33:28 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11738}] to 160.40.51.20:27017
+2015-12-23 17:33:46 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:33:46 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11739}] to 160.40.51.20:27017
+2015-12-23 17:33:46 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=760849}
+2015-12-23 17:33:46 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11740}] to 160.40.51.20:27017
+2015-12-23 17:34:35 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:34:35 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11741}] to 160.40.51.20:27017
+2015-12-23 17:34:35 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=755574}
+2015-12-23 17:34:35 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11742}] to 160.40.51.20:27017
+2015-12-23 17:40:09 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:40:09 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11743}] to 160.40.51.20:27017
+2015-12-23 17:40:09 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=747891}
+2015-12-23 17:40:09 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11744}] to 160.40.51.20:27017
+2015-12-23 17:45:31 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:45:31 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11745}] to 160.40.51.20:27017
+2015-12-23 17:45:31 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=788793}
+2015-12-23 17:45:31 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11746}] to 160.40.51.20:27017
+2015-12-23 17:55:29 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:55:29 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11749}] to 160.40.51.20:27017
+2015-12-23 17:55:29 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=799021}
+2015-12-23 17:55:30 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11750}] to 160.40.51.20:27017
+2015-12-23 17:57:00 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:57:01 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11751}] to 160.40.51.20:27017
+2015-12-23 17:57:01 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=758023}
+2015-12-23 17:57:01 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11752}] to 160.40.51.20:27017
+2015-12-23 17:57:52 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:57:52 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11753}] to 160.40.51.20:27017
+2015-12-23 17:57:52 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=730003}
+2015-12-23 17:57:52 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11754}] to 160.40.51.20:27017
+2015-12-23 17:58:09 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:58:09 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11755}] to 160.40.51.20:27017
+2015-12-23 17:58:09 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=761636}
+2015-12-23 17:58:09 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11756}] to 160.40.51.20:27017
+2015-12-23 17:58:32 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 17:58:32 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11757}] to 160.40.51.20:27017
+2015-12-23 17:58:32 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=758414}
+2015-12-23 17:58:32 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11758}] to 160.40.51.20:27017
+2015-12-23 18:11:16 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 18:11:16 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11761}] to 160.40.51.20:27017
+2015-12-23 18:11:16 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=805477}
+2015-12-23 18:11:16 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11762}] to 160.40.51.20:27017
+2015-12-23 18:11:52 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-23 18:11:52 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11763}] to 160.40.51.20:27017
+2015-12-23 18:11:52 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=785737}
+2015-12-23 18:11:52 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11764}] to 160.40.51.20:27017
+2015-12-24 11:07:27 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:07:27 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11939}] to 160.40.51.20:27017
+2015-12-24 11:07:27 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=789564}
+2015-12-24 11:07:27 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11940}] to 160.40.51.20:27017
+2015-12-24 11:08:03 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:08:03 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11941}] to 160.40.51.20:27017
+2015-12-24 11:08:03 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=741717}
+2015-12-24 11:08:03 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11942}] to 160.40.51.20:27017
+2015-12-24 11:08:57 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:08:57 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11943}] to 160.40.51.20:27017
+2015-12-24 11:08:57 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=763102}
+2015-12-24 11:08:57 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11944}] to 160.40.51.20:27017
+2015-12-24 11:10:18 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:10:18 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11945}] to 160.40.51.20:27017
+2015-12-24 11:10:18 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=690525}
+2015-12-24 11:10:18 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11946}] to 160.40.51.20:27017
+2015-12-24 11:14:12 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:14:12 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11949}] to 160.40.51.20:27017
+2015-12-24 11:14:12 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=807484}
+2015-12-24 11:14:12 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11950}] to 160.40.51.20:27017
+2015-12-24 11:14:32 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:14:32 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11951}] to 160.40.51.20:27017
+2015-12-24 11:14:32 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=825120}
+2015-12-24 11:14:33 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11952}] to 160.40.51.20:27017
+2015-12-24 11:14:46 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:14:46 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11953}] to 160.40.51.20:27017
+2015-12-24 11:14:46 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=795990}
+2015-12-24 11:14:46 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11954}] to 160.40.51.20:27017
+2015-12-24 11:17:06 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:17:06 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11955}] to 160.40.51.20:27017
+2015-12-24 11:17:06 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=1898488}
+2015-12-24 11:17:06 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11956}] to 160.40.51.20:27017
+2015-12-24 11:19:19 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:19:19 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11957}] to 160.40.51.20:27017
+2015-12-24 11:19:19 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=808496}
+2015-12-24 11:19:19 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11958}] to 160.40.51.20:27017
+2015-12-24 11:19:54 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:19:54 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11959}] to 160.40.51.20:27017
+2015-12-24 11:19:54 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=730993}
+2015-12-24 11:19:54 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11960}] to 160.40.51.20:27017
+2015-12-24 11:23:07 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:23:08 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11961}] to 160.40.51.20:27017
+2015-12-24 11:23:08 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=700898}
+2015-12-24 11:23:08 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11962}] to 160.40.51.20:27017
+2015-12-24 11:30:27 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 11:30:27 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:11965}] to 160.40.51.20:27017
+2015-12-24 11:30:27 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=678207}
+2015-12-24 11:30:27 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:11966}] to 160.40.51.20:27017
+2015-12-24 15:47:10 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 15:47:10 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:12083}] to 160.40.51.20:27017
+2015-12-24 15:47:10 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=754469}
+2015-12-24 15:47:10 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:12084}] to 160.40.51.20:27017
+2015-12-24 15:50:51 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 15:50:51 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:12087}] to 160.40.51.20:27017
+2015-12-24 15:50:51 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=752608}
+2015-12-24 15:50:51 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:12088}] to 160.40.51.20:27017
+2015-12-24 15:52:26 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 15:52:26 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:12090}] to 160.40.51.20:27017
+2015-12-24 15:52:26 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=729788}
+2015-12-24 15:52:27 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:12091}] to 160.40.51.20:27017
+2015-12-24 15:54:18 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 15:54:18 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:12092}] to 160.40.51.20:27017
+2015-12-24 15:54:18 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=737851}
+2015-12-24 15:54:18 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:12093}] to 160.40.51.20:27017
+2015-12-24 15:55:21 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 15:55:21 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:12094}] to 160.40.51.20:27017
+2015-12-24 15:55:21 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=650828}
+2015-12-24 15:55:21 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:12095}] to 160.40.51.20:27017
+2015-12-24 15:58:57 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2015-12-24 15:58:57 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:12097}] to 160.40.51.20:27017
+2015-12-24 15:58:57 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=809196}
+2015-12-24 15:58:57 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:12098}] to 160.40.51.20:27017

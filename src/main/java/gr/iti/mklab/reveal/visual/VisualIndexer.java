@@ -88,7 +88,7 @@ public class VisualIndexer {
 
     public VisualIndexer(String collectionName) throws IOException {
         this.collection = collectionName;
-        createCollection();
+        //createCollection();
         handler = new VisualIndexHandler("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
     }
 

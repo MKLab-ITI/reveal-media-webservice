@@ -1,13 +1,16 @@
 package gr.iti.mklab.reveal.web;
 
 import ForensicsToolbox.*;
+
 import com.google.gson.Gson;
+
 import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
 import gr.iti.mklab.reveal.entitites.NEandRECallable;
+import gr.iti.mklab.reveal.summarization.MediaSummarizer;
+import gr.iti.mklab.reveal.summarization.RankedImage;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
-
 import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
@@ -26,18 +29,23 @@ import gr.iti.mklab.simmo.core.morphia.AssociationDAO;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import jdk.nashorn.internal.runtime.regexp.joni.Config;
+
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
+import org.mongodb.morphia.query.QueryResults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PreDestroy;
+
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 @Controller
@@ -573,6 +581,101 @@ public class RevealController {
         public Image item;
     }
 
+    ////////////////////////////////////////////////////////
+    ////////// S U M M A R I Z A T I O N //////////////////
+    ///////////////////////////////////////////////////////
+    
+    private ExecutorService summarizationExecutor = Executors.newSingleThreadExecutor();
+    private Map<String, Future<List<RankedImage>>> futures = new HashMap<String, Future<List<RankedImage>>>();
+    
+    /**
+     * Execute summarization procedure
+     *
+     * @param collection
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping(value = "/media/{collection}/summarize", 
+    		method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public String summarizationForCollection(@PathVariable(value = "collection") String collection) throws Exception {
+    	
+    	MediaSummarizer summarizer = new MediaSummarizer(collection);
+    	
+    	Future<List<RankedImage>> response = summarizationExecutor.submit(summarizer);
+    	if(response != null) {
+    		futures.put(collection, response);
+    		return "Summarization command submitted";
+    	}
+    	else {
+    		return "Summarization command failed to be submitted!";
+    	}
+    }
+    
+    @RequestMapping(value = "/summary/{collection}", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public SummaryResult getSummary(@PathVariable(value = "collection") String collection,
+                                            @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
+        
+    	Future<List<RankedImage>> response = futures.get(collection);
+    	if(response == null) {
+    		DAO<RankedImage, String> rankedImagesDAO = new BasicDAO<RankedImage, String>(
+    				RankedImage.class, 
+    				MorphiaManager.getMongoClient(), 
+    				MorphiaManager.getMorphia(), 
+    				MorphiaManager.getDB(collection).getName()
+    			);
+    		
+    		Query<RankedImage> q = rankedImagesDAO.createQuery()
+    				.order("-score")
+    				.limit(count);
+    		
+    		QueryResults<RankedImage> rankedImages = rankedImagesDAO.find(q);
+    		List<RankedImage> summary = rankedImages.asList();
+    		
+    		SummaryResult sr = new SummaryResult("finnished");
+    		sr.summary = summary;
+    		
+    		return sr;
+    	}
+    	
+    	if(response.isCancelled()) {
+    		return new SummaryResult("cancelled");
+    	}
+    	
+    	if(!response.isDone()) {
+    		return new SummaryResult("running");
+    	}
+    	else {
+    		try {
+    			SummaryResult sr = new SummaryResult("finnished");
+				List<RankedImage> summary = response.get();
+				sr.summary = summary;
+				
+				futures.remove(collection);
+				
+				return sr;
+			} catch (InterruptedException | ExecutionException e) {
+				return new SummaryResult("failed");
+			}
+    	}
+    	
+    }
+    
+    class SummaryResult {    
+    	
+    	public SummaryResult() {
+    		
+    	}
+    	
+    	public SummaryResult(String status) {
+    		this.status = status;
+    	}
+    	
+        public List<RankedImage> summary = new ArrayList<RankedImage>();
+        public String status = "running";
+    }
+    
     ////////////////////////////////////////////////////////
     ///////// EXCEPTION HANDLING ///////////////////////////
     ///////////////////////////////////////////////////////
