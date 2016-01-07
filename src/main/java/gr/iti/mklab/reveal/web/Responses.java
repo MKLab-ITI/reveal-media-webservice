@@ -95,6 +95,8 @@ public class Responses {
 
         public long numImages;
 
+        public long numIndexedImages;
+
         public long numVideos;
 
         public Image image;

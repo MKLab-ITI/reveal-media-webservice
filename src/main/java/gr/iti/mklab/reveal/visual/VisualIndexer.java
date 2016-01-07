@@ -22,6 +22,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,6 +210,29 @@ public class VisualIndexer {
             return false;
         }
         return true;
+    }
+
+    public int numItems() throws Exception {
+        String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/statistics/" + collection;
+        HttpGet httpget = new HttpGet(request.replaceAll(" ", "%20"));
+        httpget.setConfig(_requestConfig);
+        HttpResponse response = _httpclient.execute(httpget);
+        StatusLine status = response.getStatusLine();
+        int code = status.getStatusCode();
+        if (code < 200 || code >= 300) {
+            _logger.error("Failed delete collection with name " + collection +
+                    ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            return 0;
+        }
+        HttpEntity entity = response.getEntity();
+        if (entity == null) {
+            _logger.error("Entity is null for create collection " + collection +
+                    ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            return 0;
+        }
+        String entityAsString = EntityUtils.toString(entity);
+        JSONObject jsonObject = new JSONObject(entityAsString);
+        return jsonObject.getInt("ivfpqIndex");
     }
 
     public List<JsonResultSet.JsonResult> findSimilar(String url, double threshold) {
