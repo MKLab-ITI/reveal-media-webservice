@@ -4,7 +4,6 @@ import edu.uci.ics.jung.graph.DirectedGraph;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 import gr.iti.mklab.reveal.util.Configuration;
-import gr.iti.mklab.simmo.core.cluster.Cluster;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
@@ -26,8 +25,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.bson.types.ObjectId;
-import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 
@@ -40,11 +37,6 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 	private double similarityCuttof = 0.2;
 			
 	public MediaSummarizer(String collection) {
-		try {
-			Configuration.load(getClass().getResourceAsStream("/remote.properties"));
-		} catch (ConfigurationException | IOException e) {
-			e.printStackTrace();
-		}
 		this.collection = collection;
 	}
 	
