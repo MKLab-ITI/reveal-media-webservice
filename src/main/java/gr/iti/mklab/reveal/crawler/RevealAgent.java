@@ -1,7 +1,9 @@
 package gr.iti.mklab.reveal.crawler;
 
+import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.crawler.seeds.DogpileSource;
 import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
+import gr.iti.mklab.reveal.entitites.NEandRECallable;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
@@ -29,6 +31,8 @@ import java.net.SocketTimeoutException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by kandreadou on 2/10/15.
@@ -113,18 +117,47 @@ public class RevealAgent implements Runnable {
                 //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(_request.getCrawlDataPath()));
                 FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + _request.getCollection()));
+                LOGGER.warn("###### stop indexing runner and social media crawler");
+                runner.stop();
+                indexingThread.interrupt();
+                if (Configuration.ADD_SOCIAL_MEDIA) {
+                    _manager.deleteAllFeeds(false, _request.getCollection());
+                }
 
-            } else {
-                LOGGER.warn("###### Cancel");
+            } else if(_request.getState() == CrawlJob.STATE.KILLING){
+                LOGGER.warn("###### Kill");
                 _request.setState(CrawlJob.STATE.FINISHED);
                 _request.setLastStateChange(new Date());
                 dao.save(_request);
+                LOGGER.warn("###### stop indexing runner and social media crawler");
+                runner.stop();
+                indexingThread.interrupt();
+                if (Configuration.ADD_SOCIAL_MEDIA) {
+                    _manager.deleteAllFeeds(false, _request.getCollection());
+                }
             }
-            LOGGER.warn("###### stop indexing runner and social media crawler");
-            runner.stop();
-            indexingThread.interrupt();
-            if (Configuration.ADD_SOCIAL_MEDIA) {
-                _manager.deleteAllFeeds(false, _request.getCollection());
+            else {
+                //STOPPING state
+                LOGGER.warn("###### Stop");
+                LOGGER.warn("###### stop  social media crawler");
+                if (Configuration.ADD_SOCIAL_MEDIA) {
+                    _manager.deleteAllFeeds(false, _request.getCollection());
+                }
+                LOGGER.warn("###### stop indexing runner when finished");
+                runner.stopWhenFinished();
+                while (indexingThread.isAlive()){
+                    //Wait for the indexing to finish before calling the clustering and entity extraction
+                    Thread.sleep(30000);
+                }
+                //extract entities for the collection
+                ExecutorService entitiesExecutor = Executors.newSingleThreadExecutor();
+                entitiesExecutor.submit(new NEandRECallable(_request.getCollection()));
+                //cluster collection items
+                ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
+                clusteringExecutor.submit(new ClusterEverythingCallable(_request.getCollection(), 1.3, 2));
+                _request.setState(CrawlJob.STATE.FINISHED);
+                _request.setLastStateChange(new Date());
+                dao.save(_request);
             }
             LOGGER.warn("###### unregister bean for name");
             unregisterBeanForName(_request.getCollection());

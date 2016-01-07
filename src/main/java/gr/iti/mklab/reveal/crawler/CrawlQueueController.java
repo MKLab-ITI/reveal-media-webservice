@@ -67,7 +67,7 @@ public class CrawlQueueController {
         poller.stopPolling();
         List<CrawlJob> list = getRunningCrawls();
         for (CrawlJob job : list) {
-            cancel(job.getId());
+            kill(job.getId());
         }
     }
 
@@ -96,12 +96,20 @@ public class CrawlQueueController {
         return r;
     }
 
-    public synchronized CrawlJob cancel(String id) throws Exception {
+    public CrawlJob stop(String id) throws Exception{
+        return cancel(id, false);
+    }
+
+    public CrawlJob kill(String id) throws Exception{
+        return cancel(id, true);
+    }
+
+    private synchronized CrawlJob cancel(String id, boolean immediately) throws Exception {
         System.out.println("CRAWL: Cancel for id " + id);
         CrawlJob req = getCrawlRequest(id);
         if(CrawlJob.STATE.RUNNING == req.getState()) {
             System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
-            req.setState(CrawlJob.STATE.STOPPING);
+            req.setState(immediately?CrawlJob.STATE.KILLING:CrawlJob.STATE.STOPPING);
             req.setLastStateChange(new Date());
             dao.save(req);
             if (req.getKeywords().isEmpty())
@@ -262,6 +270,7 @@ public class CrawlQueueController {
                 q.criteria("requestState").equal(CrawlJob.STATE.RUNNING),
                 q.criteria("requestState").equal(CrawlJob.STATE.WAITING),
                 q.criteria("requestState").equal(CrawlJob.STATE.STOPPING),
+                q.criteria("requestState").equal(CrawlJob.STATE.KILLING),
                 q.criteria("requestState").equal(CrawlJob.STATE.FINISHED),
                 q.criteria("requestState").equal(CrawlJob.STATE.DELETING),
                 q.criteria("requestState").equal(CrawlJob.STATE.STARTING)
@@ -304,6 +313,7 @@ public class CrawlQueueController {
                 break;
             case RUNNING:
             case STOPPING:
+            case KILLING:
                 status.duration = new Date().getTime() - status.getCreationDate().getTime();
                 break;
             default:

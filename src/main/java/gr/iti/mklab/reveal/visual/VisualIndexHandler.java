@@ -40,6 +40,7 @@ public class VisualIndexHandler {
     private HttpClient httpClient;
 
     public VisualIndexHandler(String webServiceHost, String collectionName) {
+        System.out.println("VisualIndexHandler start of constructor");
         this.webServiceHost = webServiceHost;
         this.collectionName = collectionName;
         MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
@@ -50,6 +51,7 @@ public class VisualIndexHandler {
         params.setSoTimeout(30000);
         cm.setParams(params);
         this.httpClient = new HttpClient(cm);
+        System.out.println("VisualIndexHandler end of constructor");
     }
 
     public JsonResultSet getSimilarImages(String imageId) {

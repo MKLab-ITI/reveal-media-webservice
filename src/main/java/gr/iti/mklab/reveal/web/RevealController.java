@@ -320,6 +320,12 @@ public class RevealController {
         }
     }
 
+    /**
+     * Stops all running threads and deletes all data related to this collection
+     * @param id
+     * @return
+     * @throws RevealException
+     */
     @RequestMapping(value = "/crawls/{id}/delete", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public boolean deleteCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
@@ -331,13 +337,36 @@ public class RevealController {
         }
     }
 
+    /**
+     * Stops the crawling, waits until the indexing of all remaining images finishes
+     * and then launches the clustering and entity extraction
+     * @param id
+     * @return
+     * @throws RevealException
+     */
     @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public CrawlJob cancelCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
         try {
-            CrawlJob job = crawlerCtrler.cancel(id);
+            return crawlerCtrler.stop(id);
+        } catch (Exception ex) {
+            throw new RevealException("Error when stopping", ex);
+        }
+    }
+
+    /**
+     * Stops the crawling, stops the indexing and launches the clustering and entity extraction
+     * @param id
+     * @return
+     * @throws RevealException
+     */
+    @RequestMapping(value = "/crawls/{id}/kill", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public CrawlJob interruptCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
+        try {
+            CrawlJob job = crawlerCtrler.kill(id);
             // Check that it is stopping, because cancel is not always successful
-            if(job.getState() == CrawlJob.STATE.STOPPING) {
+            if(job.getState() == CrawlJob.STATE.KILLING) {
                 //extract entities for the collection
                 entitiesExecutor.submit(new NEandRECallable(job.getCollection()));
                 //cluster collection items
@@ -345,7 +374,7 @@ public class RevealController {
             }
             return job;
         } catch (Exception ex) {
-            throw new RevealException("Error when canceling", ex);
+            throw new RevealException("Error when killing", ex);
         }
     }
 
