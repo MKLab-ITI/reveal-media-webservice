@@ -635,7 +635,13 @@ public class RevealController {
     		List<RankedImage> summary = rankedImages.asList();
     		
     		SummaryResponse sr = new SummaryResponse("finnished");
+    		if(summary == null | summary.isEmpty()) {
+        		sr.setStatus("uncommitted task");
+    		}
+    		
+    		
     		sr.setSummary(summary);
+
     		
     		return sr;
     	}
