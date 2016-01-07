@@ -14,6 +14,7 @@ import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.reveal.web.Responses.SummaryResponse;
 import gr.iti.mklab.simmo.core.Association;
 import gr.iti.mklab.simmo.core.UserAccount;
 import gr.iti.mklab.simmo.core.annotations.Clustered;
@@ -614,7 +615,7 @@ public class RevealController {
     
     @RequestMapping(value = "/summary/{collection}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public SummaryResult getSummary(@PathVariable(value = "collection") String collection,
+    public Responses.SummaryResponse getSummary(@PathVariable(value = "collection") String collection,
                                             @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
         
     	Future<List<RankedImage>> response = futures.get(collection);
@@ -633,47 +634,33 @@ public class RevealController {
     		QueryResults<RankedImage> rankedImages = rankedImagesDAO.find(q);
     		List<RankedImage> summary = rankedImages.asList();
     		
-    		SummaryResult sr = new SummaryResult("finnished");
-    		sr.summary = summary;
+    		SummaryResponse sr = new SummaryResponse("finnished");
+    		sr.setSummary(summary);
     		
     		return sr;
     	}
     	
     	if(response.isCancelled()) {
-    		return new SummaryResult("cancelled");
+    		return new SummaryResponse("cancelled");
     	}
     	
     	if(!response.isDone()) {
-    		return new SummaryResult("running");
+    		return new SummaryResponse("running");
     	}
     	else {
     		try {
-    			SummaryResult sr = new SummaryResult("finnished");
+    			SummaryResponse sr = new SummaryResponse("finnished");
 				List<RankedImage> summary = response.get();
-				sr.summary = summary;
+				sr.setSummary(summary);
 				
 				futures.remove(collection);
 				
 				return sr;
 			} catch (InterruptedException | ExecutionException e) {
-				return new SummaryResult("failed");
+				return new SummaryResponse("failed");
 			}
     	}
     	
-    }
-    
-    class SummaryResult {    
-    	
-    	public SummaryResult() {
-    		
-    	}
-    	
-    	public SummaryResult(String status) {
-    		this.status = status;
-    	}
-    	
-        public List<RankedImage> summary = new ArrayList<RankedImage>();
-        public String status = "running";
     }
     
     ////////////////////////////////////////////////////////

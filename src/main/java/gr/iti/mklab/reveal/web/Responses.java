@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.web;
 
+import gr.iti.mklab.reveal.summarization.RankedImage;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
@@ -108,6 +109,35 @@ public class Responses {
         public String lastItemInserted;
     }
 
+    public static class SummaryResponse {    
+    	
+    	public SummaryResponse() {
+    		
+    	}
+    	
+    	public SummaryResponse(String status) {
+    		this.status = status;
+    	}
+    	
+        private List<RankedImage> summary = new ArrayList<RankedImage>();
+        private String status = "running";
+		public List<RankedImage> getSummary() {
+			return summary;
+		}
+
+		public void setSummary(List<RankedImage> summary) {
+			this.summary = summary;
+		}
+
+		public String getStatus() {
+			return status;
+		}
+
+		public void setStatus(String status) {
+			this.status = status;
+		}
+    }
+    
     public static void main(String[] args) throws Exception {
         Image im = new Image();
         //im.setId(new ObjectId("54b8f9d2e4b0daec5c5e5921").toString());
