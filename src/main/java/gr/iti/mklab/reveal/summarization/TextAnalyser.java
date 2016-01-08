@@ -18,12 +18,11 @@ import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 @SuppressWarnings("deprecation")
 public class TextAnalyser {
 
-	private static Analyzer stdAnalyzer = new StandardAnalyzer(Version.LUCENE_46);
+	private static Analyzer stdAnalyzer = new StandardAnalyzer();
 		 
 	public static List<String> getTokens(String text) {
 		
@@ -37,7 +36,7 @@ public class TextAnalyser {
 			ts.reset();
 			while (ts.incrementToken()) {
 				String token = charTermAtt.toString();
-				if(token.length()>1) {
+				if(token.length() > 1) {
 					tokens.add(token);
 				}
 		      }
@@ -72,14 +71,14 @@ public class TextAnalyser {
 		List<String> tokens = new ArrayList<String>();
 		
 		Reader reader = new StringReader(text);
-		LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_46, reader);
+		LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(reader);
 		
 		// Filters
-		LowerCaseFilter lowerCaseFilter = new LowerCaseFilter(Version.LUCENE_46, tokenizer); 
+		LowerCaseFilter lowerCaseFilter = new LowerCaseFilter(tokenizer); 
 		KStemFilter kStemFilter = new KStemFilter(lowerCaseFilter);
 		
 		CharArraySet stopwords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
-		StopFilter stopFilter = new StopFilter(Version.LUCENE_46, kStemFilter, stopwords);
+		StopFilter stopFilter = new StopFilter(kStemFilter, stopwords);
 
 		TokenStream ts;
 		if(N > 1) {

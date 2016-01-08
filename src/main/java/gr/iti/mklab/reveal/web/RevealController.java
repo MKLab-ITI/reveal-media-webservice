@@ -628,17 +628,25 @@ public class RevealController {
     @RequestMapping(value = "/media/{collection}/summarize", 
     		method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public String summarizationForCollection(@PathVariable(value = "collection") String collection) throws Exception {
+    public String summarizationForCollection(
+    		@PathVariable(value = "collection") String collection,
+    		@RequestParam(value = "similarityCuttof", required = false, defaultValue = "0.2") double similarityCuttof)
+    				throws Exception {
     	
-    	MediaSummarizer summarizer = new MediaSummarizer(collection);
-    	
-    	Future<List<RankedImage>> response = summarizationExecutor.submit(summarizer);
-    	if(response != null) {
-    		futures.put(collection, response);
-    		return "Summarization command submitted";
+    	Future<List<RankedImage>> response = futures.get(collection);
+    	if(response == null) {
+    		MediaSummarizer summarizer = new MediaSummarizer(collection, similarityCuttof);
+        	response = summarizationExecutor.submit(summarizer);
+        	if(response != null) {
+        		futures.put(collection, response);
+        		return "Summarization command is submitted.";
+        	}
+        	else {
+        		return "Summarization command failed to be submitted.";
+        	}
     	}
     	else {
-    		return "Summarization command failed to be submitted!";
+    		return "Summarization task has already been submitted.";
     	}
     }
     
@@ -668,10 +676,8 @@ public class RevealController {
         		sr.setStatus("uncommitted task");
     		}
     		
-    		
     		sr.setSummary(summary);
 
-    		
     		return sr;
     	}
     	
