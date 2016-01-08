@@ -40,11 +40,11 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 	private double similarityCuttof = 0.2;
 			
 	public MediaSummarizer(String collection, double similarityCuttof) {
-		try {
-			Configuration.load(getClass().getResourceAsStream("/remote.properties"));
-		} catch (ConfigurationException | IOException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			Configuration.load(getClass().getResourceAsStream("/remote.properties"));
+//		} catch (ConfigurationException | IOException e) {
+//			e.printStackTrace();
+//		}
 		this.similarityCuttof = similarityCuttof;
 		this.collection = collection;
 	}
