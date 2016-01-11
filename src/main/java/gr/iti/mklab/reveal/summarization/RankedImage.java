@@ -4,6 +4,10 @@ import org.mongodb.morphia.annotations.Id;
 
 public class RankedImage implements Comparable<RankedImage> {
 		
+		public RankedImage() {
+			
+		}
+		
 		public RankedImage(String id, double score) {
 			this.id = id;
 			this.score = score;
