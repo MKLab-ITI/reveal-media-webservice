@@ -70,6 +70,8 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.ivy.util.DateUtil;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,6 +98,10 @@ import com.martiansoftware.jsap.UnflaggedOption;
  */
 public class ITIHTMLParser<T> implements Parser<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ITIHTMLParser.class);
+
+    private static final DateTimeFormatter RFC1123_DATE_TIME_FORMATTER =
+            DateTimeFormat.forPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'")
+                    .withZoneUTC().withLocale(Locale.US);
 
     public Set<String> keywords = new HashSet<String>();
     public String collectionName;
@@ -653,12 +659,8 @@ public class ITIHTMLParser<T> implements Parser<T> {
                     final Header lastModifiedHeader = httpResponse.getFirstHeader(HttpHeaders.LAST_MODIFIED);
                     Date webpageLastModifiedDate = null;
                     if (lastModifiedHeader != null) {
-                        try {
-                            webpageLastModifiedDate = DateUtil.parse(lastModifiedHeader.getValue());
-                            wp.setLastModifiedDate(webpageLastModifiedDate);
-                        } catch (ParseException pe) {
-                            // ignore
-                        }
+                        webpageLastModifiedDate = RFC1123_DATE_TIME_FORMATTER.parseLocalDate(lastModifiedHeader.getValue()).toDate();
+                        wp.setLastModifiedDate(webpageLastModifiedDate);
                     }
 
                     if (name == HTMLElementName.META) {
