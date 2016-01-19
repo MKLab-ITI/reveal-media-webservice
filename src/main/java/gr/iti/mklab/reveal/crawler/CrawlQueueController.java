@@ -329,12 +329,12 @@ public class CrawlQueueController {
         } else if (lastVideoInserted != null) {
             status.lastItemInserted = lastVideoInserted.toString();
         }
-        try {
+        /*try {
             int numIndexedItems = VisualIndexerFactory.getVisualIndexer(status.getCollection()).numItems();
             status.numIndexedImages = numIndexedItems;
         }catch(Exception ex){
             System.out.println("Exception when getting num "+ex);
-        }
+        }*/
         return status;
     }
 
