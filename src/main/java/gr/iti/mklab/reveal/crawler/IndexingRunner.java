@@ -37,9 +37,11 @@ public class IndexingRunner implements Runnable {
     private boolean isRunning = true;
     private boolean shouldStop = false;
     private boolean listsWereEmptyOnce = false;
+    private final String collection;
 
     public IndexingRunner(String collection) throws ExecutionException, IOException {
         System.out.println("Creating IndexingRunner for collection "+collection);
+        this.collection = collection;
         _indexer = VisualIndexerFactory.getVisualIndexer(collection);
         System.out.println("After creating the indexer ");
         if (Configuration.PUBLISH_RABBITMQ)
@@ -59,48 +61,63 @@ public class IndexingRunner implements Runnable {
     public void run() {
         System.out.println("Indexing runner run");
         while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
-            final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
-            final List<Video> videoList = videoDAO.getNotVIndexed(STEP);
-            System.out.println("image list size " + imageList.size());
-            System.out.println("video list size " + videoList.size());
+            try {
+                final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
+                final List<Video> videoList = videoDAO.getNotVIndexed(STEP);
+                System.out.println("image list size " + imageList.size());
+                System.out.println("video list size " + videoList.size());
 
-            if (imageList.isEmpty() && videoList.isEmpty()) {
+                if (imageList.isEmpty() && videoList.isEmpty()) {
+                    try {
+                        listsWereEmptyOnce = true;
+                        Thread.sleep(INDEXING_PERIOD);
+                    } catch (InterruptedException ie) {
+
+                    }
+                } else {
+
+                    for (Image image : imageList) {
+                        System.out.println("Checking image " + image.getId());
+                        if (_indexer.index(image)) {
+                            image.addAnnotation(ld);
+                            imageDAO.save(image);
+                            if (_publisher != null)
+                                _publisher.publish(MorphiaManager.getMorphia().toDBObject(image).toString());
+                        } else {
+                            System.out.println("Deleting image " + image.getId());
+                            imageDAO.delete(image);
+                            pageDAO.deleteById(image.getId());
+                            if (LinkDetectionRunner.LAST_POSITION > 0)
+                                LinkDetectionRunner.LAST_POSITION--;
+                        }
+                    }
+                    for (Video video : videoList) {
+                        if (_indexer.index(video)) {
+                            video.addAnnotation(ld);
+                            videoDAO.save(video);
+                        } else {
+                            videoDAO.delete(video);
+                            //pageDAO.deleteById(video.getId());
+                        }
+                    }
+                }
+                if (_publisher != null)
+                    _publisher.close();
+            } catch (IllegalStateException ex) {
+                System.out.println("IllegalStateException "+ex);
+                System.out.println("Trying to recreate collections");
                 try {
-                    listsWereEmptyOnce = true;
-                    Thread.sleep(INDEXING_PERIOD);
-                } catch (InterruptedException ie) {
-
+                    imageDAO = new MediaDAO<>(Image.class, collection);
+                    videoDAO = new MediaDAO<>(Video.class, collection);
+                    pageDAO = new ObjectDAO<>(Webpage.class, collection);
+                }catch(Exception e){
+                    System.out.println("Exception "+e);
+                    System.out.println("Could not recreate collections");
                 }
-            } else {
-
-                for (Image image : imageList) {
-                    System.out.println("Checking image "+image.getId());
-                    if (_indexer.index(image)) {
-                        image.addAnnotation(ld);
-                        imageDAO.save(image);
-                        if (_publisher != null)
-                            _publisher.publish(MorphiaManager.getMorphia().toDBObject(image).toString());
-                    } else {
-                        System.out.println("Deleting image "+image.getId());
-                        imageDAO.delete(image);
-                        pageDAO.deleteById(image.getId());
-                        if (LinkDetectionRunner.LAST_POSITION > 0)
-                            LinkDetectionRunner.LAST_POSITION--;
-                    }
-                }
-                for (Video video : videoList) {
-                    if (_indexer.index(video)) {
-                        video.addAnnotation(ld);
-                        videoDAO.save(video);
-                    } else {
-                        videoDAO.delete(video);
-                        //pageDAO.deleteById(video.getId());
-                    }
-                }
+            }catch(Exception other){
+                System.out.println("Exception "+other);
             }
         }
-        if (_publisher != null)
-            _publisher.close();
     }
 
     public void stop() {

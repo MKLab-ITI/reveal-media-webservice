@@ -31,7 +31,7 @@ public abstract class LinkDetectionRunner {
             Pattern pattern = Pattern.compile("^Twitter", Pattern.CASE_INSENSITIVE);
             //pageList = pageDAO.getItems((int) pageDAO.count() - LAST_POSITION, LAST_POSITION);
             pageList = pageDAO.getDatastore().find(Webpage.class).field("_id").equal(pattern).offset(LAST_POSITION).limit(STEP).asList();
-            System.out.println("LAST_POSITION " + LAST_POSITION + " pageList.size " + pageList.size());
+            //System.out.println("LAST_POSITION " + LAST_POSITION + " pageList.size " + pageList.size());
             while (!pageList.isEmpty()) {
                 for (Webpage page : pageList) {
                     if (page.getId().startsWith("Twitter"))
