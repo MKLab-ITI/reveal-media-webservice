@@ -251,17 +251,17 @@
 		<dependency>
     		<groupId>info.debatty</groupId>
     		<artifactId>java-string-similarity</artifactId>
-    		<version>RELEASE</version>
+    		<version>0.13</version>
 		</dependency>
 		<dependency>
     		<groupId>info.debatty</groupId>
     		<artifactId>java-graphs</artifactId>
-    		<version>RELEASE</version>
+    		<version>0.17</version>
 		</dependency>
 		<dependency>
     		<groupId>info.debatty</groupId>
     		<artifactId>java-lsh</artifactId>
-    		<version>RELEASE</version>
+    		<version>0.8</version>
 		</dependency>
 
 		<dependency>
