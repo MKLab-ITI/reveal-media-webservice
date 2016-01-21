@@ -102,7 +102,13 @@ public class RevealController {
     @ResponseBody
     public List<NamedEntity> entitiesForCollection(@PathVariable(value = "collection") String collection) throws Exception {
         DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-        return rankedEntities.find().asList().subList(0, 300);
+        int numberofEntitiesToReturn = 300;
+        if(rankedEntities!=null){
+        	return rankedEntities.find().asList().
+        			subList(0, rankedEntities.count()>numberofEntitiesToReturn? numberofEntitiesToReturn:(int)rankedEntities.count());
+        }
+		return new ArrayList<>();
+
     }
 
     /**
