@@ -122,16 +122,10 @@ public class IndexingRunner implements Runnable {
                                     if (_publisher != null)
                                         _publisher.publish(MorphiaManager.getMorphia().toDBObject(media).toString());
                                 } else {
-                                    System.out.println("Deleting image " + media.getId());
-                                    if(media instanceof Image){
-                                    	 imageDAO.delete((Image)media);
-                                         pageDAO.deleteById(media.getId());
-                                         if (LinkDetectionRunner.LAST_POSITION > 0)
-                                             LinkDetectionRunner.LAST_POSITION--;
-        							}else{
-        								videoDAO.delete((Video)media);
-        							}
+                                	deleteMedia(media);
                                 }
+        					}else{
+        						deleteMedia(result.media);
         					}
         					completedCounter++;
         					System.out.println(completedCounter + " tasks completed!");
@@ -182,6 +176,18 @@ public class IndexingRunner implements Runnable {
 
     public void stopWhenFinished() {
         shouldStop = true;
+    }
+    
+    private void deleteMedia(Media media){
+    	System.out.println("Deleting image " + media.getId());
+        if(media instanceof Image){
+        	 imageDAO.delete((Image)media);
+             pageDAO.deleteById(media.getId());
+             if (LinkDetectionRunner.LAST_POSITION > 0)
+                 LinkDetectionRunner.LAST_POSITION--;
+		}else{
+			videoDAO.delete((Video)media);
+		}
     }
     
     public MediaCallableResult getResultWait() throws Exception {
