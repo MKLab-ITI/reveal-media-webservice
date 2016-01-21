@@ -45,7 +45,7 @@ public class CrawlQueueController {
         // Creates a DAO object to persist submitted crawl requests
         dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
         // the client for handling the stream manager social media crawler
-        streamManager = new StreamManagerClient("http://" + Configuration.INDEX_SERVICE_HOST + ":8080");
+        streamManager = new StreamManagerClient("http://" + Configuration.STREAM_MANAGER_SERVICE_HOST + ":8080");
         // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();

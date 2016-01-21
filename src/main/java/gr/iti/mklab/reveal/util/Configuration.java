@@ -17,6 +17,7 @@ public class Configuration {
     public static String VISUAL_DIR;
     public static String LEARNING_FOLDER;
     public static String INDEX_SERVICE_HOST;
+    public static String STREAM_MANAGER_SERVICE_HOST;
     public static String MONGO_HOST;
     public static boolean ADD_SOCIAL_MEDIA;
     public static String MANIPULATION_REPORT_PATH;
@@ -32,6 +33,7 @@ public class Configuration {
         VISUAL_DIR = conf.getString("visualDir");
         LEARNING_FOLDER = conf.getString("learningFolder");
         INDEX_SERVICE_HOST = conf.getString("indexServiceHost");
+        STREAM_MANAGER_SERVICE_HOST = conf.getString("streamManagerServiceHost");
         MONGO_HOST = conf.getString("mongoHost");
     }
 
@@ -42,6 +44,7 @@ public class Configuration {
         VISUAL_DIR = conf.getProperty("visualDir");
         LEARNING_FOLDER = conf.getProperty("learningFolder");
         INDEX_SERVICE_HOST = conf.getProperty("indexServiceHost");
+        STREAM_MANAGER_SERVICE_HOST = conf.getProperty("streamManagerServiceHost");
         MONGO_HOST = conf.getProperty("mongoHost");
         ADD_SOCIAL_MEDIA = Boolean.valueOf(conf.getProperty("getSocialMedia"));
         MANIPULATION_REPORT_PATH = conf.getProperty("manipulationReportPath");
