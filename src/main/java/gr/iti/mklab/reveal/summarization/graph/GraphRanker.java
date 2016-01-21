@@ -1,4 +1,4 @@
-package gr.iti.mklab.reveal.summarization;
+package gr.iti.mklab.reveal.summarization.graph;
 
 import edu.uci.ics.jung.algorithms.matrix.GraphMatrixOperations;
 import edu.uci.ics.jung.algorithms.scoring.EigenvectorCentrality;
@@ -7,11 +7,11 @@ import edu.uci.ics.jung.algorithms.scoring.PageRank;
 import edu.uci.ics.jung.algorithms.scoring.HITS;
 import edu.uci.ics.jung.algorithms.scoring.PageRankWithPriors;
 import edu.uci.ics.jung.graph.Graph;
-import edu.ucla.sspace.matrix.DivRank;
 import edu.ucla.sspace.matrix.SparseHashMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
+import gr.iti.mklab.reveal.summarization.divrank.DivRank;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +31,7 @@ import cern.colt.matrix.impl.SparseDoubleMatrix2D;
 public class GraphRanker {
 	
 	//public static Double d = 0.75; //damping factor in PageRank
-	public static Double d = 0.7; //damping factor in PageRank
+	public static Double d = 0.75; //damping factor in PageRank
 	
 	// Stoping criteria
 	private static double tolerance = 0.000001;
@@ -158,7 +158,12 @@ public class GraphRanker {
 	}
 	
 	public static Map<String, Double> divrankScoring(Graph<String, Edge>  graph, final Map<String, Double> priors) {
-
+		
+		Map<Edge, Number> edgesMap = new HashMap<Edge, Number>();
+		for(Edge edge : graph.getEdges()) {
+			edgesMap.put(edge, edge.weight);
+		}
+		
 		List<String> vertices = new ArrayList<String>(graph.getVertices());
 		
 		System.out.println("#priors: " + priors.size() + ", #vertices: " + vertices.size());
@@ -174,20 +179,23 @@ public class GraphRanker {
 		}
 		System.out.println("Initial SUM: " + sum);
 
-		SparseDoubleMatrix2D matrix = GraphMatrixOperations.graphToSparseMatrix(graph);
+		SparseDoubleMatrix2D matrix = GraphMatrixOperations.graphToSparseMatrix(graph, edgesMap);
 		
 		IntArrayList iIndinces = new IntArrayList();
 		IntArrayList jIndinces = new IntArrayList();
 		DoubleArrayList weights = new DoubleArrayList();
+		
 		matrix.getNonZeros(iIndinces, jIndinces, weights);
-	
+		
 		SparseMatrix affinityMatrix = new SparseHashMatrix(vertices.size(), vertices.size());
-		for(int index=0; index<weights.size(); index++) {
+		for(int index = 0; index < weights.size(); index++) {
 			affinityMatrix.set(iIndinces.get(index), jIndinces.get(index), weights.get(index));
 		}
 		DoubleVector initialRanks = new DenseVector(initialScores);
 		
 		DivRank ranker = new DivRank(d);
+		ranker.setIterations(20);
+		
 		DoubleVector ranks = ranker.rankMatrix(affinityMatrix, initialRanks);
 		
 		double maxScore = 0;

@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.matrix;
+package gr.iti.mklab.reveal.summarization.divrank;
 
 import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.vector.DenseVector;
@@ -77,47 +77,45 @@ public class DivRank extends PageRank {
     /**
      * {@inherDoc}
      */
-    public DoubleVector rankMatrix(SparseMatrix affinityMatrix, 
-                                   DoubleVector initialRanks) {
+    public DoubleVector rankMatrix(SparseMatrix affinityMatrix, DoubleVector initialRanks) {
+    	
         int numRows = affinityMatrix.rows(); 
 
         DoubleVector pageRanks = initialRanks;
 
+        // normalization 
         scaleAffinityMatrix(affinityMatrix);
 
-        // Iterate over a row, saving the intermediate sum of each row use
-        // built-in fn to get sparse row and also getnonzero before summing
-        // multiply by position in v at the end.
-        for(int k = 0; k < 20; k++) {
+        // Iterate over a row, saving the intermediate sum of each row use built-in fn to get sparse row 
+        // and also getnonzero before summing multiply by position in v at the end.
+        for(int k = 0; k < iterations; k++) {
             DoubleVector divRanks = new DenseVector(numRows);
 
             // Create the DivRanks based on the current page rank score and the
             // original transition matrix.
-            for (int r = 0; r < numRows; ++r)
-                divRanks.set(r, dotProduct(
-                            affinityMatrix.getRowVector(r), pageRanks));
-
+            for (int row = 0; row < numRows; ++row) {
+                divRanks.set(row, dotProduct(affinityMatrix.getRowVector(row), pageRanks));
+            }
+            
             DoubleVector newPageRanks = new DenseVector(numRows);
 
-            // Compute the ranks based on a random walk through the affinity
-            // matrix.  Traditionally, this is done by multiplying the transpose
-            // of the affinity matrix by the page rank vector.  Since computing
-            // the transpose is costly, both memory wise and access wise, we
+            // Compute the ranks based on a random walk through the affinity matrix.  Traditionally, this is done by multiplying the transpose
+            // of the affinity matrix by the page rank vector.  Since computing the transpose is costly, both memory wise and access wise, we
             // compute it without doing the transpose directly.
             for(int i = 0; i < numRows; i++) {
                 SparseDoubleVector row = affinityMatrix.getRowVector(i);
                 for(int j : row.getNonZeroIndices()) {
-                    double delta = row.get(j) * pageRanks.get(i) * 
-                                   pageRanks.get(j) * 1d/divRanks.get(i);
+                    double delta = row.get(j) * pageRanks.get(i) * pageRanks.get(j) * 1d/divRanks.get(i);
                     newPageRanks.add(j, delta);
                 }
             }
 
             // Scale each computed rank by the factor given to the random jump
             // weight. 
-            for(int i = 0; i < numRows; i++)
+            for(int i = 0; i < numRows; i++) {
                 newPageRanks.set(i, newPageRanks.get(i) * affinityWeight);
-
+            }
+            
             addRandomJumpProbabilities(newPageRanks, pageRanks, initialRanks);
 
             // Store the new page rank scores.
@@ -131,11 +129,12 @@ public class DivRank extends PageRank {
      * Returns the dot product between a {@link SparseDoubleVector} and a dense
      * {@link DoubleVector}.
      */
-    private double dotProduct(SparseDoubleVector transitionProbabilities,
-                              DoubleVector pageRanks) {
+    private double dotProduct(SparseDoubleVector transitionProbabilities, DoubleVector pageRanks) {
         double product = 0;
-        for (int i : transitionProbabilities.getNonZeroIndices())
+        for (int i : transitionProbabilities.getNonZeroIndices()) {
             product += transitionProbabilities.get(i) * pageRanks.get(i);
+        }
         return product;
     }
+    
 }

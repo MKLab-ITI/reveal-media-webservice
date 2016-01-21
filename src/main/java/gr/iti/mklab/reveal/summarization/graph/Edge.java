@@ -1,4 +1,4 @@
-package gr.iti.mklab.reveal.summarization;
+package gr.iti.mklab.reveal.summarization.graph;
 
 
 import java.io.Serializable;

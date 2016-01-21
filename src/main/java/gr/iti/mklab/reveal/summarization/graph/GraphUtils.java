@@ -1,4 +1,4 @@
-package gr.iti.mklab.reveal.summarization;
+package gr.iti.mklab.reveal.summarization.graph;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -31,7 +31,9 @@ import edu.uci.ics.jung.graph.DirectedSparseGraph;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 import edu.uci.ics.jung.io.GraphIOException;
+import edu.uci.ics.jung.io.GraphMLMetadata;
 import edu.uci.ics.jung.io.GraphMLWriter;
+import edu.uci.ics.jung.io.graphml.DataMetadata;
 import edu.uci.ics.jung.io.graphml.EdgeMetadata;
 import edu.uci.ics.jung.io.graphml.GraphMLReader2;
 import edu.uci.ics.jung.io.graphml.GraphMetadata;
@@ -129,6 +131,39 @@ public class GraphUtils {
 			edu.uci.ics.jung.graph.util.Pair<V> endpoints = graph.getEndpoints(edge);
 			directedGraph.addEdge(new Edge(edge.getWeight()), endpoints.getFirst(), endpoints.getSecond());
 			directedGraph.addEdge(new Edge(edge.getWeight()), endpoints.getSecond(), endpoints.getFirst());
+		}
+		return directedGraph;
+	}
+	
+	/*
+	 * Get a directed graph of items from an undirected graph. 
+	 * For each undirected edges two directed edges are added to the new graph.
+	 */
+	public static <V> DirectedGraph<V, Edge> toDirected(Graph<V, Edge> graph, Map<String, Long> order) {	
+		DirectedGraph<V, Edge> directedGraph = new DirectedSparseGraph<V, Edge>();
+	
+		// Add all vertices first
+		Collection<V> vertices = graph.getVertices();
+		for(V vertex : vertices) {
+			directedGraph.addVertex(vertex);
+		}
+		
+		// Add directed edges
+		for(Edge edge : graph.getEdges()) {	
+			edu.uci.ics.jung.graph.util.Pair<V> endpoints = graph.getEndpoints(edge);
+			
+			Long firstOrder = order.get(endpoints.getFirst());
+			Long secondOrder = order.get(endpoints.getSecond());
+			if(firstOrder > secondOrder) {
+				directedGraph.addEdge(new Edge(edge.getWeight()), endpoints.getFirst(), endpoints.getSecond());
+			}
+			else if(firstOrder < secondOrder) {
+				directedGraph.addEdge(new Edge(edge.getWeight()), endpoints.getSecond(), endpoints.getFirst());
+			}
+			else {
+				directedGraph.addEdge(new Edge(edge.getWeight()), endpoints.getFirst(), endpoints.getSecond());
+				directedGraph.addEdge(new Edge(edge.getWeight()), endpoints.getSecond(), endpoints.getFirst());
+			}
 		}
 		return directedGraph;
 	}
@@ -293,7 +328,77 @@ public class GraphUtils {
 		
 	}
 	
+	/**
+	 * Save graph in a .graphml file.
+	 * 
+	 * @param grap : the graph  to be saved
+	 * @param filename : the name of the file
+	 * @throws IOException
+	 */
+	public static void saveProcessedGraph(Graph<Vertex, Edge> graph, Collection<Collection<String>>  clusters,
+			Map<String, Double> priors, String filename) throws IOException {
+		
+		Map<String, String> associations = new HashMap<String, String>();
+		int c = 0;
+		for(Collection<String> cluster : clusters) {
+			for(String member : cluster) {
+				associations.put(member, Integer.toString(c));
+			}
+			c++;
+		}
+		
+		File file =new File(filename);
+		File dir = file.getParentFile();
+		if(!dir.exists()) {
+			dir.mkdirs();
+		}
+		
+		PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+		ExtendedGraphMLWriter<Vertex, Edge> graphWriter = new ExtendedGraphMLWriter<Vertex, Edge> ();
+		
+		graphWriter.addVertexData("weight", "double", "0", 				
+			new Transformer<Vertex, String>() {
+				@Override
+				public String transform(Vertex v) {
+					return Double.toString(v.getWeight());
+				}
+			}
+		);
+		graphWriter.addVertexData("prior", "double", "0", 				
+				new Transformer<Vertex, String>() {
+					@Override
+					public String transform(Vertex v) {
+						String id = v.getId();
+						Double prior = priors.get(id);
+						
+						return Double.toString(prior==null ? .0 : prior);
+					}
+				}
+			);
+		graphWriter.addVertexData("cluster", "string", "NULL", 				
+				new Transformer<Vertex, String>() {
+					@Override
+					public String transform(Vertex v) {
+						String cluster = associations.get(v.getId());
+						return cluster;
+					}
+				}
+			);
+		
+		graphWriter.addEdgeData("weight", "double", "0", 
+			new Transformer<Edge, String>() {
+				@Override
+				public String transform(Edge e) {
+					return Double.toString(e.getWeight());
+				}
+			}
+		);
 
+		graphWriter.save(graph, out);
+
+		
+	}
+	
 	/**
 	 * Load a graph from a .graphml file
 	 * @param filename : the name of the file that the graph is stored

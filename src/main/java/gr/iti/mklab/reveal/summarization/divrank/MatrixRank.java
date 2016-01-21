@@ -1,5 +1,6 @@
-package edu.ucla.sspace.matrix;
+package gr.iti.mklab.reveal.summarization.divrank;
 
+import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.vector.DoubleVector;
 
 

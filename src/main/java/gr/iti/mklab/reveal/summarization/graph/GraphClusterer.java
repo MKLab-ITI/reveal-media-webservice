@@ -1,4 +1,4 @@
-package gr.iti.mklab.reveal.summarization;
+package gr.iti.mklab.reveal.summarization.graph;
 
 import edu.uci.ics.jung.graph.Graph;
 import gr.iti.mklab.reveal.summarization.scan.Community;

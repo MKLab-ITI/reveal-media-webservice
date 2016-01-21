@@ -635,12 +635,20 @@ public class RevealController {
     @ResponseBody
     public String summarizationForCollection(
     		@PathVariable(value = "collection") String collection,
-    		@RequestParam(value = "similarityCuttof", required = false, defaultValue = "0.2") double similarityCuttof)
+    		@RequestParam(value = "similarityCuttof", required = false, defaultValue = "0.2") double similarityCuttof, 
+    		@RequestParam(value = "visualCuttof", required = false, defaultValue = "0.2") double visualCuttof,
+    		@RequestParam(value = "randomJumpWeight", required = false, defaultValue = "0.75") double randomJumpWeight,
+    		@RequestParam(value = "scanMu", required = false, defaultValue = "3") int scanMu,
+    		@RequestParam(value = "scanEpsilon", required = false, defaultValue = "0.65") double scanEpsilon)
     				throws Exception {
+    	
+    	
     	
     	Future<List<RankedImage>> response = futures.get(collection);
     	if(response == null) {
-    		MediaSummarizer summarizer = new MediaSummarizer(collection, similarityCuttof);
+    		MediaSummarizer summarizer = new MediaSummarizer(collection, similarityCuttof, visualCuttof, 
+    				randomJumpWeight, scanMu, scanEpsilon);
+    		
         	response = summarizationExecutor.submit(summarizer);
         	if(response != null) {
         		futures.put(collection, response);
@@ -654,7 +662,6 @@ public class RevealController {
     		return "Summarization task has already been submitted.";
     	}
     }
-    
     @RequestMapping(value = "/summary/{collection}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public Responses.SummaryResponse getSummary(@PathVariable(value = "collection") String collection,

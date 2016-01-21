@@ -85,6 +85,19 @@ public class VisualIndexer {
         }
     }
 
+    public static void lightinit() throws Exception {
+
+        _requestConfig = RequestConfig.custom()
+                .setSocketTimeout(30000)
+                .setConnectTimeout(30000)
+                .build();
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        _httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .build();
+
+    }
+    
     private VisualIndexHandler handler;
     private String collection;
 

@@ -1,4 +1,4 @@
-package gr.iti.mklab.reveal.summarization;
+package gr.iti.mklab.reveal.summarization.utils;
 
 public class L2 {
 

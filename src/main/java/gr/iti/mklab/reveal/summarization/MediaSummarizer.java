@@ -3,9 +3,20 @@ package gr.iti.mklab.reveal.summarization;
 import edu.uci.ics.jung.graph.DirectedGraph;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
+import gr.iti.mklab.reveal.summarization.graph.Edge;
+import gr.iti.mklab.reveal.summarization.graph.GraphClusterer;
+import gr.iti.mklab.reveal.summarization.graph.GraphRanker;
+import gr.iti.mklab.reveal.summarization.graph.GraphUtils;
+import gr.iti.mklab.reveal.summarization.graph.Vertex;
+import gr.iti.mklab.reveal.summarization.utils.L2;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.simmo.core.Annotation;
+import gr.iti.mklab.simmo.core.annotations.NamedEntity;
+import gr.iti.mklab.simmo.core.annotations.SummaryScore;
+import gr.iti.mklab.simmo.core.cluster.Cluster;
+import gr.iti.mklab.simmo.core.cluster.Clusterable;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
@@ -19,17 +30,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang.ArrayUtils;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
+import org.mongodb.morphia.query.Query;
+import org.mongodb.morphia.query.UpdateOperations;
 
 public class MediaSummarizer implements Callable<List<RankedImage>> {
 
@@ -38,39 +53,76 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 	private String collection;
 
 	private double similarityCuttof = 0.2;
+	private double visualSimilarity = 0.2;
+
+	private double randomJumpWeight = 0.75;
+
+	private int mu;
+	private double epsilon;
 			
-	public MediaSummarizer(String collection, double similarityCuttof) {
-//		try {
-//			Configuration.load(getClass().getResourceAsStream("/remote.properties"));
-//		} catch (ConfigurationException | IOException e) {
-//			e.printStackTrace();
-//		}
+	public MediaSummarizer(String collection, double similarityCuttof, double visualSimilarity, 
+			double randomJumpWeight, int mu, double epsilon) {
+		
+		try {
+			Configuration.load(getClass().getResourceAsStream("/remote.properties"));
+		} catch (ConfigurationException | IOException e) {
+			e.printStackTrace();
+		}
 		this.similarityCuttof = similarityCuttof;
+		this.visualSimilarity = visualSimilarity;
+		this.randomJumpWeight  = randomJumpWeight;
+		this.mu = mu;
+		this.epsilon = epsilon;
+		
 		this.collection = collection;
 	}
 	
 	@Override
 	public List<RankedImage> call() throws Exception {
 		
+		 DAO<Cluster, String> clusterDAO = new BasicDAO<>(
+				 Cluster.class, 
+				 MorphiaManager.getMongoClient(), 
+				 MorphiaManager.getMorphia(), 
+				 MorphiaManager.getDB(collection).getName()
+			);
+		 
 		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
+		
 		DAO<RankedImage, String> rankedImagesDAO = new BasicDAO<RankedImage, String>(
 				RankedImage.class, 
 				MorphiaManager.getMongoClient(), 
 				MorphiaManager.getMorphia(), 
 				MorphiaManager.getDB(collection).getName()
 			);
-        
-		//VisualIndexer vIndexer = VisualIndexerFactory.getVisualIndexer(collection);
+		
+		VisualIndexer.lightinit();
+		VisualIndexer vIndexer = VisualIndexerFactory.getVisualIndexer(collection);
 		
 		Graph<String, Edge> graph = new UndirectedSparseGraph<String, Edge>();
 
         Map<String, String> texts = new HashMap<String, String>();
+        Map<String, Long> times = new HashMap<String, Long>();
         Map<String, Integer> popularities = new HashMap<String, Integer>();
-        //Map<String, Double[]> visualVectors = new HashMap<String, Double[]>();
+        Map<String, Double[]> visualVectors = new HashMap<String, Double[]>();
         
+        long current = System.currentTimeMillis();
 		for (int k = 0; k < imageDAO.count(); k += ITEMS_PER_ITERATION) {
             List<Image> images = imageDAO.getItems(ITEMS_PER_ITERATION, k);
             images.stream().forEach(image -> {
+            
+            	List<? extends Annotation> annotations = image.getAnnotationsByClass(NamedEntity.class);
+            	for(Annotation annotation : annotations) {
+            		NamedEntity ne = (NamedEntity) annotation;
+            		
+            	}
+            	
+            	Set<String> tags = image.getTags();
+            	if(!tags.isEmpty()) {
+            		for(String tag : tags) {
+            			
+            		}
+            	}
             	
             	graph.addVertex(image.getId());
             	
@@ -79,15 +131,23 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
             		texts.put(image.getId(), title);
             	}
             	
-            	int popularity = image.getNumShares() + image.getNumLikes() + image.getNumComments()
-            			+ image.getNumViews();
+            	Date date = image.getCrawlDate();
+            	if(date != null) {
+            		times.put(image.getId(), date.getTime());
+            	}
+            	else {
+            		times.put(image.getId(), current);
+            	}
+            	
+            	int popularity = image.getNumShares() + image.getNumLikes() 
+            			+ image.getNumComments() + image.getNumViews();
             	
             	popularities.put(image.getId(), popularity);
             	
-            	//Double[] vector = vIndexer.getVector(image.getId());
-            	//if(vector != null && vector.length > 0) {
-            		//visualVectors.put(image.getId(), vector);	
-            	//}
+            	Double[] vector = vIndexer.getVector(image.getId());
+            	if(vector != null && vector.length > 0) {
+            		visualVectors.put(image.getId(), vector);	
+            	}
             	
             });
         }
@@ -98,20 +158,40 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         System.out.println("Graph created: " + graph.getVertexCount() + " vertices and " 
         		+ graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
         
-        //attachVisualEdges(graph, visualVectors);
-        //System.out.println("Graph created: " + graph.getVertexCount() + " vertices and " 
-        //		+ graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
+        attachVisualEdges(graph, visualVectors);
+        System.out.println("Graph created: " + graph.getVertexCount() + " vertices and " 
+        		+ graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
         
-        Collection<Collection<String>> clusters = GraphClusterer.cluster(graph, true);
+        GraphClusterer.scanMu = mu;
+        GraphClusterer.scanEpsilon = epsilon;
+        Collection<Collection<String>> clusters = GraphClusterer.cluster(graph, false);
         System.out.println(clusters.size() + " clusters detected.");
+        
+        for(Collection<String> c : clusters) {
+        	Cluster cluster = new Cluster();
+        	List<Clusterable> members = new ArrayList<Clusterable>();
+        	for(String mId : c) {
+        		Image image = imageDAO.get(mId);
+        		if(image != null) {
+        			members.add(image);
+        		}
+        	}
+        	cluster.setMembers(members);
+        	cluster.setSize(members.size());
+        	
+        	clusterDAO.save(cluster);
+        }
+        
         
         Map<String, Double> priors = getPriorScores(graph.getVertices(), popularities, clusters, graph); 
         
-		DirectedGraph<String, Edge> directedGraph = GraphUtils.toDirected(graph);
-		Graph<String, Edge> normalizedGraph = GraphUtils.normalize(directedGraph);
+		DirectedGraph<String, Edge> directedGraph = GraphUtils.toDirected(graph, times);
+		//Graph<String, Edge> normalizedGraph = GraphUtils.normalize(directedGraph);
 		
-		Map<String, Double> divrankScores = GraphRanker.divrankScoring(normalizedGraph, priors);
-		  
+		GraphRanker.d = randomJumpWeight;
+		Map<String, Double> pagerankScores = GraphRanker.pagerankScoring(directedGraph, priors);
+		Map<String, Double> divrankScores = GraphRanker.divrankScoring(directedGraph, priors);
+		
 		List<RankedImage> rankedImages = new ArrayList<RankedImage>();
 		for(Entry<String, Double> entry : divrankScores.entrySet()) {
 			RankedImage rankedImage = new RankedImage(entry.getKey(), entry.getValue());
@@ -119,6 +199,51 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			
 			rankedImagesDAO.save(rankedImage);
 		}
+		
+		for(String vertex : graph.getVertices()) {
+			SummaryScore summaryScore = new SummaryScore(
+					popularities.get(vertex), 
+					priors.get(vertex), 
+					pagerankScores.get(vertex), 
+					divrankScores.get(vertex)
+				);
+			
+			// add annotation to image
+			Query<Image> query = imageDAO.createQuery().filter("_id", vertex);
+			UpdateOperations<Image> ops = imageDAO.createUpdateOperations().add("annotations", summaryScore);
+			imageDAO.update(query, ops);
+			
+		}
+		
+		//////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////
+		//////////////////// E X P E R I M E N T A L /////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////
+		/*
+		Graph<Vertex, Edge> weightedGraph = new UndirectedSparseGraph<Vertex, Edge>();
+		for(RankedImage ri : rankedImages) {
+			Vertex v = new Vertex(ri.getId(), ri.getScore());
+			weightedGraph.addVertex(v);
+		}
+		
+		List<Vertex> vertices = new ArrayList<Vertex>(weightedGraph.getVertices());
+		for(int i = 0; i < (vertices.size()-1); i++) {
+			Vertex v1 = vertices.get(i);
+			for(int j = i+1; j<vertices.size(); j++) {
+				Vertex v2 = vertices.get(j);
+				Edge edge = graph.findEdge(v1.getId(), v2.getId());
+				if(edge != null) {
+					weightedGraph.addEdge(edge, v1, v2);
+				}
+			}	
+		}
+		GraphUtils.saveProcessedGraph(weightedGraph, clusters, priors, "./wg.graphml");
+		*/
+		///////////////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////
 		
 		return rankedImages;
 	}
@@ -137,9 +262,9 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         
         builder.setThreadCount(8);
         builder.setK(k);
-        builder.setDelta(0.01);
+        builder.setDelta(0.00001);
         builder.setRho(0.5);
-        builder.setMaxIterations(40);
+        builder.setMaxIterations(20);
         
         builder.setSimilarity(new SimilarityInterface<Vector>() {
         	
@@ -149,7 +274,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 				if(v1 != null && v2 != null) {
 					try {
 						double similarity = v1.cosine(v2);
-						if(similarity < similarityCuttof) {
+						if(similarity < 0) {
 							return .0;
 						}
 						
@@ -170,6 +295,8 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         }
 
         Map<Node<Vector>, NeighborList> nn = builder.computeGraph(nodes);
+        //builder.test(nodes);
+        System.out.println("Iterations: " + builder.getIterations());
         for(Node<Vector> node : nn.keySet()) {
         	String v1 = node.id;
         	NeighborList nl = nn.get(node);
@@ -177,6 +304,9 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         	Iterator<Neighbor> it = nl.iterator();
         	while(it.hasNext()) {
         		Neighbor neighbor = it.next();
+        		if(neighbor == null) {
+        			continue;
+        		}
         		String v2 = neighbor.node.id;
         		Edge edge = graph.findEdge(v1, v2);
         		if(edge == null && neighbor.similarity > similarityCuttof) {
@@ -195,7 +325,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 		int k = 0;
 		double ratio = 0.02;
-		while(k == 0 && ratio <=1) {
+		while(k == 0 && ratio <= 1) {
 			k = (int) (ratio * graph.getVertexCount());
 			ratio += 0.01;
 		}
@@ -203,9 +333,9 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         ThreadedNNDescent<Double[]> builder = new ThreadedNNDescent<Double[]>();
         builder.setThreadCount(8);
         builder.setK(k);
-        builder.setDelta(0.01);
+        builder.setDelta(0.00001);
         builder.setRho(0.5);
-        builder.setMaxIterations(40);
+        builder.setMaxIterations(20);
         
         builder.setSimilarity(new SimilarityInterface<Double[]>() {
         	
@@ -225,7 +355,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         });
         
         List<Node<Double[]>> nodes = new ArrayList<Node<Double[]>>();
-        for (String vertex : graph.getVertices()) {
+        for (String vertex : visualVectors.keySet()) {
         	Double[] vector = visualVectors.get(vertex);
         	if(vector != null) {
         		Node<Double[]> node = new Node<Double[]>(vertex, vector);
@@ -241,15 +371,16 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         	Iterator<Neighbor> it = nl.iterator();
         	while(it.hasNext()) {
         		Neighbor neighbor = it.next();
-        		String v2 = neighbor.node.id;
-        		Edge edge = graph.findEdge(v1, v2);
-        		if(edge == null && neighbor.similarity >= 0.1) {
-        			edge = new Edge(neighbor.similarity);
-        			graph.addEdge(edge, v1, v2);
+        		if(neighbor != null) {
+        			String v2 = neighbor.node.id;
+        			Edge edge = graph.findEdge(v1, v2);
+        			if(edge == null && neighbor.similarity >= visualSimilarity) {
+        				edge = new Edge(neighbor.similarity);
+        				graph.addEdge(edge, v1, v2);
+        			}
         		}
         	}
         }    
-
 	}
 	
 	public Map<String, Double> getPriorScores(Collection<String> ids, Map<String, Integer> popularities, 
@@ -285,15 +416,18 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			if(p == null) {
 				p = 0;
 			}
-			Double popularity = Math.log(Math.E + (p.doubleValue() / maxPop.doubleValue()));
+			Double popularity = Math.log(Math.E + (1 + p.doubleValue() / maxPop.doubleValue()));
 			
 			Integer sig = topicSignificane.get(id);
 			if(sig == null) {
 				sig = 0;
 			}
-			
 			Double significance = Math.exp(sig.doubleValue() / maxCluster.doubleValue());
+			
 			Double density = topicDensities.get(id);
+			if(density == null) {
+				density = 1.;
+			}
 			
 			score = density * popularity * significance;
 			
@@ -307,7 +441,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 		MorphiaManager.setup("160.40.51.20");
 		
-		MediaSummarizer sum = new MediaSummarizer("turkey_politics", 0.1);
+		MediaSummarizer sum = new MediaSummarizer("syria_crisis", 0.65, 0.25, 0.75, 4, 0.7);
 		System.out.println("Run summarizer!");
 		sum.call();
 	}

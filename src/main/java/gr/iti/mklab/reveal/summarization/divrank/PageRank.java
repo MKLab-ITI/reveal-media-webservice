@@ -19,8 +19,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.matrix;
+package gr.iti.mklab.reveal.summarization.divrank;
 
+import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
@@ -69,6 +70,8 @@ import edu.ucla.sspace.vector.SparseDoubleVector;
  */
 public class PageRank implements MatrixRank {
 
+	protected int iterations = 50;
+	
     /**
      * The weight factor given to the random jump probabilities versus the
      * actual edge weights in the affinity matrix.
@@ -103,7 +106,7 @@ public class PageRank implements MatrixRank {
         // Iterate over a row, saving the intermediate sum of each row use
         // built-in fn to get sparse row and also getnonzero before summing
         // multiply by position in v at the end.
-        for(int k = 0; k < 20; k++) {
+        for(int k = 0; k < iterations; k++) {
             DoubleVector newPageRanks = new DenseVector(numRows);
 
             // Compute the ranks based on a random walk through the affinity
@@ -144,19 +147,23 @@ public class PageRank implements MatrixRank {
 
             // Sum the weights of the row.
             double rowSum = 0;
-            for (int c : row.getNonZeroIndices())
+            for (int c : row.getNonZeroIndices()) {
                 rowSum += row.get(c);
-
+        	}
+            
             // Normalize by the row sum if it is non-zero.
-            if (rowSum == 0d)
+            if (rowSum == 0d) {
                 continue;
-            for (int c : row.getNonZeroIndices())
+            }
+            
+            for (int c : row.getNonZeroIndices()) {
                 affinityMatrix.set(r, c, row.get(c) / rowSum);
+            }
         }
     }
 
     /**
-     * Adds the rank reated by random restart from each node.  This is based on
+     * Adds the rank created by random restart from each node.  This is based on
      * both the {@code randomJumpWeight}, and the difference between the L1
      * norms of the current page ranks and the previous page ranks.
      */
@@ -188,4 +195,12 @@ public class PageRank implements MatrixRank {
             initialRanks.set(i, 1d/affinityMatrix.rows());
         return initialRanks;
     }
+
+	public int getIterations() {
+		return iterations;
+	}
+
+	public void setIterations(int iterations) {
+		this.iterations = iterations;
+	}
 }
