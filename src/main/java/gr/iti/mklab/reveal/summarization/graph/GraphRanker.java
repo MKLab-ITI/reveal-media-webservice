@@ -77,8 +77,9 @@ public class GraphRanker {
 			@Override
 			public Double transform(String vertex) {
 				Double vertexPrior = priors.get(vertex);
-				if(vertexPrior == null)
+				if(vertexPrior == null) {
 					return 0d;
+				}
 				
 				return vertexPrior;
 			}
@@ -97,8 +98,9 @@ public class GraphRanker {
 		for(String vertex : vertices) {
 			Double score = ranker.getVertexScore(vertex);
 			
-			if(score > maxScore)
+			if(score > maxScore) {
 				maxScore = score;
+			}
 			
 			verticesMap.put(vertex, score);
 		}

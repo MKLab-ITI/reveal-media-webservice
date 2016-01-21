@@ -63,11 +63,14 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 	public MediaSummarizer(String collection, double similarityCuttof, double visualSimilarity, 
 			double randomJumpWeight, int mu, double epsilon) {
 		
+		/*
 		try {
 			Configuration.load(getClass().getResourceAsStream("/remote.properties"));
 		} catch (ConfigurationException | IOException e) {
 			e.printStackTrace();
 		}
+		*/
+		
 		this.similarityCuttof = similarityCuttof;
 		this.visualSimilarity = visualSimilarity;
 		this.randomJumpWeight  = randomJumpWeight;
@@ -199,6 +202,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			
 			rankedImagesDAO.save(rankedImage);
 		}
+		
 		
 		for(String vertex : graph.getVertices()) {
 			SummaryScore summaryScore = new SummaryScore(
@@ -441,7 +445,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 		MorphiaManager.setup("160.40.51.20");
 		
-		MediaSummarizer sum = new MediaSummarizer("syria_crisis", 0.65, 0.25, 0.75, 4, 0.7);
+		MediaSummarizer sum = new MediaSummarizer("turkey_politics", 0.65, 0.25, 0.75, 4, 0.7);
 		System.out.println("Run summarizer!");
 		sum.call();
 	}
