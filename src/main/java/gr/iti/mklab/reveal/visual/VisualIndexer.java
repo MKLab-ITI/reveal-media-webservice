@@ -118,68 +118,15 @@ public class VisualIndexer {
      * @param media
      * @return
      */
-    public boolean index(Media media) {
-        boolean indexed = false;
+    public boolean index(Media media, double[] vector) {
         if (handler == null)
             throw new IllegalStateException("There is no index for the collection " + collection);
-        HttpGet httpget = null;
-        try {
-            String id = media.getId();
-            String url = null;
-            if (media instanceof Image)
-                url = media.getUrl();
-            else if (media instanceof Video)
-                url = ((Video) media).getThumbnail();
-            httpget = new HttpGet(url.replaceAll(" ", "%20"));
-            httpget.setConfig(_requestConfig);
-            HttpResponse response = _httpclient.execute(httpget);
-            StatusLine status = response.getStatusLine();
-            int code = status.getStatusCode();
-            if (code < 200 || code >= 300) {
-                _logger.error("Failed fetch media item " + id + ". URL=" + url +
-                        ". Http code: " + code + " Error: " + status.getReasonPhrase());
-                return false;
-            }
-            HttpEntity entity = response.getEntity();
-            if (entity == null) {
-                _logger.error("Entity is null for " + id + ". URL=" + url +
-                        ". Http code: " + code + " Error: " + status.getReasonPhrase());
-                return false;
-            }
-            InputStream input = entity.getContent();
-            byte[] imageContent = IOUtils.toByteArray(input);
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageContent));
-            int width = image.getWidth();
-            int height = image.getHeight();
-            if (image != null && ImageUtils.isImageBigEnough(width, height)) {
-                ImageVectorization imvec = new ImageVectorization(id, image, targetLengthMax, maxNumPixels);
-                if (media instanceof Image) {
-                    ((Image) media).setWidth(width);
-                    ((Image) media).setHeight(height);
-                } else if (media instanceof Video) {
-                    ((Video) media).setWidth(width);
-                    ((Video) media).setHeight(height);
-                }
-                imvec.setDebug(true);
-                System.out.println("beginning vectorization");
-                ImageVectorizationResult imvr = imvec.call();
-                System.out.println("Vectorization called properly");
-                double[] vector = imvr.getImageVector();
-                System.out.println("imvr collected properly");
-                if (vector == null || vector.length == 0) {
-                    _logger.error("Error in feature extraction for " + id);
-                }
-                handler.index(id, vector);
-                indexed = true;
-            }
-        } catch (Exception e) {
-            _logger.error(e.getMessage(), e);
-
-        } finally {
-            if (httpget != null) {
-                httpget.abort();
-            }
-            return indexed;
+        try{
+        	handler.index(media.getId(), vector);
+        	return true;
+        }catch(Exception e){
+        	_logger.error(e.getMessage(), e);
+        	return false;
         }
     }
 
@@ -306,6 +253,6 @@ public class VisualIndexer {
         Image im = new Image();
         //im.setId("1235");
         im.setUrl("http://animalia-life.com/data_images/dog/dog4.jpg");
-        boolean indexed = v.index(im);
+        boolean indexed = v.index(im, null);
     }
 }
