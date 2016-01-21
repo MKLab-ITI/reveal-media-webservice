@@ -2,11 +2,14 @@ package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.rabbitmq.RabbitMQPublisher;
 import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.visual.MediaCallable;
+import gr.iti.mklab.reveal.visual.MediaCallableResult;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
 import gr.iti.mklab.simmo.core.documents.Webpage;
 import gr.iti.mklab.simmo.core.items.Image;
+import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
@@ -14,9 +17,13 @@ import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A runnable that indexes all non indexed images found in the specified collection
@@ -38,6 +45,11 @@ public class IndexingRunner implements Runnable {
     private boolean shouldStop = false;
     private boolean listsWereEmptyOnce = false;
     private final String collection;
+    private ExecutorService executor;
+	private CompletionService<MediaCallableResult> pool;
+	private int numPendingTasks;
+	private final int maxNumPendingTasks;
+	private int NUM_THREADS = 10;
 
     public IndexingRunner(String collection) throws ExecutionException, IOException {
         System.out.println("Creating IndexingRunner for collection "+collection);
@@ -54,12 +66,19 @@ public class IndexingRunner implements Runnable {
         ld.setFeatureEncoding(LocalDescriptors.FEATURE_ENCODING.Vlad);
         ld.setNumberOfFeatures(1024);
         ld.setFeatureEncodingLibrary("multimedia-indexing");
+        executor = Executors.newFixedThreadPool(NUM_THREADS);
+		pool = new ExecutorCompletionService<MediaCallableResult>(executor);
+		numPendingTasks = 0;
+		maxNumPendingTasks = NUM_THREADS * 10;
         System.out.println("End of constructor ");
     }
 
     @Override
     public void run() {
         System.out.println("Indexing runner run");
+        int submittedCounter = 0;
+		int completedCounter = 0;
+		int failedCounter = 0;
         while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
             try {
                 final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
@@ -76,30 +95,52 @@ public class IndexingRunner implements Runnable {
                     }
                 } else {
 
-                    for (Image image : imageList) {
-                        System.out.println("Checking image " + image.getId());
-                        if (_indexer.index(image)) {
-                            image.addAnnotation(ld);
-                            imageDAO.save(image);
-                            if (_publisher != null)
-                                _publisher.publish(MorphiaManager.getMorphia().toDBObject(image).toString());
-                        } else {
-                            System.out.println("Deleting image " + image.getId());
-                            imageDAO.delete(image);
-                            pageDAO.deleteById(image.getId());
-                            if (LinkDetectionRunner.LAST_POSITION > 0)
-                                LinkDetectionRunner.LAST_POSITION--;
-                        }
-                    }
-                    for (Video video : videoList) {
-                        if (_indexer.index(video)) {
-                            video.addAnnotation(ld);
-                            videoDAO.save(video);
-                        } else {
-                            videoDAO.delete(video);
-                            //pageDAO.deleteById(video.getId());
-                        }
-                    }
+        			// if there are more task to submit and the downloader can accept more tasks then submit
+        			while (canAcceptMoreTasks()) {
+        				for (Image image : imageList) {
+        					submitTask(image);
+        					submittedCounter++;
+        				}
+        				for(Video video:videoList){
+        					submitTask(video);
+        					submittedCounter++;
+        				}
+        			}
+        			// if are submitted taks that are pending completion ,try to consume
+        			if (completedCounter + failedCounter < submittedCounter) {
+        				try {
+        					MediaCallableResult result = getResultWait();
+        					if(result.vector!=null && result.vector.length>0){
+        						Media media = result.media;
+        						if (_indexer.index(media, result.vector)) {
+        							media.addAnnotation(ld);
+        							if(media instanceof Image){
+        								imageDAO.save((Image)media);
+        							}else{
+        								videoDAO.save((Video)media);
+        							}
+                                    if (_publisher != null)
+                                        _publisher.publish(MorphiaManager.getMorphia().toDBObject(media).toString());
+                                } else {
+                                    System.out.println("Deleting image " + media.getId());
+                                    if(media instanceof Image){
+                                    	 imageDAO.delete((Image)media);
+                                         pageDAO.deleteById(media.getId());
+                                         if (LinkDetectionRunner.LAST_POSITION > 0)
+                                             LinkDetectionRunner.LAST_POSITION--;
+        							}else{
+        								videoDAO.delete((Video)media);
+        							}
+                                }
+        					}
+        					completedCounter++;
+        					System.out.println(completedCounter + " tasks completed!");
+        				} catch (Exception e) {
+        					failedCounter++;
+        					System.out.println(failedCounter + " tasks failed!");
+        					System.out.println(e.getMessage());
+        				}
+        			}
                 }
                 if (_publisher != null)
                     _publisher.close();
@@ -122,11 +163,52 @@ public class IndexingRunner implements Runnable {
 
     public void stop() {
         isRunning = false;
+        executor.shutdown(); // Disable new tasks from being submitted
+		try {
+			// Wait a while for existing tasks to terminate
+			if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+				executor.shutdownNow(); // Cancel currently executing tasks
+				// Wait a while for tasks to respond to being cancelled
+				if (!executor.awaitTermination(60, TimeUnit.SECONDS))
+					System.err.println("Pool did not terminate");
+			}
+		} catch (InterruptedException ie) {
+			// (Re-)Cancel if current thread also interrupted
+			executor.shutdownNow();
+			// Preserve interrupt status
+			Thread.currentThread().interrupt();
+		}
     }
 
     public void stopWhenFinished() {
         shouldStop = true;
     }
+    
+    public MediaCallableResult getResultWait() throws Exception {
+		try {
+			MediaCallableResult imdr = pool.take().get();
+			return imdr;
+		} catch (Exception e) {
+			throw e;
+		} finally {
+			// in any case (Exception or not) the numPendingTask should be reduced
+			numPendingTasks--;
+		}
+	}
+
+	public void submitTask(Media media) {
+		Callable<MediaCallableResult> call = new MediaCallable(media);
+		pool.submit(call);
+		numPendingTasks++;
+	}
+	
+	public boolean canAcceptMoreTasks() {
+		if (numPendingTasks < maxNumPendingTasks) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 
     public static void main(String[] args) throws Exception {
         Configuration.load("local.properties");
