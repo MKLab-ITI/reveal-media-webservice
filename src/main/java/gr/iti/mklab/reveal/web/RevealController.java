@@ -379,10 +379,14 @@ public class RevealController {
             CrawlJob job = crawlerCtrler.kill(id);
             // Check that it is stopping, because cancel is not always successful
             if(job.getState() == CrawlJob.STATE.KILLING) {
-                //extract entities for the collection
+       	
+                // extract entities for the collection
                 entitiesExecutor.submit(new NEandRECallable(job.getCollection()));
+                // cluster and summarize 
+            	clusteringExecutor.submit( new MediaSummarizer(job.getCollection(), 0.65, 0.25, 0.75, 4, 0.7));
                 //cluster collection items
-                clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 1.3, 2));
+                //clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 1.3, 2));
+
             }
             return job;
         } catch (Exception ex) {

@@ -45,14 +45,19 @@ public class MediaCallable implements Callable<MediaCallableResult> {
                  .build();
     }
 	
-	public MediaCallable(Media media){
+	public MediaCallable(Media media) {
 		this.media = media;
 	}
 	
 	@Override
-	public MediaCallableResult call() throws Exception {
-		double[] vector = process();
-		return new MediaCallableResult(media, vector);
+	public MediaCallableResult call() {
+		try {
+			double[] vector = process();
+			return new MediaCallableResult(media, vector);
+		}
+		catch(Exception e) {
+			return new MediaCallableResult(media, null);
+		}
 	}
 	
 	public double[] process() {
@@ -60,10 +65,17 @@ public class MediaCallable implements Callable<MediaCallableResult> {
         try {
             String id = media.getId();
             String url = null;
-            if (media instanceof Image)
+            if (media instanceof Image) {
                 url = media.getUrl();
-            else if (media instanceof Video)
+            }
+            else if (media instanceof Video) {
                 url = ((Video) media).getThumbnail();
+            }
+            
+            if(url == null) {
+            	return null;
+            }
+            
             httpget = new HttpGet(url.replaceAll(" ", "%20"));
             httpget.setConfig(_requestConfig);
             HttpResponse response = _httpclient.execute(httpget);
@@ -108,7 +120,6 @@ public class MediaCallable implements Callable<MediaCallableResult> {
             }
         } catch (Exception e) {
             _logger.error(e.getMessage(), e);
-
         } finally {
             if (httpget != null) {
                 httpget.abort();

@@ -1,9 +1,9 @@
 package gr.iti.mklab.reveal.crawler;
 
-import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.crawler.seeds.DogpileSource;
 import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
 import gr.iti.mklab.reveal.entitites.NEandRECallable;
+import gr.iti.mklab.reveal.summarization.MediaSummarizer;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
@@ -12,6 +12,7 @@ import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
 import it.unimi.di.law.bubing.StartupConfiguration;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.bson.types.ObjectId;
@@ -25,6 +26,7 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -154,7 +156,8 @@ public class RevealAgent implements Runnable {
                 entitiesExecutor.submit(new NEandRECallable(_request.getCollection()));
                 //cluster collection items
                 ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
-                clusteringExecutor.submit(new ClusterEverythingCallable(_request.getCollection(), 1.3, 2));
+                clusteringExecutor.submit( new MediaSummarizer(_request.getCollection(), 0.65, 0.25, 0.75, 4, 0.7));
+                //clusteringExecutor.submit(new ClusterEverythingCallable(_request.getCollection(), 1.3, 2));
                 _request.setState(CrawlJob.STATE.FINISHED);
                 _request.setLastStateChange(new Date());
                 dao.save(_request);

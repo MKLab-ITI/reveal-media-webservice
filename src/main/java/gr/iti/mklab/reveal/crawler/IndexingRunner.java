@@ -16,13 +16,16 @@ import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,8 +59,9 @@ public class IndexingRunner implements Runnable {
         this.collection = collection;
         _indexer = VisualIndexerFactory.getVisualIndexer(collection);
         System.out.println("After creating the indexer ");
-        if (Configuration.PUBLISH_RABBITMQ)
+        if (Configuration.PUBLISH_RABBITMQ) {
             _publisher = new RabbitMQPublisher("localhost", collection);
+        }
         imageDAO = new MediaDAO<>(Image.class, collection);
         videoDAO = new MediaDAO<>(Video.class, collection);
         pageDAO = new ObjectDAO<>(Webpage.class, collection);
@@ -75,12 +79,16 @@ public class IndexingRunner implements Runnable {
 
     @Override
     public void run() {
+    			
         System.out.println("Indexing runner run");
         int submittedCounter = 0;
 		int completedCounter = 0;
 		int failedCounter = 0;
         while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
             try {
+            	Set<Media> unindexedMedia = new HashSet<Media>();
+            	Set<Media> proccessed = new HashSet<Media>();
+            	
                 final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
                 final List<Video> videoList = videoDAO.getNotVIndexed(STEP);
                 System.out.println("image list size " + imageList.size());
@@ -93,38 +101,49 @@ public class IndexingRunner implements Runnable {
                     } catch (InterruptedException ie) {
 
                     }
-                } else {
-
+                } 
+                else {
         			// if there are more task to submit and the downloader can accept more tasks then submit
         			while (canAcceptMoreTasks()) {
         				for (Image image : imageList) {
+        					unindexedMedia.add(image);
         					submitTask(image);
         					submittedCounter++;
         				}
-        				for(Video video:videoList){
+        				
+        				for(Video video : videoList) {
+        					unindexedMedia.add(video);
         					submitTask(video);
         					submittedCounter++;
         				}
         			}
+        			
         			// if are submitted taks that are pending completion ,try to consume
         			if (completedCounter + failedCounter < submittedCounter) {
         				try {
         					MediaCallableResult result = getResultWait();
-        					if(result.vector!=null && result.vector.length>0){
+        					
+        					proccessed.add(result.media);
+        					if(result.vector != null && result.vector.length > 0) {
         						Media media = result.media;
         						if (_indexer.index(media, result.vector)) {
         							media.addAnnotation(ld);
-        							if(media instanceof Image){
+        							if(media instanceof Image) {
         								imageDAO.save((Image)media);
-        							}else{
+        							}
+        							else {
         								videoDAO.save((Video)media);
         							}
-                                    if (_publisher != null)
+        							
+                                    if (_publisher != null) {
                                         _publisher.publish(MorphiaManager.getMorphia().toDBObject(media).toString());
-                                } else {
+                                    }
+                                } 
+        						else {
                                 	deleteMedia(media);
                                 }
-        					}else{
+        					}
+        					else {
         						deleteMedia(result.media);
         					}
         					completedCounter++;
@@ -135,21 +154,33 @@ public class IndexingRunner implements Runnable {
         					System.out.println(e.getMessage());
         				}
         			}
+        			
+        			unindexedMedia.removeAll(proccessed);
+        			System.out.println(unindexedMedia.size() + " media failed to be indexed!");
+        			for(Media failedMedia : unindexedMedia) {
+        				deleteMedia(failedMedia);
+        			}
+        			
                 }
-                if (_publisher != null)
+                
+                if (_publisher != null) {
                     _publisher.close();
-            } catch (IllegalStateException ex) {
+                }
+            } 
+            catch (IllegalStateException ex) {
                 System.out.println("IllegalStateException "+ex);
                 System.out.println("Trying to recreate collections");
                 try {
                     imageDAO = new MediaDAO<>(Image.class, collection);
                     videoDAO = new MediaDAO<>(Video.class, collection);
                     pageDAO = new ObjectDAO<>(Webpage.class, collection);
-                }catch(Exception e){
+                }
+                catch(Exception e) {
                     System.out.println("Exception "+e);
                     System.out.println("Could not recreate collections");
                 }
-            }catch(Exception other){
+            }
+            catch(Exception other){
                 System.out.println("Exception "+other);
             }
         }
@@ -180,21 +211,24 @@ public class IndexingRunner implements Runnable {
     
     private void deleteMedia(Media media){
     	System.out.println("Deleting image " + media.getId());
-        if(media instanceof Image){
+        if(media instanceof Image) {
         	 imageDAO.delete((Image)media);
              pageDAO.deleteById(media.getId());
              if (LinkDetectionRunner.LAST_POSITION > 0)
                  LinkDetectionRunner.LAST_POSITION--;
-		}else{
+		}
+        else {
 			videoDAO.delete((Video)media);
 		}
     }
     
     public MediaCallableResult getResultWait() throws Exception {
 		try {
-			MediaCallableResult imdr = pool.take().get();
+			Future<MediaCallableResult> future = pool.take();
+			MediaCallableResult imdr = future.get();
+			
 			return imdr;
-		} catch (Exception e) {
+		} catch (InterruptedException e) {
 			throw e;
 		} finally {
 			// in any case (Exception or not) the numPendingTask should be reduced
@@ -211,7 +245,8 @@ public class IndexingRunner implements Runnable {
 	public boolean canAcceptMoreTasks() {
 		if (numPendingTasks < maxNumPendingTasks) {
 			return true;
-		} else {
+		} 
+		else {
 			return false;
 		}
 	}

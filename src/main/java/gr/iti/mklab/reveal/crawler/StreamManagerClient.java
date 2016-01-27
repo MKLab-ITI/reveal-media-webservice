@@ -42,8 +42,9 @@ public class StreamManagerClient {
     public void addAllKeywordFeeds(Set<String> keywords, String collection) {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MONTH, -1);
+        
         KeywordsFeed flickr = new KeywordsFeed();
-        flickr.addKeywords(new ArrayList(keywords));
+        flickr.addKeywords(new ArrayList<String>(keywords));
         flickr.setId(collection + "Flickr#1");
         flickr.setSinceDate(cal.getTime());
         flickr.setSource("Flickr");
@@ -51,7 +52,7 @@ public class StreamManagerClient {
         addKeywordsFeed(flickr);
 
         KeywordsFeed feed = new KeywordsFeed();
-        feed.addKeywords(new ArrayList(keywords));
+        feed.addKeywords(new ArrayList<String>(keywords));
         feed.setId(collection + "Twitter#1");
         feed.setSinceDate(cal.getTime());
         feed.setSource("Twitter");
@@ -59,28 +60,38 @@ public class StreamManagerClient {
         addKeywordsFeed(feed);
 
         KeywordsFeed instagram = new KeywordsFeed();
-        instagram.addKeywords(new ArrayList(keywords));
+        instagram.addKeywords(new ArrayList<String>(keywords));
         instagram.setId(collection + "Instagram#1");
         instagram.setSinceDate(cal.getTime());
         instagram.setSource("Instagram");
         instagram.setLabel(collection);
         addKeywordsFeed(instagram);
 
+        /*
         KeywordsFeed tumblr = new KeywordsFeed();
-        tumblr.addKeywords(new ArrayList(keywords));
+        tumblr.addKeywords(new ArrayList<String>(keywords));
         tumblr.setId(collection + "Tumblr#1");
         tumblr.setSinceDate(cal.getTime());
         tumblr.setSource("Tumblr");
         tumblr.setLabel(collection);
         addKeywordsFeed(tumblr);
-
+         */
+        
         KeywordsFeed youtube = new KeywordsFeed();
-        youtube.addKeywords(new ArrayList(keywords));
+        youtube.addKeywords(new ArrayList<String>(keywords));
         youtube.setId(collection + "Youtube#1");
         youtube.setSinceDate(cal.getTime());
         youtube.setSource("YouTube");
         youtube.setLabel(collection);
         addKeywordsFeed(youtube);
+        
+        KeywordsFeed googleplus = new KeywordsFeed();
+        googleplus.addKeywords(new ArrayList<String>(keywords));
+        googleplus.setId(collection + "GooglePlus#1");
+        googleplus.setSinceDate(cal.getTime());
+        googleplus.setSource("GooglePlus");
+        googleplus.setLabel(collection);
+        addKeywordsFeed(googleplus);
     }
 
     public void addAllGeoFeeds(double lon_min, double lat_min, double lon_max, double lat_max, String collection) {
@@ -172,7 +183,7 @@ public class StreamManagerClient {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MONTH, -1);
         KeywordsFeed flickr = new KeywordsFeed();
-        flickr.addKeywords(new ArrayList(keywords));
+        flickr.addKeywords(new ArrayList<String>(keywords));
         flickr.setId("Flickr#2");
         flickr.setSinceDate(cal.getTime());
         flickr.setSource("Flickr");

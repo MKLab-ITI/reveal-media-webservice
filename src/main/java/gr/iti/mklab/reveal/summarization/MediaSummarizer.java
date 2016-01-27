@@ -134,12 +134,21 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
             		texts.put(image.getId(), title);
             	}
             	
-            	Date date = image.getCrawlDate();
-            	if(date != null) {
+            	Date date = image.getCreationDate();
+            	if(date == null || date.getTime() == 0) {
+            		date = image.getLastModifiedDate();	
+            	}
+            	if(date != null && date.getTime() > 0) {
             		times.put(image.getId(), date.getTime());
             	}
             	else {
-            		times.put(image.getId(), current);
+            		date = image.getCrawlDate();
+            		if(date != null) {
+            			times.put(image.getId(), date.getTime());
+            		}
+            		else { 
+            			times.put(image.getId(), current);
+            		}
             	}
             	
             	int popularity = image.getNumShares() + image.getNumLikes() 
