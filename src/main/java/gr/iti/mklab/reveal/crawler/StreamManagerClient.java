@@ -67,16 +67,6 @@ public class StreamManagerClient {
         instagram.setLabel(collection);
         addKeywordsFeed(instagram);
 
-        /*
-        KeywordsFeed tumblr = new KeywordsFeed();
-        tumblr.addKeywords(new ArrayList<String>(keywords));
-        tumblr.setId(collection + "Tumblr#1");
-        tumblr.setSinceDate(cal.getTime());
-        tumblr.setSource("Tumblr");
-        tumblr.setLabel(collection);
-        addKeywordsFeed(tumblr);
-         */
-        
         KeywordsFeed youtube = new KeywordsFeed();
         youtube.addKeywords(new ArrayList<String>(keywords));
         youtube.setId(collection + "Youtube#1");
@@ -123,7 +113,7 @@ public class StreamManagerClient {
             deleteFeed(collection+"Flickr#1");
             deleteFeed(collection+"Twitter#1");
             deleteFeed(collection+"Instagram#1");
-            deleteFeed(collection+"Tumblr#1");
+            deleteFeed(collection+"GooglePlus#1");
             deleteFeed(collection+"Youtube#1");
         }
     }

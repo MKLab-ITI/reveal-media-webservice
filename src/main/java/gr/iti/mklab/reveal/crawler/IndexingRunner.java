@@ -96,7 +96,11 @@ public class IndexingRunner implements Runnable {
 
                 if (imageList.isEmpty() && videoList.isEmpty()) {
                     try {
-                        listsWereEmptyOnce = true;
+                    	listsWereEmptyOnce = true;
+                    	if(shouldStop) {
+                    		break;
+                    	}
+   
                         Thread.sleep(INDEXING_PERIOD);
                     } catch (InterruptedException ie) {
 
@@ -119,7 +123,7 @@ public class IndexingRunner implements Runnable {
         			}
         			
         			// if are submitted taks that are pending completion ,try to consume
-        			if (completedCounter + failedCounter < submittedCounter) {
+        			while (completedCounter + failedCounter < submittedCounter) {
         				try {
         					MediaCallableResult result = getResultWait();
         					
@@ -131,8 +135,11 @@ public class IndexingRunner implements Runnable {
         							if(media instanceof Image) {
         								imageDAO.save((Image)media);
         							}
-        							else {
+        							else if(media instanceof Video) {
         								videoDAO.save((Video)media);
+        							}
+        							else {
+        								System.out.println("Unknown instance of " + media.getId());
         							}
         							
                                     if (_publisher != null) {
@@ -140,10 +147,12 @@ public class IndexingRunner implements Runnable {
                                     }
                                 } 
         						else {
+        							System.out.println("Failed to index" + result.media.getId() + ". Delete media");
                                 	deleteMedia(media);
                                 }
         					}
         					else {
+        						System.out.println("Vector for " + result.media.getId() + " is empty. Delete media");
         						deleteMedia(result.media);
         					}
         					completedCounter++;
@@ -168,7 +177,7 @@ public class IndexingRunner implements Runnable {
                 }
             } 
             catch (IllegalStateException ex) {
-                System.out.println("IllegalStateException "+ex);
+                System.out.println("IllegalStateException " + ex);
                 System.out.println("Trying to recreate collections");
                 try {
                     imageDAO = new MediaDAO<>(Image.class, collection);
@@ -209,17 +218,21 @@ public class IndexingRunner implements Runnable {
         shouldStop = true;
     }
     
-    private void deleteMedia(Media media){
-    	System.out.println("Deleting image " + media.getId());
-        if(media instanceof Image) {
-        	 imageDAO.delete((Image)media);
-             pageDAO.deleteById(media.getId());
-             if (LinkDetectionRunner.LAST_POSITION > 0)
-                 LinkDetectionRunner.LAST_POSITION--;
+    private void deleteMedia(Media media) {
+    	if(media instanceof Image) {
+    		System.out.println("Deleting image " + media.getId());
+        	imageDAO.delete((Image)media);
+        	pageDAO.deleteById(media.getId());
+        	if (LinkDetectionRunner.LAST_POSITION > 0)
+        		LinkDetectionRunner.LAST_POSITION--;
 		}
-        else {
+        else if(media instanceof Video) {
+        	System.out.println("Deleting video " + media.getId());
 			videoDAO.delete((Video)media);
 		}
+    	else {
+    		System.out.println("Unknown instance for " + media.getId());
+    	}
     }
     
     public MediaCallableResult getResultWait() throws Exception {

@@ -56,6 +56,7 @@ public class MediaCallable implements Callable<MediaCallableResult> {
 			return new MediaCallableResult(media, vector);
 		}
 		catch(Exception e) {
+			_logger.error("Exception for " + media.getId(), e);
 			return new MediaCallableResult(media, null);
 		}
 	}
@@ -71,8 +72,12 @@ public class MediaCallable implements Callable<MediaCallableResult> {
             else if (media instanceof Video) {
                 url = ((Video) media).getThumbnail();
             }
+            else {
+            	_logger.error("Unknown insatnce of " + id);
+            }
             
             if(url == null) {
+            	_logger.error("Url is null for " + id);
             	return null;
             }
             
@@ -117,6 +122,9 @@ public class MediaCallable implements Callable<MediaCallableResult> {
                     return null;
                 }
                 return vector;
+            }
+            else {
+            	 _logger.error(image == null ? ("Image is null for " + id):("Image for " + id + " is not big enough."));
             }
         } catch (Exception e) {
             _logger.error(e.getMessage(), e);

@@ -138,7 +138,8 @@ public class CrawlQueueController {
             //Delete the crawl and index folders
             FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
             FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
-        } else if(CrawlJob.STATE.RUNNING == req.getState()) {
+        } 
+        else if(CrawlJob.STATE.RUNNING == req.getState()) {
             req.setState(CrawlJob.STATE.DELETING);
             req.setLastStateChange(new Date());
             dao.save(req);

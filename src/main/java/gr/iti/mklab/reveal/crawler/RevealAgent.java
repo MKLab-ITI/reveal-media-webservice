@@ -154,6 +154,7 @@ public class RevealAgent implements Runnable {
                 //extract entities for the collection
                 ExecutorService entitiesExecutor = Executors.newSingleThreadExecutor();
                 entitiesExecutor.submit(new NEandRECallable(_request.getCollection()));
+                
                 //cluster collection items
                 ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
                 clusteringExecutor.submit( new MediaSummarizer(_request.getCollection(), 0.65, 0.25, 0.75, 4, 0.7));
@@ -176,14 +177,14 @@ public class RevealAgent implements Runnable {
 
     private void unregisterBeanForName(String name) {
         try {
-//JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
+        	//JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
             JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
             MBeanServerConnection mbsc = cc.getMBeanServerConnection();
-//This information is available in jconsole
+            //This information is available in jconsole
             ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=" + name);
             mbsc.unregisterMBean(serviceConfigName);
-// Close JMX connector
+            // Close JMX connector
             cc.close();
         } catch (Exception e) {
             System.out.println("Exception occurred: " + e.toString());
