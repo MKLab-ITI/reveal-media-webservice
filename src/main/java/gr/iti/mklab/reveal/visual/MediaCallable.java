@@ -64,6 +64,7 @@ public class MediaCallable implements Callable<MediaCallableResult> {
 	public double[] process() {
         HttpGet httpget = null;
         try {
+        	
             String id = media.getId();
             String url = null;
             if (media instanceof Image) {
@@ -102,7 +103,7 @@ public class MediaCallable implements Callable<MediaCallableResult> {
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageContent));
             int width = image.getWidth();
             int height = image.getHeight();
-            if (image != null && ImageUtils.isImageBigEnough(width, height)) {
+            if (image != null && (ImageUtils.isImageBigEnough(width, height) || (media instanceof Video))) {
                 ImageVectorization imvec = new ImageVectorization(id, image, targetLengthMax, maxNumPixels);
                 if (media instanceof Image) {
                     ((Image) media).setWidth(width);
