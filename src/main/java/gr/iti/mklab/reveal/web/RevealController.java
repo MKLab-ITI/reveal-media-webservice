@@ -176,7 +176,7 @@ public class RevealController {
     public String addverification(@RequestParam(value = "url", required = true) String url) throws RevealException {
         try {
             System.out.println("Received new URL. Downloading...");
-            String URL=ReportManagement.DownloadURL(url, Configuration.MANIPULATION_REPORT_PATH);
+            String URL=ReportManagement.DownloadURL(url, Configuration.MANIPULATION_REPORT_PATH, Configuration.MONGO_HOST);
             System.out.println("Downloaded.");
             return URL;
         } catch (Exception ex) {
@@ -189,7 +189,7 @@ public class RevealController {
     public String generateReport(@RequestParam(value = "hash", required = true) String hash) throws RevealException {
         try {
             System.out.println("Received new hash for analysis. Beginning...");
-            String ReportResult=ReportManagement.CreateReport(hash, Configuration.MANIPULATION_REPORT_PATH,Configuration.MAX_GHOST_IMAGE_SMALL_DIM,Configuration.NUM_GHOST_THREADS,Configuration.FORENSIC_PROCESS_TIMEOUT);
+            String ReportResult=ReportManagement.CreateReport(hash, Configuration.MONGO_HOST, Configuration.MANIPULATION_REPORT_PATH,Configuration.MAX_GHOST_IMAGE_SMALL_DIM,Configuration.NUM_GHOST_THREADS,Configuration.FORENSIC_PROCESS_TIMEOUT);
             System.out.println("Analysis complete with message: " + ReportResult);
             return ReportResult;
         } catch (Exception ex) {
@@ -202,7 +202,7 @@ public class RevealController {
     public ForensicReport returnReport(@RequestParam(value = "hash", required = true) String hash) throws RevealException {
         try {
             System.out.println("Request for forensic report received, hash=" + hash + ".");
-            ForensicReport Report=ReportManagement.GetReport(hash);
+            ForensicReport Report=ReportManagement.GetReport(hash, Configuration.MONGO_HOST);
             if (Report!=null) {
             if (Report.ELA_Report.completed)
                 Report.ELA_Report.Map=Report.ELA_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
