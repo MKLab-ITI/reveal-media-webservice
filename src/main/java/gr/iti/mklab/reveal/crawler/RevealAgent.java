@@ -69,19 +69,29 @@ public class RevealAgent implements Runnable {
             try {
                 runner = new IndexingRunner(_request.getCollection());
             } catch (Exception ex) {
-                System.out.println("###### Cathing exception in run method");
+                System.out.println("###### Cathing exception in run method: " + ex.getMessage());
                 // If there is an error, change the state and return
                 _request.setState(CrawlJob.STATE.WAITING);
                 dao.save(_request);
                 return;
             }
+            
+            if (Configuration.ADD_SOCIAL_MEDIA) {
+                _manager.addAllKeywordFeeds(_request.getKeywords(), _request.getCollection());
+                try {
+                	// wait some seconds for stream manager to start collection
+                	Thread.sleep(10 * 1000);
+                }
+                catch(Exception e) {
+                	e.printStackTrace();
+                }
+            }
+            
             Thread indexingThread = new Thread(runner);
             indexingThread.start();
             LOGGER.warn("###### After the indexing runner has been created");
             System.out.println("###### After the indexing runner has been created");
-            if (Configuration.ADD_SOCIAL_MEDIA) {
-                _manager.addAllKeywordFeeds(_request.getKeywords(), _request.getCollection());
-            }
+            
             _request.setState(CrawlJob.STATE.RUNNING);
             _request.setLastStateChange(new Date());
             dao.save(_request);
