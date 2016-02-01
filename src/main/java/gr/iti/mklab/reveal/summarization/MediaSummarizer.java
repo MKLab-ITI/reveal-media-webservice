@@ -8,7 +8,6 @@ import gr.iti.mklab.reveal.summarization.graph.GraphClusterer;
 import gr.iti.mklab.reveal.summarization.graph.GraphRanker;
 import gr.iti.mklab.reveal.summarization.graph.GraphUtils;
 import gr.iti.mklab.reveal.summarization.utils.L2;
-
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.annotations.SummaryScore;
@@ -184,21 +183,6 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         	GraphClusterer.scanEpsilon = epsilon;
         	clusters = GraphClusterer.cluster(graph, false);
         	System.out.println(clusters.size() + " clusters detected.");
-        
-        	for(Collection<String> c : clusters) {
-        		Cluster cluster = new Cluster();
-        		List<Clusterable> members = new ArrayList<Clusterable>();
-        		for(String mId : c) {
-        			Image image = imageDAO.get(mId);
-        			if(image != null) {
-        				members.add(image);
-        			}
-        		}
-        		cluster.setMembers(members);
-        		cluster.setSize(members.size());
-        	
-        		clusterDAO.save(cluster);
-        	}
 		}
 		catch(Exception e) {
 			System.out.println("MediaSummarizer => Exception during clustering: " + e.getMessage());
@@ -240,6 +224,28 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 				e.printStackTrace();
 			}
 		}
+		
+		for(Collection<String> clst : clusters) {
+			double bestScore = 0;
+    		Cluster cluster = new Cluster();
+    		List<Clusterable> members = new ArrayList<Clusterable>();
+    		for(String mId : clst) {
+    			Double score = divrankScores.get(mId);
+    			Image image = imageDAO.get(mId);
+    			if(image != null) {
+    				members.add(image);
+    				
+    				if(score != null && score > bestScore) {
+    					bestScore = score;
+    					cluster.setCentroid(image);
+    				}
+    			}
+    		}
+    		cluster.setMembers(members);
+    		cluster.setSize(members.size());
+    	
+    		clusterDAO.save(cluster);
+    	}
 		
 		//////////////////////////////////////////////////////////////////////////////
 		//////////////////////////////////////////////////////////////////////////////
