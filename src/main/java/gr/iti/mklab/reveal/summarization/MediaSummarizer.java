@@ -8,6 +8,7 @@ import gr.iti.mklab.reveal.summarization.graph.GraphClusterer;
 import gr.iti.mklab.reveal.summarization.graph.GraphRanker;
 import gr.iti.mklab.reveal.summarization.graph.GraphUtils;
 import gr.iti.mklab.reveal.summarization.utils.L2;
+import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.annotations.SummaryScore;
@@ -22,6 +23,7 @@ import info.debatty.java.graphs.Node;
 import info.debatty.java.graphs.SimilarityInterface;
 import info.debatty.java.graphs.build.ThreadedNNDescent;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,6 +35,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang.ArrayUtils;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
@@ -56,13 +59,14 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 	public MediaSummarizer(String collection, double similarityCuttof, double visualSimilarity, 
 			double randomJumpWeight, int mu, double epsilon) {
 		
-		/*
+		/* */
+
 		try {
 			Configuration.load(getClass().getResourceAsStream("/remote.properties"));
 		} catch (ConfigurationException | IOException e) {
+			
 			e.printStackTrace();
 		}
-		*/
 		
 		this.textSimilarityCuttof = similarityCuttof;
 		this.visualSimilarityCuttof = visualSimilarity;
@@ -78,13 +82,6 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 		List<RankedImage> rankedImages = new ArrayList<RankedImage>();
 		
-		DAO<Cluster, String> clusterDAO = new BasicDAO<>(
-				Cluster.class, 
-				MorphiaManager.getMongoClient(), 
-				MorphiaManager.getMorphia(), 
-				MorphiaManager.getDB(collection).getName()
-			);
-		 
 		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
 		
 		DAO<RankedImage, String> rankedImagesDAO = new BasicDAO<RankedImage, String>(
@@ -164,14 +161,14 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			System.out.println("Vocabulary created with " + Vocabulary.getNumOfTerms() + " terms.");
 				 
 			createGraph(graph, vectorsMap);
-        	System.out.println("Graph created: " + graph.getVertexCount() + " vertices and " + graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
+        	System.out.println("Graph created for " + collection  + ": " + graph.getVertexCount() + " vertices and " + graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
         
         	attachVisualEdges(graph, visualVectors);
-        	System.out.println("Graph created: " + graph.getVertexCount() + " vertices and " + graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
+        	System.out.println("Graph created: " + collection + ": "  + graph.getVertexCount() + " vertices and " + graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
         	
 		}
 		catch(Exception e) {
-			System.out.println("MediaSUmmarizer => Exception during graph generation: " + e.getMessage());
+			System.out.println("MediaSummarizer for " + collection + " => Exception during graph generation: " + e.getMessage());
 			e.printStackTrace();
 			return rankedImages;
 		}
@@ -182,10 +179,10 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			GraphClusterer.scanMu = mu;
         	GraphClusterer.scanEpsilon = epsilon;
         	clusters = GraphClusterer.cluster(graph, false);
-        	System.out.println(clusters.size() + " clusters detected.");
+        	System.out.println(clusters.size() + " clusters detected for " + collection);
 		}
 		catch(Exception e) {
-			System.out.println("MediaSummarizer => Exception during clustering: " + e.getMessage());
+			System.out.println("MediaSummarizer for " + collection + " => Exception during clustering: " + e.getMessage());
 			e.printStackTrace();
 			return rankedImages;
 		}
@@ -203,28 +200,45 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			RankedImage rankedImage = new RankedImage(entry.getKey(), entry.getValue());
 			rankedImages.add(rankedImage);
 			
-			rankedImagesDAO.save(rankedImage);
+			try {
+				rankedImagesDAO.save(rankedImage);
+			}
+			catch(Exception e) {
+				System.out.println("Collection: " + collection + ". Exception during storing of rankedImage " + rankedImage.id + " => " + e.getMessage());
+			}
 		}
 		
 		for(String vertex : graph.getVertices()) {
 			try {
-				SummaryScore summaryScore = new SummaryScore(
-					popularities.get(vertex), 
-					priors.get(vertex), 
-					pagerankScores.get(vertex), 
-					divrankScores.get(vertex)
-				);
-			
-				// add annotation to image
-				Query<Image> query = imageDAO.createQuery().filter("_id", vertex);
-				UpdateOperations<Image> ops = imageDAO.createUpdateOperations().add("annotations", summaryScore);
-				imageDAO.update(query, ops);
+				if(popularities.containsKey(vertex) && priors.containsKey(vertex) &&
+						pagerankScores.containsKey(vertex) && divrankScores.containsKey(vertex)) {
+					SummaryScore summaryScore = new SummaryScore(
+						popularities.get(vertex), 
+						priors.get(vertex), 
+						pagerankScores.get(vertex), 
+						divrankScores.get(vertex)
+					);
+					
+					// add annotation to image
+					Query<Image> query = imageDAO.createQuery().filter("_id", vertex);
+					UpdateOperations<Image> ops = imageDAO.createUpdateOperations().add("annotations", summaryScore);
+					imageDAO.update(query, ops);
+				}
 			}
 			catch(Exception e) {
 				e.printStackTrace();
+				System.out.println("Exception for vertex " + vertex + " in collection " + collection + ": " + e.getMessage());
 			}
 		}
 		
+		DAO<Cluster, String> clusterDAO = new BasicDAO<>(
+				Cluster.class, 
+				MorphiaManager.getMongoClient(), 
+				MorphiaManager.getMorphia(), 
+				MorphiaManager.getDB(collection).getName()
+			); 
+		
+		System.out.println("Save clusters for " + collection);
 		for(Collection<String> clst : clusters) {
 			double bestScore = 0;
     		Cluster cluster = new Cluster();
@@ -244,7 +258,12 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
     		cluster.setMembers(members);
     		cluster.setSize(members.size());
     	
-    		clusterDAO.save(cluster);
+    		try {
+    			clusterDAO.save(cluster);
+    		}
+    		catch(Exception e) {
+    			System.out.println("Collection: " + collection + ". Exception during storing of cluster " + cluster.getId() + " => " + e.getMessage());
+    		}
     	}
 		
 		//////////////////////////////////////////////////////////////////////////////
@@ -473,7 +492,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 		MorphiaManager.setup("160.40.51.20");
 		
-		MediaSummarizer sum = new MediaSummarizer("test", 0.65, 0.25, 0.75, 4, 0.7);
+		MediaSummarizer sum = new MediaSummarizer("hillaryclinton", 0.65, 0.25, 0.75, 4, 0.7);
 		System.out.println("Run summarizer!");
 		sum.call();
 	}
