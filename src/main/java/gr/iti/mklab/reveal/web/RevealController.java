@@ -205,27 +205,27 @@ public class RevealController {
             ForensicReport Report=ReportManagement.GetReport(hash, Configuration.MONGO_HOST);
             if (Report!=null) {
             if (Report.ELA_Report.completed)
-                Report.ELA_Report.Map=Report.ELA_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+                Report.ELA_Report.Map=Report.ELA_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH, Configuration.INDEX_SERVICE_HOST + "images/");
             if (Report.DQ_Report.completed)
-                Report.DQ_Report.Map=Report.DQ_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+                Report.DQ_Report.Map=Report.DQ_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.INDEX_SERVICE_HOST + "images/");
             if (Report.DisplayImage!=null)
-                Report.DisplayImage=Report.DisplayImage.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+                Report.DisplayImage=Report.DisplayImage.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.INDEX_SERVICE_HOST + "images/");
             if (Report.NoiseDW_Report.completed)
-                Report.NoiseDW_Report.Map=Report.NoiseDW_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+                Report.NoiseDW_Report.Map=Report.NoiseDW_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.INDEX_SERVICE_HOST + "images/");
             if (Report.Ghost_Report.completed) {
                 for (int GhostInd = 0; GhostInd < Report.Ghost_Report.Maps.size(); GhostInd++) {
-                    Report.Ghost_Report.Maps.set(GhostInd, Report.Ghost_Report.Maps.get(GhostInd).replace(Configuration.MANIPULATION_REPORT_PATH, "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/"));
+                    Report.Ghost_Report.Maps.set(GhostInd, Report.Ghost_Report.Maps.get(GhostInd).replace(Configuration.MANIPULATION_REPORT_PATH, Configuration.INDEX_SERVICE_HOST + "images/"));
                 }
             }
                 if (Report.Thumbnail_Report.NumberOfThumbnails>0) {
                     for (int ThumbInd = 0; ThumbInd < Report.Thumbnail_Report.ThumbnailList.size(); ThumbInd++) {
-                        Report.Thumbnail_Report.ThumbnailList.set(ThumbInd, Report.Thumbnail_Report.ThumbnailList.get(ThumbInd).replace(Configuration.MANIPULATION_REPORT_PATH, "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/"));
+                        Report.Thumbnail_Report.ThumbnailList.set(ThumbInd, Report.Thumbnail_Report.ThumbnailList.get(ThumbInd).replace(Configuration.MANIPULATION_REPORT_PATH, Configuration.INDEX_SERVICE_HOST + "images/"));
                     }
                 }
                 if (Report.BLK_Report.completed)
-                    Report.BLK_Report.Map=Report.BLK_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+                    Report.BLK_Report.Map=Report.BLK_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.INDEX_SERVICE_HOST + "images/");
                 if (Report.MedianNoise_Report.completed)
-                    Report.MedianNoise_Report.Map=Report.MedianNoise_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,"http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/");
+                    Report.MedianNoise_Report.Map=Report.MedianNoise_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.INDEX_SERVICE_HOST + "images/");
 
             }
             return Report;
@@ -243,16 +243,16 @@ public class RevealController {
             ForensicAnalysis fa = ToolboxAPI.analyzeImage(url, Configuration.MANIPULATION_REPORT_PATH);
             System.out.println("After analyze method");
             if (fa.DQ_Lin_Output != null)
-                fa.DQ_Lin_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
+                fa.DQ_Lin_Output = Configuration.INDEX_SERVICE_HOST + "images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
             if (fa.Noise_Mahdian_Output != null)
-                fa.Noise_Mahdian_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
+                fa.Noise_Mahdian_Output = Configuration.INDEX_SERVICE_HOST + "images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
             final List<String> newGhostOutput = new ArrayList<>();
             if (fa.GhostOutput != null) {
-                fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
+                fa.GhostOutput.stream().forEach(s -> newGhostOutput.add(Configuration.INDEX_SERVICE_HOST + "images/" + s.substring(s.lastIndexOf('/') + 1)));
             }
             fa.GhostOutput = newGhostOutput;
             if (fa.GhostGIFOutput != null) {
-                fa.GhostGIFOutput = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + fa.GhostGIFOutput.substring(fa.GhostGIFOutput.lastIndexOf('/') + 1);
+                fa.GhostGIFOutput = Configuration.INDEX_SERVICE_HOST + "images/" + fa.GhostGIFOutput.substring(fa.GhostGIFOutput.lastIndexOf('/') + 1);
             }
             return fa;
         } catch (Exception ex) {
@@ -270,7 +270,7 @@ public class RevealController {
 
             final List<String> newGhostOutput = new ArrayList<>();
             if (ga.GhostOutput != null) {
-                ga.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
+                ga.GhostOutput.stream().forEach(s -> newGhostOutput.add(Configuration.INDEX_SERVICE_HOST + "images/" + s.substring(s.lastIndexOf('/') + 1)));
             }
             ga.GhostOutput = newGhostOutput;
             /*if (ga.GhostGIFOutput != null) {
@@ -290,7 +290,7 @@ public class RevealController {
             DQAnalysis dq = ToolboxAPI.getImageDQ(url, Configuration.MANIPULATION_REPORT_PATH);
             System.out.println("After dq analyze method");
             if (dq.DQ_Lin_Output != null)
-                dq.DQ_Lin_Output = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + dq.DQ_Lin_Output.substring(dq.DQ_Lin_Output.lastIndexOf('/') + 1);
+                dq.DQ_Lin_Output = Configuration.INDEX_SERVICE_HOST + "images/" + dq.DQ_Lin_Output.substring(dq.DQ_Lin_Output.lastIndexOf('/') + 1);
             return dq;
         } catch (Exception ex) {
             throw new RevealException(ex.getMessage(), ex);
