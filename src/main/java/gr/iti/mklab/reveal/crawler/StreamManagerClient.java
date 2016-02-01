@@ -43,14 +43,6 @@ public class StreamManagerClient {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MONTH, -1);
         
-        KeywordsFeed flickr = new KeywordsFeed();
-        flickr.addKeywords(new ArrayList<String>(keywords));
-        flickr.setId(collection + "Flickr#1");
-        flickr.setSinceDate(cal.getTime());
-        flickr.setSource("Flickr");
-        flickr.setLabel(collection);
-        addKeywordsFeed(flickr);
-
         KeywordsFeed feed = new KeywordsFeed();
         feed.addKeywords(new ArrayList<String>(keywords));
         feed.setId(collection + "Twitter#1");
@@ -58,7 +50,15 @@ public class StreamManagerClient {
         feed.setSource("Twitter");
         feed.setLabel(collection);
         addKeywordsFeed(feed);
-
+        
+        KeywordsFeed flickr = new KeywordsFeed();
+        flickr.addKeywords(new ArrayList<String>(keywords));
+        flickr.setId(collection + "Flickr#1");
+        flickr.setSinceDate(cal.getTime());
+        flickr.setSource("Flickr");
+        flickr.setLabel(collection);
+        addKeywordsFeed(flickr);
+        
         KeywordsFeed instagram = new KeywordsFeed();
         instagram.addKeywords(new ArrayList<String>(keywords));
         instagram.setId(collection + "Instagram#1");

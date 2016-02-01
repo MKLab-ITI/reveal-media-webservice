@@ -80,7 +80,7 @@ public class RevealAgent implements Runnable {
                 _manager.addAllKeywordFeeds(_request.getKeywords(), _request.getCollection());
                 try {
                 	// wait some seconds for stream manager to start collection
-                	Thread.sleep(10 * 1000);
+                	Thread.sleep(30 * 1000);
                 }
                 catch(Exception e) {
                 	e.printStackTrace();
