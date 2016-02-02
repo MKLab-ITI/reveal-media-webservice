@@ -7,7 +7,6 @@ import gr.iti.mklab.reveal.summarization.MediaSummarizer;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
-import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
@@ -28,10 +27,7 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -75,22 +71,15 @@ public class RevealAgent implements Runnable {
                 dao.save(_request);
                 return;
             }
-            
-            if (Configuration.ADD_SOCIAL_MEDIA) {
-                _manager.addAllKeywordFeeds(_request.getKeywords(), _request.getCollection());
-                try {
-                	// wait some seconds for stream manager to start collection
-                	Thread.sleep(30 * 1000);
-                }
-                catch(Exception e) {
-                	e.printStackTrace();
-                }
-            }
+           
             
             Thread indexingThread = new Thread(runner);
             indexingThread.start();
             LOGGER.warn("###### After the indexing runner has been created");
             System.out.println("###### After the indexing runner has been created");
+            if (Configuration.ADD_SOCIAL_MEDIA) {
+                _manager.addAllKeywordFeeds(_request.getKeywords(), _request.getCollection());
+            }
             
             _request.setState(CrawlJob.STATE.RUNNING);
             _request.setLastStateChange(new Date());

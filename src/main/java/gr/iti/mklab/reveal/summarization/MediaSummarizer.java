@@ -55,18 +55,19 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 
 	private int mu;
 	private double epsilon;
-			
+	private int threadCount = 6;
+	 
 	public MediaSummarizer(String collection, double similarityCuttof, double visualSimilarity, 
 			double randomJumpWeight, int mu, double epsilon) {
 		
-		/* */
-
+		/*
 		try {
 			Configuration.load(getClass().getResourceAsStream("/remote.properties"));
 		} catch (ConfigurationException | IOException e) {
 			
 			e.printStackTrace();
 		}
+		 */
 		
 		this.textSimilarityCuttof = similarityCuttof;
 		this.visualSimilarityCuttof = visualSimilarity;
@@ -311,7 +312,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
         ThreadedNNDescent<Vector> builder = new ThreadedNNDescent<Vector>();
         
-        builder.setThreadCount(8);
+        builder.setThreadCount(threadCount);
         builder.setK(k);
         builder.setDelta(0.00001);
         builder.setRho(0.5);
@@ -382,7 +383,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		}
 		
         ThreadedNNDescent<Double[]> builder = new ThreadedNNDescent<Double[]>();
-        builder.setThreadCount(8);
+        builder.setThreadCount(threadCount);
         builder.setK(k);
         builder.setDelta(0.00001);
         builder.setRho(0.5);
