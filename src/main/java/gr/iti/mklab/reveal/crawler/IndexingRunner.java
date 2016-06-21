@@ -2,6 +2,7 @@ package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.rabbitmq.RabbitMQPublisher;
 import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.util.DisturbingDetectorClient;
 import gr.iti.mklab.reveal.visual.MediaCallable;
 import gr.iti.mklab.reveal.visual.MediaCallableResult;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
@@ -62,6 +63,11 @@ public class IndexingRunner implements Runnable {
         if (Configuration.PUBLISH_RABBITMQ) {
             _publisher = new RabbitMQPublisher("localhost", collection);
         }
+        
+        if(Configuration.DISTURBING_DETECTOR_HOST != null) {
+        	DisturbingDetectorClient.initialize(Configuration.DISTURBING_DETECTOR_HOST);
+        }
+        
         imageDAO = new MediaDAO<>(Image.class, collection);
         videoDAO = new MediaDAO<>(Video.class, collection);
         pageDAO = new ObjectDAO<>(Webpage.class, collection);

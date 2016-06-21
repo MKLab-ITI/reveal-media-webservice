@@ -965,3 +965,35 @@ Caused by: java.net.ConnectException: Connection refused
 2016-01-28 15:19:26 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:55742}] to 160.40.51.20:27017
 2016-01-28 15:19:26 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=856167}
 2016-01-28 15:19:27 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:55743}] to 160.40.51.20:27017
+2016-02-01 18:10:56 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-02-01 18:10:56 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:6953}] to 160.40.51.20:27017
+2016-02-01 18:10:56 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=798819}
+2016-02-01 18:13:51 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-02-01 18:13:51 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:6956}] to 160.40.51.20:27017
+2016-02-01 18:13:51 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=768336}
+2016-02-01 18:13:52 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:6957}] to 160.40.51.20:27017
+2016-02-03 13:27:39 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-02-03 13:27:39 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:41}] to 160.40.51.20:27017
+2016-02-03 13:27:39 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=888738}
+2016-02-03 13:29:49 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-02-03 13:29:49 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:42}] to 160.40.51.20:27017
+2016-02-03 13:29:49 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=804376}
+2016-02-03 13:30:28 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-02-03 13:30:28 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:43}] to 160.40.51.20:27017
+2016-02-03 13:30:28 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=839905}
+2016-02-03 13:32:09 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-02-03 13:32:09 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:47}] to 160.40.51.20:27017
+2016-02-03 13:32:09 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=1189019}
+2016-02-03 13:32:09 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:48}] to 160.40.51.20:27017
+2016-06-21 17:33:10 INFO  DisturbingDetector:60 - "0.0741449"
+2016-06-21 17:39:49 INFO  DisturbingDetector:60 - "0.0741449"
+2016-06-21 17:40:05 INFO  DisturbingDetectorClient:57 - https://s3-eu-west-1.amazonaws.com/spiked-online.com/images/baltimore_riots.jpg => "0.0741449"
+2016-06-21 17:40:05 ERROR DisturbingDetectorClient:67 - Exception for url: https://s3-eu-west-1.amazonaws.com/spiked-online.com/images/baltimore_riots.jpg
+java.lang.NumberFormatException: For input string: ""0.0741449""
+	at sun.misc.FloatingDecimal.readJavaFormatString(FloatingDecimal.java:2043)
+	at sun.misc.FloatingDecimal.parseDouble(FloatingDecimal.java:110)
+	at java.lang.Double.parseDouble(Double.java:538)
+	at gr.iti.mklab.reveal.util.DisturbingDetectorClient.detect(DisturbingDetectorClient.java:59)
+	at gr.iti.mklab.reveal.util.DisturbingDetectorClient.main(DisturbingDetectorClient.java:83)
+2016-06-21 17:41:34 INFO  DisturbingDetectorClient:58 - https://s3-eu-west-1.amazonaws.com/spiked-online.com/images/baltimore_riots.jpg => 0.0741449
+2016-06-21 17:41:41 INFO  DisturbingDetectorClient:58 - https://s3-eu-west-1.amazonaws.com/spiked-online.com/images/baltimore_riots.jpg => 0.0741449

@@ -27,7 +27,8 @@ public class Configuration {
     public static long FORENSIC_PROCESS_TIMEOUT;
     public static int MAX_GHOST_IMAGE_SMALL_DIM;
     public static String HTTP_HOST;
-
+    public static String DISTURBING_DETECTOR_HOST;
+    
     public static void load(String file) throws ConfigurationException {
         PropertiesConfiguration conf = new PropertiesConfiguration(file);
         CRAWLS_DIR = conf.getString("crawlsDir");
@@ -37,6 +38,7 @@ public class Configuration {
         STREAM_MANAGER_SERVICE_HOST = conf.getString("streamManagerServiceHost");
         MONGO_HOST = conf.getString("mongoHost");
         HTTP_HOST=conf.getString("httpHost");
+        DISTURBING_DETECTOR_HOST=conf.getString("disturbingDetectorHost");
     }
 
     public static void load(InputStream stream) throws ConfigurationException, IOException {
@@ -56,5 +58,6 @@ public class Configuration {
         FORENSIC_PROCESS_TIMEOUT=Long.parseLong(conf.getProperty("ForensicProcessTimeout", "30000"));
         MAX_GHOST_IMAGE_SMALL_DIM=Integer.parseInt(conf.getProperty("MaxGhostImageSmallDimension", "768"));
         HTTP_HOST=conf.getProperty("httpHost");
+        DISTURBING_DETECTOR_HOST=conf.getProperty("disturbingDetectorHost");
     }
 }

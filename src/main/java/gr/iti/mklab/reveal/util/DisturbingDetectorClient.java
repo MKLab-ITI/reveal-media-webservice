@@ -2,9 +2,7 @@ package gr.iti.mklab.reveal.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
@@ -20,25 +18,29 @@ import org.apache.log4j.Logger;
 
 public class DisturbingDetectorClient {
 
-	private Logger _logger = Logger.getLogger(DisturbingDetectorClient.class);
+	private static Logger _logger = Logger.getLogger(DisturbingDetectorClient.class);
 	
-	private HttpClient httpClient;
-	private String webServiceHost;
+	private static HttpClient httpClient;
+	private static String webServiceHost;
 	
-	public DisturbingDetectorClient(String webServiceHost) {
-	        this.webServiceHost = webServiceHost;
-	        MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
-	        HttpConnectionManagerParams params = new HttpConnectionManagerParams();
-	        params.setMaxTotalConnections(100);
-	        params.setDefaultMaxConnectionsPerHost(20);
-	        params.setConnectionTimeout(30000);
-	        params.setSoTimeout(30000);
-	        cm.setParams(params);
-	        this.httpClient = new HttpClient(cm);
+	public static void initialize(String webServiceHost) {
+		DisturbingDetectorClient.webServiceHost = webServiceHost;
+		MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
+		HttpConnectionManagerParams params = new HttpConnectionManagerParams();
+		params.setMaxTotalConnections(100);
+		params.setDefaultMaxConnectionsPerHost(20);
+		params.setConnectionTimeout(30000);
+		params.setSoTimeout(30000);
+		cm.setParams(params);
+		httpClient = new HttpClient(cm);    
 	}
 	
-    public double detect(String url, byte[] image) {
+    public static boolean detect(String url, byte[] image) {
 
+    	if(webServiceHost == null || httpClient == null) {
+    		return false;
+    	}
+    	
         PostMethod postMethod = null;
         try {
             ByteArrayPartSource source = new ByteArrayPartSource("bytes", image);
@@ -53,14 +55,11 @@ public class DisturbingDetectorClient {
             if (code == 200) {
                 InputStream responseStream = postMethod.getResponseBodyAsStream();
                 String raw = IOUtils.toString(responseStream);
-                raw = raw.replaceAll("\"", "");
-                
-                _logger.info(url + " => " + raw);
-                
-                double disturbanceValue = Double.parseDouble(raw);
-                return disturbanceValue;
-                
-             
+               
+                if(raw != null && raw.equals("ok")) {
+                	return true;
+                }
+           
             } else {
                 _logger.error("Http returned code: " + code);
             }
@@ -72,7 +71,7 @@ public class DisturbingDetectorClient {
             	postMethod.releaseConnection();
             }
         }
-        return -10000;
+        return false;
     }
     
 	public static void main(String[] args) throws IOException {
@@ -80,8 +79,8 @@ public class DisturbingDetectorClient {
 		byte[] imageBytes = IOUtils.toByteArray((url).openStream());
 		
 		
-		DisturbingDetectorClient dd = new DisturbingDetectorClient("http://xxx.xxx.xxx.xxx:8080");
-		dd.detect(url.toString(), imageBytes);
+		 DisturbingDetectorClient.initialize("http://xxx.xxx.xxx.xxx:8080");
+		 DisturbingDetectorClient.detect(url.toString(), imageBytes);
 	}
 
 }

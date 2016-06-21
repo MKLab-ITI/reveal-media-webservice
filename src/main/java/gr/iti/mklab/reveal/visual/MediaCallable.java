@@ -19,6 +19,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gr.iti.mklab.reveal.util.DisturbingDetectorClient;
 import gr.iti.mklab.reveal.util.ImageUtils;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
@@ -100,6 +101,17 @@ public class MediaCallable implements Callable<MediaCallableResult> {
             }
             InputStream input = entity.getContent();
             byte[] imageContent = IOUtils.toByteArray(input);
+            
+            try {
+            	if(imageContent != null && imageContent.length > 0) {
+            		boolean resp = DisturbingDetectorClient.detect(url, imageContent);
+            		_logger.info("DisturbingDetectorClient response: " + resp);
+            	}
+            }
+            catch(Exception e) {
+            	
+            }
+            
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageContent));
             int width = image.getWidth();
             int height = image.getHeight();
