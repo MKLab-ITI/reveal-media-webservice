@@ -748,36 +748,43 @@ public class RevealController {
     public boolean updateDisturbingValue(
     		@RequestParam(value = "collection", required = true) String collection,
     		@RequestParam(value = "url", required = true) String url,
-    		@RequestParam(value = "id", required = true) String id,
-    		@RequestParam(value = "score", required = true) double score) throws RevealException {
+    		@RequestParam(value = "id", required = false) String id,
+    		@RequestParam(value = "score", required = true) double score,
+    		@RequestParam(value = "type", required = true) String type) throws RevealException {
 
-    	MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-    	MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
-    	
-    	Query<Image> mq = imageDAO.createQuery();
-    	Query<Video> vq = videoDAO.createQuery();
     	Annotation scoreAnnotation = new DisturbingScore(score);
-    	UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", scoreAnnotation);
-    	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations().add("annotations", scoreAnnotation);
-    	if(id != null) {
-    		mq.filter("_id", id);
-    	}
-    	else {
-    		mq.filter("url", url);
-    	}
-    	
-    	try {
-    		imageDAO.update(mq, mOps);
-    	}
-    	catch(Exception e) {
+    	if(type.equals("image")) {
+    		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
+    		Query<Image> mq = imageDAO.createQuery();
+    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", scoreAnnotation);
+    		if(id != null) {
+        		mq.filter("_id", id);
+        	}
+        	else {
+        		mq.filter("url", url);
+        	}
     		
+    		try {
+        		imageDAO.update(mq, mOps);
+        	}
+        	catch(Exception e) { }
     	}
-    	
-    	try {
-    		videoDAO.update(vq, vOps);
-    	}
-    	catch(Exception e) {
+    	else if(type.equals("video")) {
+    		MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
+        	Query<Video> vq = videoDAO.createQuery();
+    		if(id != null) {
+    			vq.filter("_id", id);
+        	}
+        	else {
+        		vq.filter("url", url);
+        	}
     		
+        	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations().add("annotations", scoreAnnotation);
+        	
+        	try {
+        		videoDAO.update(vq, vOps);
+        	}
+        	catch(Exception e) { }
     	}
     	
     	return true;
