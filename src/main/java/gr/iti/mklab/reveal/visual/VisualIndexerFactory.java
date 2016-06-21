@@ -30,4 +30,8 @@ public class VisualIndexerFactory {
     public static VisualIndexer getVisualIndexer(String collection) throws ExecutionException, IOException {
         return INDEXERS_CACHE.get(collection);
     }
+    
+    public static boolean exists(String collection) {
+    	return (INDEXERS_CACHE.getIfPresent(collection) != null);
+    }
 }

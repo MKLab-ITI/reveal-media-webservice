@@ -172,6 +172,27 @@ public class VisualIndexer {
         return true;
     }
 
+    public static boolean deleteCollection(String thisCollection) throws Exception {
+        String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/delete/" + thisCollection;
+        HttpGet httpget = new HttpGet(request.replaceAll(" ", "%20"));
+        httpget.setConfig(_requestConfig);
+        HttpResponse response = _httpclient.execute(httpget);
+        StatusLine status = response.getStatusLine();
+        int code = status.getStatusCode();
+        if (code < 200 || code >= 300) {
+            _logger.error("Failed delete collection with name " + thisCollection +
+                    ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            return false;
+        }
+        HttpEntity entity = response.getEntity();
+        if (entity == null) {
+            _logger.error("Entity is null for create collection " + thisCollection +
+                    ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            return false;
+        }
+        return true;
+    }
+    
     public int numItems() throws Exception {
         String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/statistics/" + collection;
         HttpGet httpget = new HttpGet(request.replaceAll(" ", "%20"));
