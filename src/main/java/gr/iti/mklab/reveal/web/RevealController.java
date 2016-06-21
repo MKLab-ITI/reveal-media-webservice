@@ -15,9 +15,11 @@ import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.reveal.web.Responses.SummaryResponse;
+import gr.iti.mklab.simmo.core.Annotation;
 import gr.iti.mklab.simmo.core.Association;
 import gr.iti.mklab.simmo.core.UserAccount;
 import gr.iti.mklab.simmo.core.annotations.Clustered;
+import gr.iti.mklab.simmo.core.annotations.DisturbingScore;
 import gr.iti.mklab.simmo.core.annotations.NamedEntity;
 import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
 import gr.iti.mklab.simmo.core.associations.TextualRelation;
@@ -36,6 +38,7 @@ import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
 import org.mongodb.morphia.query.QueryResults;
+import org.mongodb.morphia.query.UpdateOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -738,6 +741,46 @@ public class RevealController {
 			}
     	}
     	
+    }
+    
+    @RequestMapping(value = "/media/update/disturbing", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public boolean updateDisturbingValue(
+    		@RequestParam(value = "collection", required = true) String collection,
+    		@RequestParam(value = "url", required = true) String url,
+    		@RequestParam(value = "id", required = true) String id,
+    		@RequestParam(value = "score", required = true) double score) throws RevealException {
+
+    	MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
+    	MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
+    	
+    	Query<Image> mq = imageDAO.createQuery();
+    	Query<Video> vq = videoDAO.createQuery();
+    	Annotation scoreAnnotation = new DisturbingScore(score);
+    	UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", scoreAnnotation);
+    	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations().add("annotations", scoreAnnotation);
+    	if(id != null) {
+    		mq.filter("_id", id);
+    	}
+    	else {
+    		mq.filter("url", url);
+    	}
+    	
+    	try {
+    		imageDAO.update(mq, mOps);
+    	}
+    	catch(Exception e) {
+    		
+    	}
+    	
+    	try {
+    		videoDAO.update(vq, vOps);
+    	}
+    	catch(Exception e) {
+    		
+    	}
+    	
+    	return true;
     }
     
     ////////////////////////////////////////////////////////

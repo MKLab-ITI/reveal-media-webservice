@@ -35,7 +35,7 @@ public class DisturbingDetectorClient {
 		httpClient = new HttpClient(cm);    
 	}
 	
-    public static boolean detect(String url, byte[] image) {
+    public static boolean detect(String url, byte[] image, String collection, String id, String type) {
 
     	if(webServiceHost == null || httpClient == null) {
     		return false;
@@ -46,7 +46,10 @@ public class DisturbingDetectorClient {
             ByteArrayPartSource source = new ByteArrayPartSource("bytes", image);
             Part[] parts = {
                     new StringPart("url", url),
-                    new FilePart("bytearray", source)
+                    new FilePart("bytearray", source),
+                    new StringPart("collection", collection),
+                    new StringPart("id", id),
+                    new StringPart("type", type)
             };
             
             postMethod = new PostMethod(webServiceHost + "/disturbingdetector/disturbingdetector/getfrombytearray");
@@ -80,7 +83,7 @@ public class DisturbingDetectorClient {
 		
 		
 		 DisturbingDetectorClient.initialize("http://xxx.xxx.xxx.xxx:8080");
-		 DisturbingDetectorClient.detect(url.toString(), imageBytes);
+		 DisturbingDetectorClient.detect(url.toString(), imageBytes, "test", "1", "image");
 	}
 
 }

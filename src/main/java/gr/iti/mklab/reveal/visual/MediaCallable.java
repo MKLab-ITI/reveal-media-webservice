@@ -32,6 +32,7 @@ public class MediaCallable implements Callable<MediaCallableResult> {
 	protected static int maxNumPixels = 768 * 512;
     protected static int targetLengthMax = 1024;
     private Media media;
+	private String collection;
     private static Logger _logger = LoggerFactory.getLogger(MediaCallable.class);
     private static CloseableHttpClient _httpclient;
     private static RequestConfig _requestConfig;
@@ -46,8 +47,9 @@ public class MediaCallable implements Callable<MediaCallableResult> {
                  .build();
     }
 	
-	public MediaCallable(Media media) {
+	public MediaCallable(Media media, String collection) {
 		this.media = media;
+		this.collection = collection;
 	}
 	
 	@Override
@@ -67,12 +69,15 @@ public class MediaCallable implements Callable<MediaCallableResult> {
         try {
         	
             String id = media.getId();
+            String type = null;
             String url = null;
             if (media instanceof Image) {
                 url = media.getUrl();
+                type = "image";
             }
             else if (media instanceof Video) {
                 url = ((Video) media).getThumbnail();
+                type = "video";
             }
             else {
             	_logger.error("Unknown insatnce of " + id);
@@ -104,7 +109,7 @@ public class MediaCallable implements Callable<MediaCallableResult> {
             
             try {
             	if(imageContent != null && imageContent.length > 0) {
-            		boolean resp = DisturbingDetectorClient.detect(url, imageContent);
+            		boolean resp = DisturbingDetectorClient.detect(url, imageContent, collection, id, type);
             		_logger.info("DisturbingDetectorClient response: " + resp);
             	}
             }

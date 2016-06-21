@@ -256,7 +256,7 @@ public class IndexingRunner implements Runnable {
 	}
 
 	public void submitTask(Media media) {
-		Callable<MediaCallableResult> call = new MediaCallable(media);
+		Callable<MediaCallableResult> call = new MediaCallable(media, collection);
 		pool.submit(call);
 		numPendingTasks++;
 	}
