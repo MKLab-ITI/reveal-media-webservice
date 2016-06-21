@@ -145,11 +145,20 @@ public class RevealAgent implements Runnable {
                     _manager.deleteAllFeeds(false, _request.getCollection());
                 }
                 LOGGER.warn("###### stop indexing runner when finished");
-                runner.stopWhenFinished();
-                while (indexingThread.isAlive()){
-                    //Wait for the indexing to finish before calling the clustering and entity extraction
-                    Thread.sleep(30000);
+                
+                if(!VisualIndexerFactory.exists(_request.getCollection())) {
+                	LOGGER.warn("###### stop indexing runner when finished");
+                	runner.stop();
+                    indexingThread.interrupt();
                 }
+                else {
+                	runner.stopWhenFinished();
+                    while (indexingThread.isAlive()) {
+                        //Wait for the indexing to finish before calling the clustering and entity extraction
+                        Thread.sleep(30000);
+                    }
+                }
+                
                 //extract entities for the collection
                 ExecutorService entitiesExecutor = Executors.newSingleThreadExecutor();
                 entitiesExecutor.submit(new NEandRECallable(_request.getCollection()));

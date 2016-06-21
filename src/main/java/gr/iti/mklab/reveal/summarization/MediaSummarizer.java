@@ -60,7 +60,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 	public MediaSummarizer(String collection, double similarityCuttof, double visualSimilarity, 
 			double randomJumpWeight, int mu, double epsilon) {
 		
-		/*
+		/* 
 		try {
 			Configuration.load(getClass().getResourceAsStream("/remote.properties"));
 		} catch (ConfigurationException | IOException e) {
@@ -102,23 +102,11 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         Map<String, Integer> popularities = new HashMap<String, Integer>();
         Map<String, Double[]> visualVectors = new HashMap<String, Double[]>();
         
+        final long time = System.currentTimeMillis();
         long current = System.currentTimeMillis();
 		for (int k = 0; k < imageDAO.count(); k += ITEMS_PER_ITERATION) {
             List<Image> images = imageDAO.getItems(ITEMS_PER_ITERATION, k);
             images.stream().forEach(image -> {
-            	/*
-            	List<? extends Annotation> annotations = image.getAnnotationsByClass(NamedEntity.class);
-            	for(Annotation annotation : annotations) {
-            		NamedEntity ne = (NamedEntity) annotation;
-            		
-            	}
-            	Set<String> tags = image.getTags();
-            	if(!tags.isEmpty()) {
-            		for(String tag : tags) {
-            			
-            		}
-            	}
-            	*/
             	
             	graph.addVertex(image.getId());
             	
@@ -140,12 +128,11 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
             			times.put(image.getId(), date.getTime());
             		}
             		else { 
-            			times.put(image.getId(), current);
+            			times.put(image.getId(), time);
             		}
             	}
             	
-            	int popularity = image.getNumShares() + image.getNumLikes() 
-            			+ image.getNumComments() + image.getNumViews();
+            	int popularity = image.getNumShares() + image.getNumLikes() + image.getNumComments() + image.getNumViews();
             	
             	popularities.put(image.getId(), popularity);
             	
@@ -157,6 +144,9 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
             });
         }
 		
+		System.out.println("MediaSummarizer loaded " + graph.getVertexCount() + " images in " + (System.currentTimeMillis() - current) + " milliseconds.");
+		
+		current = System.currentTimeMillis();
 		try {
 			Map<String, Vector> vectorsMap = Vocabulary.createVocabulary(texts, 2);
 			System.out.println("Vocabulary created with " + Vocabulary.getNumOfTerms() + " terms.");
@@ -173,14 +163,15 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			e.printStackTrace();
 			return rankedImages;
 		}
-        
+		
+		System.out.println("Total time for graph creation in summarizer: " + (System.currentTimeMillis() - current));
 		
 		Collection<Collection<String>> clusters = null;
 		try {
 			GraphClusterer.scanMu = mu;
         	GraphClusterer.scanEpsilon = epsilon;
         	clusters = GraphClusterer.cluster(graph, false);
-        	System.out.println(clusters.size() + " clusters detected for " + collection);
+        	System.out.println("Media summarizer detected " + clusters.size() + " clusters for " + collection);
 		}
 		catch(Exception e) {
 			System.out.println("MediaSummarizer for " + collection + " => Exception during clustering: " + e.getMessage());
@@ -493,7 +484,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 		MorphiaManager.setup("160.40.51.20");
 		
-		MediaSummarizer sum = new MediaSummarizer("hillaryclinton", 0.65, 0.25, 0.75, 4, 0.7);
+		MediaSummarizer sum = new MediaSummarizer("zikavirusoutbreak", 0.65, 0.25, 0.75, 4, 0.7);
 		System.out.println("Run summarizer!");
 		sum.call();
 	}

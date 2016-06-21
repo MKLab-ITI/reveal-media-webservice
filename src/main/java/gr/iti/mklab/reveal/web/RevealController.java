@@ -21,6 +21,7 @@ import gr.iti.mklab.simmo.core.annotations.Clustered;
 import gr.iti.mklab.simmo.core.annotations.NamedEntity;
 import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
 import gr.iti.mklab.simmo.core.associations.TextualRelation;
+import gr.iti.mklab.simmo.core.cluster.Cluster;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
@@ -593,14 +594,27 @@ public class RevealController {
                                             @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                             @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-        List<gr.iti.mklab.simmo.core.cluster.Cluster> clusters = clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).order("-size").offset(offset).limit(count).asList();
-        List<ClusterReduced> minimalList = new ArrayList<ClusterReduced>(clusters.size());
-        for (gr.iti.mklab.simmo.core.cluster.Cluster c : clusters) {
-            ClusterReduced cr = new ClusterReduced();
-            cr.id = c.getId();
-            cr.members = c.getSize();
-            cr.item = (Image) c.getMembers().get(0);
-            minimalList.add(cr);
+        Query<Cluster> clustersResult = clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).order("-size").offset(offset).limit(count);
+        List<ClusterReduced> minimalList = new ArrayList<ClusterReduced>();
+        Iterator<Cluster> it = clustersResult.iterator();
+        while (it.hasNext()) {
+        	try {
+        		gr.iti.mklab.simmo.core.cluster.Cluster c = it.next();
+        		ClusterReduced cr = new ClusterReduced();
+        		cr.id = c.getId();
+        		cr.members = c.getSize();
+        		if(c.getCentroid() == null) {
+        			cr.item = (Image) c.getMembers().get(0);	
+        		}
+        		else {
+        			cr.item = (Image) c.getCentroid();
+        		}
+        		
+        		minimalList.add(cr);
+        	}
+        	catch(Exception e) {
+        		
+        	}
         }
         return minimalList;
     }

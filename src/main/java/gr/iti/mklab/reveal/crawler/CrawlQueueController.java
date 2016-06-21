@@ -125,16 +125,48 @@ public class CrawlQueueController {
     public synchronized CrawlJob delete(String id) throws Exception {
         System.out.println("CRAWL: Delete for id " + id);
         CrawlJob req = getCrawlRequest(id);
+        if(req == null) {
+        	 System.out.println("CrawlJob with " + id + " is null. Cannot delete.");
+        	 return req;
+        }
+        
         System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
         if (req.getState() == CrawlJob.STATE.FINISHED) {
             req.setState(CrawlJob.STATE.DELETING);
             req.setLastStateChange(new Date());
             //Delete the request from the request DB
-            dao.delete(req);
+            try {
+            	dao.delete(req);
+            }
+            catch(Exception e) {
+            	System.out.println("Exception during deletion of " + id + ": " + e.getMessage());
+            }
+            
+            System.out.println("Request deleted for CrawlJob " + id);
+            
             //Delete the collection DB
-            MorphiaManager.getDB(req.getCollection()).dropDatabase();
+            try {
+            	MorphiaManager.getDB(req.getCollection()).dropDatabase();
+            }
+            catch(Exception e) {
+            	System.out.println("Exception during dropping of " + req.getCollection() + ": " + e.getMessage());
+            }
+            
             //Unload from memory
-            VisualIndexerFactory.getVisualIndexer(req.getCollection()).deleteCollection();
+            try {
+            	if(VisualIndexerFactory.exists(req.getCollection())) {
+            		VisualIndexer VisualIndexer = VisualIndexerFactory.getVisualIndexer(req.getCollection());
+            		VisualIndexer.deleteCollection();
+            	}	
+            	else {
+            		VisualIndexer.lightinit();
+            		VisualIndexer.deleteCollection(req.getCollection());
+            	}
+            }
+            catch(Exception e) {
+            	System.out.println("Exception during visual index deletion of " + req.getCollection() + ": " + e.getMessage());
+            }
+            
             //Delete the crawl and index folders
             FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
             FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
