@@ -3,6 +3,8 @@ package gr.iti.mklab.reveal.web;
 import ForensicsToolbox.*;
 
 import com.google.gson.Gson;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 
 import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
@@ -39,6 +41,7 @@ import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
 import org.mongodb.morphia.query.QueryResults;
 import org.mongodb.morphia.query.UpdateOperations;
+import org.mongodb.morphia.query.UpdateResults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -745,13 +748,19 @@ public class RevealController {
     
     @RequestMapping(value = "/media/update/disturbing", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public boolean updateDisturbingValue(
+    public String updateDisturbingValue(
     		@RequestParam(value = "collection", required = true) String collection,
     		@RequestParam(value = "url", required = true) String url,
     		@RequestParam(value = "id", required = false) String id,
     		@RequestParam(value = "score", required = true) double score,
     		@RequestParam(value = "type", required = true) String type) throws RevealException {
 
+    	DBObject dbObj = new BasicDBObject();
+    	dbObj.put("collection", collection);
+    	dbObj.put("score", score);
+    	dbObj.put("url", url);
+    	dbObj.put("type", type);
+    	
     	Annotation scoreAnnotation = new DisturbingScore(score);
     	if(type.equals("image")) {
     		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
@@ -765,9 +774,13 @@ public class RevealController {
         	}
     		
     		try {
-        		imageDAO.update(mq, mOps);
+    			UpdateResults r = imageDAO.update(mq, mOps);
+    			dbObj.put("action", r.getUpdatedCount() + " updated");
         	}
-        	catch(Exception e) { }
+        	catch(Exception e) { 
+        		dbObj.put("exception", e.getMessage());
+        	}
+    		
     	}
     	else if(type.equals("video")) {
     		MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
@@ -782,12 +795,15 @@ public class RevealController {
         	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations().add("annotations", scoreAnnotation);
         	
         	try {
-        		videoDAO.update(vq, vOps);
+        		UpdateResults r = videoDAO.update(vq, vOps);
+        		dbObj.put("action", r.getUpdatedCount() + " up[dated");
         	}
-        	catch(Exception e) { }
+        	catch(Exception e) { 
+        		dbObj.put("exception", e.getMessage());
+        	}
     	}
     	
-    	return true;
+    	return dbObj.toString();
     }
     
     ////////////////////////////////////////////////////////
