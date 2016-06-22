@@ -826,6 +826,15 @@ public class RevealController {
 
     public static void main(String[] args) throws Exception {
 
+    	MorphiaManager.setup("160.40.51.20");
+    	MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "test2");
+    	
+    	List<Image> nvi = imageDAO.getNotVIndexed(1000);
+    	System.out.println(nvi.size() + " not indexed!");
+    	
+    	if(nvi != null)
+    		return;
+    	
         /*ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://nyulocal.com/wp-content/uploads/2015/02/oscars.1.jpg", "/tmp/reveal/images/");
         if (fa.DQ_Lin_Output != null)
             fa.DQ_Lin_Output = "http://localhost:8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);

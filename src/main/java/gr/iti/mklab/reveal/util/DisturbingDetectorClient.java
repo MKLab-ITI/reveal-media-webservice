@@ -35,10 +35,10 @@ public class DisturbingDetectorClient {
 		httpClient = new HttpClient(cm);    
 	}
 	
-    public static boolean detect(String url, byte[] image, String collection, String id, String type) {
+    public static String detect(String url, byte[] image, String collection, String id, String type) {
 
     	if(webServiceHost == null || httpClient == null) {
-    		return false;
+    		return "Null http client";
     	}
     	
         PostMethod postMethod = null;
@@ -60,7 +60,7 @@ public class DisturbingDetectorClient {
                 String raw = IOUtils.toString(responseStream);
                
                 if(raw != null && raw.equals("ok")) {
-                	return true;
+                	return raw;
                 }
            
             } else {
@@ -68,8 +68,9 @@ public class DisturbingDetectorClient {
                 InputStream responseStream = postMethod.getResponseBodyAsStream();
                 String raw = IOUtils.toString(responseStream);
                 
-                _logger.error("Http returned code: " + code + " for " + url + " in collection " + collection 
-                		+ ". Message: " + raw);
+                _logger.error("Http returned code: " + code + " for " + url + " in collection " + collection + ". Message: " + raw);
+            
+                return "Error in code - " + code;
             }
             
         } catch (Exception e) {
@@ -80,7 +81,8 @@ public class DisturbingDetectorClient {
             	postMethod.releaseConnection();
             }
         }
-        return false;
+        
+        return "DisturbingDetectorClienteError for id=" + id;
     }
     
 	public static void main(String[] args) throws IOException {

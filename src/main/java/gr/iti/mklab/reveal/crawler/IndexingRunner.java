@@ -17,8 +17,10 @@ import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -96,8 +98,8 @@ public class IndexingRunner implements Runnable {
 		int failedCounter = 0;
         while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
             try {
-            	Set<Media> unindexedMedia = new HashSet<Media>();
-            	Set<Media> proccessed = new HashSet<Media>();
+            	Map<String, Media> unindexedMedia = new HashMap<String, Media>();
+            	Map<String, Media> proccessed = new HashMap<String, Media>();
             	
                 final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
                 final List<Video> videoList = videoDAO.getNotVIndexed(STEP);
@@ -120,13 +122,13 @@ public class IndexingRunner implements Runnable {
         			// if there are more task to submit and the downloader can accept more tasks then submit
         			while (canAcceptMoreTasks()) {
         				for (Image image : imageList) {
-        					unindexedMedia.add(image);
+        					unindexedMedia.put(image.getId(), image);
         					submitTask(image);
         					submittedCounter++;
         				}
         				
         				for(Video video : videoList) {
-        					unindexedMedia.add(video);
+        					unindexedMedia.put(video.getId(), video);
         					submitTask(video);
         					submittedCounter++;
         				}
@@ -137,11 +139,11 @@ public class IndexingRunner implements Runnable {
         				try {
         					MediaCallableResult result = getResultWait();
         					
-        					proccessed.add(result.media);
+        					proccessed.put(result.media.getId(), result.media);
         					if(result.vector != null && result.vector.length > 0) {
         						Media media = result.media;
         						if (_indexer.index(media, result.vector)) {
-        							//media.addAnnotation(ld);
+        							media.addAnnotation(ld);
         							if(media instanceof Image) {
         								//imageDAO.save((Image)media);
         								Query<Image> q = imageDAO.createQuery().filter("url", media.getUrl());
@@ -180,9 +182,11 @@ public class IndexingRunner implements Runnable {
         				}
         			}
         			
-        			unindexedMedia.removeAll(proccessed);
+        			for(String mId : proccessed.keySet()) {
+        				unindexedMedia.remove(mId);
+        				}
         			System.out.println(unindexedMedia.size() + " media failed to be indexed!");
-        			for(Media failedMedia : unindexedMedia) {
+        			for(Media failedMedia : unindexedMedia.values()) {
         				deleteMedia(failedMedia);
         			}
         			

@@ -106,17 +106,7 @@ public class MediaCallable implements Callable<MediaCallableResult> {
             }
             InputStream input = entity.getContent();
             byte[] imageContent = IOUtils.toByteArray(input);
-            
-            try {
-            	if(imageContent != null && imageContent.length > 0) {
-            		boolean resp = DisturbingDetectorClient.detect(url, imageContent, collection, id, type);
-            		_logger.info("DisturbingDetectorClient response: " + resp);
-            	}
-            }
-            catch(Exception e) {
-            	_logger.error("Exception for URL=" + url, e);
-            }
-            
+                        
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageContent));
             int width = image.getWidth();
             int height = image.getHeight();
@@ -139,6 +129,18 @@ public class MediaCallable implements Callable<MediaCallableResult> {
                     _logger.error("Error in feature extraction for " + id);
                     return null;
                 }
+                
+                try {
+                	if(imageContent != null && imageContent.length > 0) {
+                		_logger.info("Call disturbing detection service for id=" + id);
+                		String resp = DisturbingDetectorClient.detect(url, imageContent, collection, id, type);
+                		_logger.info("DisturbingDetectorClient response: " + resp);
+                	}
+                }
+                catch(Exception e) {
+                	_logger.error("Exception for id=" + id + ", url=" + url, e);
+                }
+                
                 return vector;
             }
             else {
