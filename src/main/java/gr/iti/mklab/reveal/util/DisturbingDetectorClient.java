@@ -64,8 +64,14 @@ public class DisturbingDetectorClient {
                 }
            
             } else {
-                _logger.error("Http returned code: " + code);
+                
+                InputStream responseStream = postMethod.getResponseBodyAsStream();
+                String raw = IOUtils.toString(responseStream);
+                
+                _logger.error("Http returned code: " + code + " for " + url + " in collection " + collection 
+                		+ ". Message: " + raw);
             }
+            
         } catch (Exception e) {
             _logger.error("Exception for url: " + url, e);
             e.printStackTrace();
