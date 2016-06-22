@@ -29,6 +29,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.mongodb.morphia.query.Query;
+import org.mongodb.morphia.query.UpdateOperations;
+import org.mongodb.morphia.query.UpdateResults;
+
 /**
  * A runnable that indexes all non indexed images found in the specified collection
  * and waits if there are no new images or videos to index
@@ -137,12 +141,18 @@ public class IndexingRunner implements Runnable {
         					if(result.vector != null && result.vector.length > 0) {
         						Media media = result.media;
         						if (_indexer.index(media, result.vector)) {
-        							media.addAnnotation(ld);
+        							//media.addAnnotation(ld);
         							if(media instanceof Image) {
-        								imageDAO.save((Image)media);
+        								//imageDAO.save((Image)media);
+        								Query<Image> q = imageDAO.createQuery().filter("url", media.getUrl());
+        								UpdateOperations<Image> ops = imageDAO.createUpdateOperations().add("annotations", ld);
+        								imageDAO.update(q, ops);
         							}
         							else if(media instanceof Video) {
-        								videoDAO.save((Video)media);
+        								//videoDAO.save((Video)media);
+        								Query<Video> q = videoDAO.createQuery().filter("url", media.getUrl());
+        								UpdateOperations<Video> ops = videoDAO.createUpdateOperations().add("annotations", ld);
+        								videoDAO.update(q, ops);
         							}
         							else {
         								System.out.println("Unknown instance of " + media.getId());

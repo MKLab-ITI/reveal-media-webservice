@@ -21,3 +21,4 @@ target/
 /wg.graphml
 /wg.graphml~
 /.gitignore
+/logs/

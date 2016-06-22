@@ -114,7 +114,7 @@ public class MediaCallable implements Callable<MediaCallableResult> {
             	}
             }
             catch(Exception e) {
-            	
+            	_logger.error("Exception for URL=" + url, e);
             }
             
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageContent));

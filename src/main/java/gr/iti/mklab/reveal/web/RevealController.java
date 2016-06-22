@@ -765,9 +765,9 @@ public class RevealController {
     	if(type.equals("image")) {
     		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
     		Query<Image> mq = imageDAO.createQuery();
-    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", scoreAnnotation);
+    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", scoreAnnotation, true);
     		if(id != null) {
-        		mq.filter("_id", id);
+    			mq.filter("_id", id);
         	}
         	else {
         		mq.filter("url", url);
@@ -796,7 +796,7 @@ public class RevealController {
         	
         	try {
         		UpdateResults r = videoDAO.update(vq, vOps);
-        		dbObj.put("action", r.getUpdatedCount() + " up[dated");
+        		dbObj.put("action", r.getUpdatedCount() + " updated");
         	}
         	catch(Exception e) { 
         		dbObj.put("exception", e.getMessage());
