@@ -760,18 +760,22 @@ public class RevealController {
     	dbObj.put("score", score);
     	dbObj.put("url", url);
     	dbObj.put("type", type);
+    	dbObj.put("id", id);
     	
     	Annotation scoreAnnotation = new DisturbingScore(score);
     	if(type.equals("image")) {
     		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
     		Query<Image> mq = imageDAO.createQuery();
-    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", scoreAnnotation, true);
-    		if(id != null) {
+    		if(id != null && !id.equals(null) && !id.equals("")) {
     			mq.filter("_id", id);
-        	}
-        	else {
-        		mq.filter("url", url);
-        	}
+    		}
+    		else {
+    			mq.filter("url", url);
+    		}
+    		
+    		dbObj.put("q", mq.toString());
+    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", scoreAnnotation, true);
+    		dbObj.put("ops", mOps.toString());
     		
     		try {
     			UpdateResults r = imageDAO.update(mq, mOps);
@@ -785,14 +789,16 @@ public class RevealController {
     	else if(type.equals("video")) {
     		MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
         	Query<Video> vq = videoDAO.createQuery();
-    		if(id != null) {
+    		if(id != null && !id.equals(null) && !id.equals("")) {
     			vq.filter("_id", id);
-        	}
-        	else {
-        		vq.filter("url", url);
-        	}
+    		}
+    		else {
+    			vq.filter("url", url);
+    		}
     		
+        	dbObj.put("q", vq.toString());
         	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations().add("annotations", scoreAnnotation);
+        	dbObj.put("ops", vOps.toString());
         	
         	try {
         		UpdateResults r = videoDAO.update(vq, vOps);
