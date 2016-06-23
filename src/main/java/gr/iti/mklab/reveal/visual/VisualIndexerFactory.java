@@ -22,6 +22,7 @@ public class VisualIndexerFactory {
             .build(
                     new CacheLoader<String, VisualIndexer>() {
                         public VisualIndexer load(String collection) throws Exception {
+                        	System.out.println("Load " + collection + " to cache");
                             return new VisualIndexer(collection);
                         }
                     });

@@ -533,7 +533,7 @@ public class RevealController {
         return response;
     }
 
-    private List<Responses.SimilarityResponse> simList2;
+    private List<Responses.SimilarityResponse> simList;
     private String lastImageUrl2;
     private double lastThreshold2;
     private boolean isBusy2 = false;
@@ -548,37 +548,50 @@ public class RevealController {
                                                                   @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
             System.out.println("Find similar images " + imageurl);
-            if (System.currentTimeMillis() - lastCall > 10 * 1000)
+            if (System.currentTimeMillis() - lastCall > 10 * 1000) {
                 isBusy2 = false;
-            if (isBusy2)
+            }
+            
+            if (isBusy2) {
                 return new ArrayList<>();
-            if (!imageurl.equals(lastImageUrl2) || simList2 == null || (simList2 != null && offset + count > simList2.size()) || lastThreshold2 != threshold) {
+            }
+            
+            if (!imageurl.equals(lastImageUrl2) || simList == null || (simList != null && offset + count > simList.size()) || lastThreshold2 != threshold) {
                 System.out.println("Entering main block");
                 isBusy2 = true;
                 lastCall = System.currentTimeMillis();
+                
                 MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collectionName);
                 MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collectionName);
                 lastThreshold2 = threshold;
                 lastImageUrl2 = imageurl;
-                List<JsonResultSet.JsonResult> temp = VisualIndexerFactory.getVisualIndexer(collectionName).findSimilar(imageurl, threshold);
+                
+                VisualIndexer vIndexer = VisualIndexerFactory.getVisualIndexer(collectionName);
+                List<JsonResultSet.JsonResult> temp = vIndexer.findSimilar(imageurl, threshold);
                 System.out.println("Result num " + temp.size());
-                simList2 = new ArrayList<>(temp.size());
+                simList = new ArrayList<Responses.SimilarityResponse>(temp.size());
                 for (JsonResultSet.JsonResult r : temp) {
                     System.out.println("r.getExternalId " + r.getId());
                     Media found = imageDAO.getDatastore().find(Image.class).field("_id").equal(r.getId()).get();
-                    if (found != null)
-                        simList2.add(new Responses.SimilarityResponse(found, r.getRank()));
+                    if (found != null) {
+                    	simList.add(new Responses.SimilarityResponse(found, r.getRank()));
+                    }
+                    
                     found = videoDAO.getDatastore().find(Video.class).field("_id").equal(r.getId()).get();
-                    if (found != null)
-                        simList2.add(new Responses.SimilarityResponse(found, r.getRank()));
+                    if (found != null) {
+                    	simList.add(new Responses.SimilarityResponse(found, r.getRank()));
+                    }
                 }
                 System.out.println("Exiting main block");
             }
+            
             isBusy2 = false;
-            if (simList2.size() < count)
-                return simList2;
-            else
-                return simList2.subList(offset, offset + count);
+            if (simList.size() < count) {
+                return simList;
+            }
+            else {
+                return simList.subList(offset, offset + count);
+            }
 
         } catch (Exception e) {
             isBusy2 = false;

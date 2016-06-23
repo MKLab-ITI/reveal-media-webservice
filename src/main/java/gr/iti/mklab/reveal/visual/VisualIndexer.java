@@ -3,7 +3,6 @@ package gr.iti.mklab.reveal.visual;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
-import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.visual.aggregation.AbstractFeatureAggregator;
 import gr.iti.mklab.visual.aggregation.VladAggregatorMultipleVocabularies;
 import gr.iti.mklab.visual.dimreduction.PCA;
@@ -58,8 +57,12 @@ public class VisualIndexer {
         _requestConfig = RequestConfig.custom()
                 .setSocketTimeout(30000)
                 .setConnectTimeout(30000)
+                .setConnectionRequestTimeout(30000)
                 .build();
-        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(); 
+        cm.setDefaultMaxPerRoute(100);
+        
         _httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
                 .build();
@@ -135,6 +138,7 @@ public class VisualIndexer {
         if (code < 200 || code >= 300) {
             _logger.error("Failed create collection with name " + collection +
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            EntityUtils.consumeQuietly(response.getEntity());
             return false;
         }
         HttpEntity entity = response.getEntity();
@@ -142,6 +146,9 @@ public class VisualIndexer {
             _logger.error("Entity is null for create collection " + collection +
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
             return false;
+        }
+        else {
+        	EntityUtils.consumeQuietly(response.getEntity());
         }
         return true;
     }
@@ -156,6 +163,7 @@ public class VisualIndexer {
         if (code < 200 || code >= 300) {
             _logger.error("Failed delete collection with name " + collection +
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            EntityUtils.consumeQuietly(response.getEntity());
             return false;
         }
         HttpEntity entity = response.getEntity();
@@ -164,9 +172,39 @@ public class VisualIndexer {
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
             return false;
         }
+        else {
+        	EntityUtils.consumeQuietly(response.getEntity());
+        }
+        
         return true;
     }
 
+    public boolean removeCollection() throws Exception {
+        String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/remove/" + collection;
+        HttpGet httpget = new HttpGet(request.replaceAll(" ", "%20"));
+        httpget.setConfig(_requestConfig);
+        HttpResponse response = _httpclient.execute(httpget);
+        StatusLine status = response.getStatusLine();
+        int code = status.getStatusCode();
+        if (code < 200 || code >= 300) {
+            _logger.error("Failed delete collection with name " + collection +
+                    ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            EntityUtils.consumeQuietly(response.getEntity());
+            return false;
+        }
+        HttpEntity entity = response.getEntity();
+        if (entity == null) {
+            _logger.error("Entity is null for create collection " + collection +
+                    ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            return false;
+        }
+        else {
+        	EntityUtils.consumeQuietly(response.getEntity());
+        }
+        
+        return true;
+    }
+    
     public static boolean deleteCollection(String thisCollection) throws Exception {
         String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/delete/" + thisCollection;
         HttpGet httpget = new HttpGet(request.replaceAll(" ", "%20"));
@@ -177,14 +215,20 @@ public class VisualIndexer {
         if (code < 200 || code >= 300) {
             _logger.error("Failed delete collection with name " + thisCollection +
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            EntityUtils.consumeQuietly(response.getEntity());
             return false;
         }
         HttpEntity entity = response.getEntity();
         if (entity == null) {
             _logger.error("Entity is null for create collection " + thisCollection +
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            
             return false;
         }
+        else {
+        	EntityUtils.consumeQuietly(response.getEntity());
+        }
+        
         return true;
     }
     
@@ -192,29 +236,40 @@ public class VisualIndexer {
         String request = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService/rest/visual/statistics/" + collection;
         HttpGet httpget = new HttpGet(request.replaceAll(" ", "%20"));
         httpget.setConfig(_requestConfig);
+        
+        System.out.println(httpget);
         HttpResponse response = _httpclient.execute(httpget);
+        System.out.println(response);
         StatusLine status = response.getStatusLine();
         int code = status.getStatusCode();
         if (code < 200 || code >= 300) {
             _logger.error("Failed delete collection with name " + collection +
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
+            EntityUtils.consumeQuietly(response.getEntity());
             return 0;
         }
+        
         HttpEntity entity = response.getEntity();
         if (entity == null) {
             _logger.error("Entity is null for create collection " + collection +
                     ". Http code: " + code + " Error: " + status.getReasonPhrase());
             return 0;
         }
+        
         String entityAsString = EntityUtils.toString(entity);
         JSONObject jsonObject = new JSONObject(entityAsString);
+        
+        EntityUtils.consumeQuietly(response.getEntity());
+        
         return jsonObject.getInt("ivfpqIndex");
     }
 
     public List<JsonResultSet.JsonResult> findSimilar(String url, double threshold) {
         List<JsonResultSet.JsonResult> results = new ArrayList<>();
-        if (handler == null)
+        if (handler == null) {
             throw new IllegalStateException("There is no index for the collection " + collection);
+        }
+        
         HttpGet httpget = null;
         try {
             httpget = new HttpGet(url.replaceAll(" ", "%20"));
@@ -225,9 +280,13 @@ public class VisualIndexer {
             if (code < 200 || code >= 300) {
                 _logger.error("Failed fetch media item " + url + ". URL=" + url +
                         ". Http code: " + code + " Error: " + status.getReasonPhrase());
+                
+                EntityUtils.consumeQuietly(response.getEntity());
+                
                 throw new IllegalStateException("Failed fetch media item " + url + ". URL=" + url +
                         ". Http code: " + code + " Error: " + status.getReasonPhrase());
             }
+            
             HttpEntity entity = response.getEntity();
             if (entity == null) {
                 _logger.error("Entity is null for " + url + ". URL=" + url +
@@ -235,6 +294,7 @@ public class VisualIndexer {
                 throw new IllegalStateException("Entity is null for " + url + ". URL=" + url +
                         ". Http code: " + code + " Error: " + status.getReasonPhrase());
             }
+            
             InputStream input = entity.getContent();
             byte[] imageContent = IOUtils.toByteArray(input);
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageContent));
@@ -249,6 +309,9 @@ public class VisualIndexer {
                 results = handler.getSimilarImages(vector, threshold).getResults();
 
             }
+            
+            EntityUtils.consumeQuietly(response.getEntity());
+            
         } catch (Exception e) {
             _logger.error(e.getMessage(), e);
 
@@ -266,10 +329,12 @@ public class VisualIndexer {
     	Configuration.INDEX_SERVICE_HOST = "160.40.51.20";
     	VisualIndexer.init(false);
         //VisualIndexer v = new VisualIndexer("test_collection");
-        VisualIndexer v = VisualIndexerFactory.getVisualIndexer("test_collection");
+        VisualIndexer v = VisualIndexerFactory.getVisualIndexer("tsipras");
     	
+        VisualIndexer v2 = VisualIndexerFactory.getVisualIndexer("zikavirus");
+        
     	Media media = new Image();
-    	media.setId("2");
+    	media.setId("1");
     	
     	Random r = new Random();
 		double[] vector = new double[1024];
@@ -278,10 +343,11 @@ public class VisualIndexer {
 		}
 		vector = Normalization.normalizeL2(vector);
 		
-		v.index(media, vector);
+		//v.index(media, vector);
 		
 		System.out.println(v.numItems());
+		System.out.println(v2.numItems());
 		
-		v.deleteCollection();
+		//v.removeCollection();
     }
 }

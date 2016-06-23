@@ -58,14 +58,13 @@ public class RevealAgent implements Runnable {
     public void run() {
         try {
             LOGGER.info("###### REVEAL agent run method");
-            System.out.println("###### REVEAL agent run method");
             // Mark the request as running
             dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
             IndexingRunner runner = null;
             try {
                 runner = new IndexingRunner(_request.getCollection());
             } catch (Exception ex) {
-            	LOGGER.error("###### Cathing exception in run method of reveal agent: " + ex.getMessage(), ex);
+            	LOGGER.error("###### Cathing exception during initiliazation of indexing runner: " + ex.getMessage(), ex);
             	
                 // If there is an error, change the state and return
                 _request.setState(CrawlJob.STATE.WAITING);
