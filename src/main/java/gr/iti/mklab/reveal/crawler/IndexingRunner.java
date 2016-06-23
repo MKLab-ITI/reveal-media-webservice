@@ -77,6 +77,7 @@ public class IndexingRunner implements Runnable {
         imageDAO = new MediaDAO<>(Image.class, collection);
         videoDAO = new MediaDAO<>(Video.class, collection);
         pageDAO = new ObjectDAO<>(Webpage.class, collection);
+        
         ld = new LocalDescriptors();
         ld.setDescriptorType(LocalDescriptors.DESCRIPTOR_TYPE.SURF);
         ld.setFeatureEncoding(LocalDescriptors.FEATURE_ENCODING.Vlad);
@@ -134,15 +135,14 @@ public class IndexingRunner implements Runnable {
         				}
         			}
         			
-        			// if are submitted taks that are pending completion ,try to consume
+        			// if are submitted tasks that are pending completion ,try to consume
         			while (completedCounter + failedCounter < submittedCounter) {
         				try {
         					MediaCallableResult result = getResultWait();
-        					
-        					proccessed.put(result.media.getId(), result.media);
         					if(result.vector != null && result.vector.length > 0) {
         						Media media = result.media;
         						if (_indexer.index(media, result.vector)) {
+        							proccessed.put(media.getId(), media);
         							media.addAnnotation(ld);
         							if(media instanceof Image) {
         								//imageDAO.save((Image)media);
@@ -184,10 +184,15 @@ public class IndexingRunner implements Runnable {
         			
         			for(String mId : proccessed.keySet()) {
         				unindexedMedia.remove(mId);
-        				}
+        			}
         			System.out.println(unindexedMedia.size() + " media failed to be indexed!");
         			for(Media failedMedia : unindexedMedia.values()) {
-        				deleteMedia(failedMedia);
+        				try {
+        					deleteMedia(failedMedia);
+        				}
+        				catch(Exception e) {
+        					
+        				}
         			}
         			
                 }
