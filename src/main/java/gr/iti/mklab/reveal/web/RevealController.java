@@ -6,7 +6,6 @@ import com.google.gson.Gson;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-import gr.iti.mklab.reveal.clustering.ClusterEverythingCallable;
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
 import gr.iti.mklab.reveal.entitites.NEandRECallable;
 import gr.iti.mklab.reveal.summarization.MediaSummarizer;
@@ -20,22 +19,19 @@ import gr.iti.mklab.reveal.web.Responses.SummaryResponse;
 import gr.iti.mklab.simmo.core.Annotation;
 import gr.iti.mklab.simmo.core.Association;
 import gr.iti.mklab.simmo.core.UserAccount;
-import gr.iti.mklab.simmo.core.annotations.Clustered;
 import gr.iti.mklab.simmo.core.annotations.DisturbingScore;
 import gr.iti.mklab.simmo.core.annotations.NamedEntity;
-import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
 import gr.iti.mklab.simmo.core.associations.TextualRelation;
 import gr.iti.mklab.simmo.core.cluster.Cluster;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
-import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.AssociationDAO;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
-import jdk.nashorn.internal.runtime.regexp.joni.Config;
 
+import org.apache.log4j.Logger;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
@@ -60,12 +56,15 @@ import java.util.concurrent.Future;
 @RequestMapping("/mmapi")
 public class RevealController {
 
+    private Logger _logger = Logger.getLogger(RevealController.class);
+    
     protected CrawlQueueController crawlerCtrler;
 
     public RevealController() throws Exception {
         Configuration.load(getClass().getResourceAsStream("/docker.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
-        VisualIndexer.init();
+        VisualIndexer.init(true);
+        
         crawlerCtrler = new CrawlQueueController();
     }
 
@@ -110,12 +109,19 @@ public class RevealController {
     public List<NamedEntity> entitiesForCollection(@PathVariable(value = "collection") String collection) throws Exception {
         DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         int numberofEntitiesToReturn = 300;
-        if(rankedEntities!=null){
-        	return rankedEntities.find().asList().
-        			subList(0, rankedEntities.count()>numberofEntitiesToReturn? numberofEntitiesToReturn:(int)rankedEntities.count());
+        if(rankedEntities != null && rankedEntities.count() > 0) {
+        	List<NamedEntity> list = rankedEntities.find().asList();
+        	if(list == null) {
+        		return new ArrayList<NamedEntity>();
+        	}
+        	else {
+        		return list.subList(0, rankedEntities.count() > numberofEntitiesToReturn ? numberofEntitiesToReturn : (int)rankedEntities.count());
+        	}
         }
-		return new ArrayList<>();
-
+        else {
+        	return new ArrayList<NamedEntity>();
+        }
+        
     }
 
     /**
@@ -329,12 +335,14 @@ public class RevealController {
         try {
             Gson gson = new Gson();
             CrawlPostRequest request = gson.fromJson(json, CrawlPostRequest.class);
-            if (request.getKeywords() == null || request.getKeywords().isEmpty())
+            if (request.getKeywords() == null || request.getKeywords().isEmpty()) {
                 return crawlerCtrler.submit(request.getCollection(), request.getLon_min(), request.getLat_min(), request.getLon_max(), request.getLat_max());
-            else
+            }
+            else {
                 return crawlerCtrler.submit(request.isNew(), request.getCollection(), request.getKeywords());
+            }
         } catch (Exception ex) {
-            System.out.println(ex);
+        	_logger.error("Exception during crawl submission: " + ex.getMessage());
             throw new RevealException(ex.getMessage(), ex);
         }
     }
@@ -352,6 +360,7 @@ public class RevealController {
             crawlerCtrler.delete(id);
             return true;
         } catch (Exception ex) {
+        	_logger.error("Exception during crawl delete: " + ex.getMessage());
             throw new RevealException("Error when deleting", ex);
         }
     }
@@ -369,6 +378,7 @@ public class RevealController {
         try {
             return crawlerCtrler.stop(id);
         } catch (Exception ex) {
+        	_logger.error("Exception during crawl stopping: " + ex.getMessage());
             throw new RevealException("Error when stopping", ex);
         }
     }
@@ -397,6 +407,7 @@ public class RevealController {
             }
             return job;
         } catch (Exception ex) {
+        	_logger.error("Error when killing id=" + id + ": " + ex.getMessage());
             throw new RevealException("Error when killing", ex);
         }
     }

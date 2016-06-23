@@ -57,7 +57,7 @@ public class RevealAgent implements Runnable {
     @Override
     public void run() {
         try {
-            LOGGER.warn("###### REVEAL agent run method");
+            LOGGER.info("###### REVEAL agent run method");
             System.out.println("###### REVEAL agent run method");
             // Mark the request as running
             dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
@@ -65,20 +65,25 @@ public class RevealAgent implements Runnable {
             try {
                 runner = new IndexingRunner(_request.getCollection());
             } catch (Exception ex) {
-                System.out.println("###### Cathing exception in run method: " + ex.getMessage());
+            	LOGGER.error("###### Cathing exception in run method of reveal agent: " + ex.getMessage(), ex);
+            	
                 // If there is an error, change the state and return
                 _request.setState(CrawlJob.STATE.WAITING);
                 dao.save(_request);
                 return;
             }
            
-            
             Thread indexingThread = new Thread(runner);
             indexingThread.start();
-            LOGGER.warn("###### After the indexing runner has been created");
-            System.out.println("###### After the indexing runner has been created");
+            
+            LOGGER.info("###### After the indexing runner has been created");
             if (Configuration.ADD_SOCIAL_MEDIA) {
-                _manager.addAllKeywordFeeds(_request.getKeywords(), _request.getCollection());
+            	try {
+            		_manager.addAllKeywordFeeds(_request.getKeywords(), _request.getCollection());
+            	}
+            	catch(Exception e) {
+            		LOGGER.error("Failed to add keywords in stream manager for " + _request.getCollection() , e);
+            	}	
             }
             
             _request.setState(CrawlJob.STATE.RUNNING);
@@ -97,18 +102,20 @@ public class RevealAgent implements Runnable {
     		Set<String> dogpileUrls = dogpile.getSeedURLs(_request.getKeywords());
             //additional.addProperty("dogpile", dogpileUrls.toArray(new String[dogpileUrls.size()]));
 
-            LOGGER.warn("###### Starting Agent for request id " + _request.getId() + " and collection name " + _request.getCollection());
+            LOGGER.info("###### Starting Agent for request id " + _request.getId() + " and collection name " + _request.getCollection());
             RuntimeConfiguration rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional), dogpileUrls);
             rc.keywords = _request.getKeywords();
             rc.collectionName = _request.getCollection();
-            LOGGER.warn("###### Agent for request id " + _request.getId() + " started");
+            LOGGER.info("###### Agent for request id " + _request.getId() + " started");
             bubingAgent = new Agent(_hostname, _jmxPort, rc);
-            LOGGER.warn("###### Agent for request id " + _request.getId() + " finished");
+            LOGGER.info("###### Agent for request id " + _request.getId() + " finished");
             _request = dao.findOne("_id", _request.getId());
-            if (_request != null)
-                LOGGER.warn("###### Found request with id " + _request.getId() + " " + _request.getState());
+            if (_request != null) {
+                LOGGER.info("###### Found request with id " + _request.getId() + " " + _request.getState());
+            }
+            
             if (_request.getState() == CrawlJob.STATE.DELETING) {
-                LOGGER.warn("###### Delete");
+                LOGGER.info("###### Delete " + _request.getCollection());
                 //Delete the request from the request DB
                 dao.delete(_request);
                 //Delete the collection DB
@@ -118,19 +125,19 @@ public class RevealAgent implements Runnable {
                 //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(_request.getCrawlDataPath()));
                 FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + _request.getCollection()));
-                LOGGER.warn("###### stop indexing runner and social media crawler");
+                LOGGER.info("###### stop indexing runner and social media crawler");
                 runner.stop();
                 indexingThread.interrupt();
                 if (Configuration.ADD_SOCIAL_MEDIA) {
                     _manager.deleteAllFeeds(false, _request.getCollection());
                 }
-
-            } else if(_request.getState() == CrawlJob.STATE.KILLING){
-                LOGGER.warn("###### Kill");
+            } 
+            else if(_request.getState() == CrawlJob.STATE.KILLING){
+                LOGGER.info("###### Kill " + _request.getCollection());
                 _request.setState(CrawlJob.STATE.FINISHED);
                 _request.setLastStateChange(new Date());
                 dao.save(_request);
-                LOGGER.warn("###### stop indexing runner and social media crawler");
+                LOGGER.info("###### stop indexing runner and social media crawler");
                 runner.stop();
                 indexingThread.interrupt();
                 if (Configuration.ADD_SOCIAL_MEDIA) {
@@ -139,7 +146,7 @@ public class RevealAgent implements Runnable {
             }
             else {
                 //STOPPING state
-                LOGGER.warn("###### Stop");
+                LOGGER.info("###### Stop " + _request.getCollection());
                 LOGGER.warn("###### stop  social media crawler");
                 if (Configuration.ADD_SOCIAL_MEDIA) {
                     _manager.deleteAllFeeds(false, _request.getCollection());
@@ -171,11 +178,11 @@ public class RevealAgent implements Runnable {
                 _request.setLastStateChange(new Date());
                 dao.save(_request);
             }
+            
             LOGGER.warn("###### unregister bean for name");
             unregisterBeanForName(_request.getCollection());
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-            System.out.println(e.getMessage());
+            LOGGER.error("Exception for collection " + _request.getCollection() + ". Message: "+ e.getMessage(), e);
         }
     }
 

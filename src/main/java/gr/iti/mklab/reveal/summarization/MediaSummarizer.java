@@ -92,7 +92,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 				MorphiaManager.getDB(collection).getName()
 			);
 		
-		VisualIndexer.lightinit();
+		VisualIndexer.init(false);
 		VisualIndexer vIndexer = VisualIndexerFactory.getVisualIndexer(collection);
 		
 		Graph<String, Edge> graph = new UndirectedSparseGraph<String, Edge>();

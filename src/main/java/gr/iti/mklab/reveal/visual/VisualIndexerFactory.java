@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class VisualIndexerFactory {
 
     private static LoadingCache<String, VisualIndexer> INDEXERS_CACHE = CacheBuilder.newBuilder()
-            .expireAfterAccess(1, TimeUnit.HOURS)
+            .expireAfterAccess(1, TimeUnit.DAYS)
             .build(
                     new CacheLoader<String, VisualIndexer>() {
                         public VisualIndexer load(String collection) throws Exception {

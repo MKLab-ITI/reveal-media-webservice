@@ -1,18 +1,18 @@
 package gr.iti.mklab.reveal.visual;
 
 import gr.iti.mklab.reveal.util.Configuration;
-import gr.iti.mklab.reveal.util.ImageUtils;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
-import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.visual.aggregation.AbstractFeatureAggregator;
 import gr.iti.mklab.visual.aggregation.VladAggregatorMultipleVocabularies;
 import gr.iti.mklab.visual.dimreduction.PCA;
 import gr.iti.mklab.visual.extraction.AbstractFeatureExtractor;
 import gr.iti.mklab.visual.extraction.SURFExtractor;
+import gr.iti.mklab.visual.utilities.Normalization;
 import gr.iti.mklab.visual.vectorization.ImageVectorization;
 import gr.iti.mklab.visual.vectorization.ImageVectorizationResult;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -28,14 +28,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
+
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 
 /**
@@ -50,7 +50,10 @@ public class VisualIndexer {
     private static RequestConfig _requestConfig;
     private static Logger _logger = LoggerFactory.getLogger(VisualIndexer.class);
 
-    public static void init() throws Exception {
+    private VisualIndexHandler handler;
+    private String collection;
+    
+    public static void init(boolean loadVectorizer) throws Exception {
 
         _requestConfig = RequestConfig.custom()
                 .setSocketTimeout(30000)
@@ -60,46 +63,38 @@ public class VisualIndexer {
         _httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
                 .build();
-        int[] numCentroids = {128, 128, 128, 128};
-        int initialLength = numCentroids.length * numCentroids[0] * AbstractFeatureExtractor.SURFLength;
+        
+        if(loadVectorizer) {
+        	int[] numCentroids = {128, 128, 128, 128};
+        	int initialLength = numCentroids.length * numCentroids[0] * AbstractFeatureExtractor.SURFLength;
 
-        String[] codebookFiles = {
+        	String[] codebookFiles = {
                 Configuration.LEARNING_FOLDER + "surf_l2_128c_0.csv",
                 Configuration.LEARNING_FOLDER + "surf_l2_128c_1.csv",
                 Configuration.LEARNING_FOLDER + "surf_l2_128c_2.csv",
                 Configuration.LEARNING_FOLDER + "surf_l2_128c_3.csv"
-        };
+        	};
 
-        String pcaFile = Configuration.LEARNING_FOLDER + "pca_surf_4x128_32768to1024.txt";
+        	String pcaFile = Configuration.LEARNING_FOLDER + "pca_surf_4x128_32768to1024.txt";
 
-        SURFExtractor extractor = new SURFExtractor();
-        ImageVectorization.setFeatureExtractor(extractor);
-        double[][][] codebooks = AbstractFeatureAggregator.readQuantizers(codebookFiles, numCentroids,
-                AbstractFeatureExtractor.SURFLength);
-        ImageVectorization.setVladAggregator(new VladAggregatorMultipleVocabularies(codebooks));
-        if (targetLengthMax < initialLength) {
-            System.out.println("targetLengthMax : " + targetLengthMax + " initialLengh " + initialLength);
-            pca = new PCA(targetLengthMax, 1, initialLength, true);
-            pca.loadPCAFromFile(pcaFile);
-            ImageVectorization.setPcaProjector(pca);
+        	SURFExtractor extractor = new SURFExtractor();
+        	ImageVectorization.setFeatureExtractor(extractor);
+        	double[][][] codebooks = AbstractFeatureAggregator.readQuantizers(codebookFiles, numCentroids,
+        	AbstractFeatureExtractor.SURFLength);
+        	
+        	ImageVectorization.setVladAggregator(new VladAggregatorMultipleVocabularies(codebooks));
+        	if (targetLengthMax < initialLength) {
+            	System.out.println("targetLengthMax : " + targetLengthMax + " initialLengh " + initialLength);
+            	pca = new PCA(targetLengthMax, 1, initialLength, true);
+            	pca.loadPCAFromFile(pcaFile);
+            	ImageVectorization.setPcaProjector(pca);
+        	}
         }
     }
 
-    public static void lightinit() throws Exception {
-
-        _requestConfig = RequestConfig.custom()
-                .setSocketTimeout(30000)
-                .setConnectTimeout(30000)
-                .build();
-        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-        _httpclient = HttpClients.custom()
-                .setConnectionManager(cm)
-                .build();
-
+    public static void init() throws Exception {
+    	init(true);
     }
-    
-    private VisualIndexHandler handler;
-    private String collection;
 
     public VisualIndexer(String collectionName) throws IOException {
         this.collection = collectionName;
@@ -245,9 +240,6 @@ public class VisualIndexer {
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageContent));
             if (image != null) {
                 ImageVectorization imvec = new ImageVectorization(url, image, targetLengthMax, maxNumPixels);
-                /*if (mediaItem.getWidth() == null && mediaItem.getHeight() == null) {
-                    mediaItem.setSize(image.getWidth(), image.getHeight());
-                }*/
                 ImageVectorizationResult imvr = imvec.call();
                 double[] vector = imvr.getImageVector();
                 if (vector == null || vector.length == 0) {
@@ -264,16 +256,32 @@ public class VisualIndexer {
             if (httpget != null) {
                 httpget.abort();
             }
-            return results;
         }
+        
+        return results;
     }
 
     public static void main(String[] args) throws Exception {
-        MorphiaManager.setup("127.0.0.1");
-        VisualIndexer v = new VisualIndexer("tree");
-        Image im = new Image();
-        //im.setId("1235");
-        im.setUrl("http://animalia-life.com/data_images/dog/dog4.jpg");
-        boolean indexed = v.index(im, null);
+    	
+    	Configuration.INDEX_SERVICE_HOST = "160.40.51.20";
+    	VisualIndexer.init(false);
+        //VisualIndexer v = new VisualIndexer("test_collection");
+        VisualIndexer v = VisualIndexerFactory.getVisualIndexer("test_collection");
+    	
+    	Media media = new Image();
+    	media.setId("2");
+    	
+    	Random r = new Random();
+		double[] vector = new double[1024];
+		for(int i=0; i<1024; i++) {
+			vector[i] = r.nextDouble();
+		}
+		vector = Normalization.normalizeL2(vector);
+		
+		v.index(media, vector);
+		
+		System.out.println(v.numItems());
+		
+		v.deleteCollection();
     }
 }

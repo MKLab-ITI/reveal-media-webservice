@@ -18,10 +18,8 @@ import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
@@ -33,7 +31,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.mongodb.morphia.query.Query;
 import org.mongodb.morphia.query.UpdateOperations;
-import org.mongodb.morphia.query.UpdateResults;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A runnable that indexes all non indexed images found in the specified collection
@@ -43,18 +42,24 @@ import org.mongodb.morphia.query.UpdateResults;
  */
 public class IndexingRunner implements Runnable {
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(IndexingRunner.class);
+    
     private final static int INDEXING_PERIOD = 30 * 1000;
     private final static int STEP = 100;
+    
     private VisualIndexer _indexer;
+    
     private RabbitMQPublisher _publisher;
     private MediaDAO<Image> imageDAO;
     private MediaDAO<Video> videoDAO;
     private ObjectDAO<Webpage> pageDAO;
+    
     private LocalDescriptors ld;
     private boolean isRunning = true;
     private boolean shouldStop = false;
     private boolean listsWereEmptyOnce = false;
     private final String collection;
+    
     private ExecutorService executor;
 	private CompletionService<MediaCallableResult> pool;
 	private int numPendingTasks;
@@ -62,10 +67,12 @@ public class IndexingRunner implements Runnable {
 	private int NUM_THREADS = 10;
 
     public IndexingRunner(String collection) throws ExecutionException, IOException {
-        System.out.println("Creating IndexingRunner for collection "+collection);
+        
+    	LOGGER.info("Creating IndexingRunner for collection " + collection);
         this.collection = collection;
         _indexer = VisualIndexerFactory.getVisualIndexer(collection);
-        System.out.println("After creating the indexer ");
+        LOGGER.info("After creating the indexer ");
+       
         if (Configuration.PUBLISH_RABBITMQ) {
             _publisher = new RabbitMQPublisher("localhost", collection);
         }
@@ -83,8 +90,10 @@ public class IndexingRunner implements Runnable {
         ld.setFeatureEncoding(LocalDescriptors.FEATURE_ENCODING.Vlad);
         ld.setNumberOfFeatures(1024);
         ld.setFeatureEncodingLibrary("multimedia-indexing");
+        
         executor = Executors.newFixedThreadPool(NUM_THREADS);
 		pool = new ExecutorCompletionService<MediaCallableResult>(executor);
+		
 		numPendingTasks = 0;
 		maxNumPendingTasks = NUM_THREADS * 10;
         System.out.println("End of constructor ");
@@ -292,7 +301,7 @@ public class IndexingRunner implements Runnable {
     public static void main(String[] args) throws Exception {
         Configuration.load("local.properties");
         MorphiaManager.setup("127.0.0.1");
-        VisualIndexer.init();
+        VisualIndexer.init(true);
         IndexingRunner runner = new IndexingRunner("tessdfasdftest");
         Thread t = new Thread(runner);
         t.start();

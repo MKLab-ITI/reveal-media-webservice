@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.visual.VisualIndexHandler;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.reveal.web.Responses;
@@ -11,9 +12,12 @@ import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.sm.streams.StreamException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
+import org.mongodb.morphia.Key;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
@@ -23,6 +27,7 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -41,6 +46,8 @@ public class CrawlQueueController {
     private DAO<CrawlJob, ObjectId> dao;
     private Poller poller;
 
+    private Logger _logger = Logger.getLogger(CrawlQueueController.class);
+    
     public CrawlQueueController() {
         // Creates a DAO object to persist submitted crawl requests
         dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
@@ -77,19 +84,26 @@ public class CrawlQueueController {
      * @param collectionName
      */
     public synchronized CrawlJob submit(boolean isNew, String collectionName, Set<String> keywords) throws Exception {
-        System.out.println("CRAWL: submit " + collectionName + " keywords " + ArrayUtils.toString(keywords));
-        String crawlDataPath = Configuration.CRAWLS_DIR + collectionName;
+    	
+    	_logger.info("CRAWL: submit " + collectionName + " keywords " + ArrayUtils.toString(keywords));
+        
+    	String crawlDataPath = Configuration.CRAWLS_DIR + collectionName;
         List<CrawlJob> requestsWithSameName = dao.getDatastore().find(CrawlJob.class).field("collection").equal(collectionName).asList();
-        if (isNew && (new File(crawlDataPath).exists() || requestsWithSameName.size() > 0))
+        if (isNew && (new File(crawlDataPath).exists() || requestsWithSameName.size() > 0)) {
+        	_logger.error("The collection " + collectionName + " already exists. Choose a different name or mark not new");
             throw new Exception("The collection " + collectionName + " already exists. Choose a different name or mark not new");
+        }
+        
         CrawlJob r = new CrawlJob(crawlDataPath, collectionName, keywords, isNew);
         dao.save(r);
         tryLaunch();
+        
         return r;
     }
 
     public synchronized CrawlJob submit(String collectionName, double lon_min, double lat_min, double lon_max, double lat_max) throws Exception {
-        System.out.println("CRAWL: submit " + collectionName + " coordinates " + lon_min);
+    	_logger.info("CRAWL: submit " + collectionName + " coordinates [" + lon_min + ", " + lat_min + "]");
+    	
         CrawlJob r = new CrawlJob(collectionName, lon_min, lat_min, lon_max, lat_max);
         dao.save(r);
         tryLaunch();
@@ -105,32 +119,37 @@ public class CrawlQueueController {
     }
 
     private synchronized CrawlJob cancel(String id, boolean immediately) throws Exception {
-        System.out.println("CRAWL: Cancel for id " + id);
+    	_logger.info("CRAWL: Cancel for id " + id);
         CrawlJob req = getCrawlRequest(id);
         if(CrawlJob.STATE.RUNNING == req.getState()) {
-            System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
+        	
+        	_logger.info("CrawlRequest " + req.getCollection() + " " + req.getState());
             req.setState(immediately?CrawlJob.STATE.KILLING:CrawlJob.STATE.STOPPING);
             req.setLastStateChange(new Date());
             dao.save(req);
-            if (req.getKeywords().isEmpty())
+            if (req.getKeywords().isEmpty()) {
                 cancelGeoCrawl(req.getCollection());
-            else
+            }
+            else {
                 cancelForName(req.getCollection());
-        }else{
-            System.out.println("CrawlRequest state "+req.getState()+". You can only stop RUNNING crawls");
+            }
         }
+        else{
+        	_logger.info("CrawlRequest state "+req.getState()+". You can only stop RUNNING crawls");
+        }
+        
         return req;
     }
 
     public synchronized CrawlJob delete(String id) throws Exception {
-        System.out.println("CRAWL: Delete for id " + id);
+    	_logger.info("CRAWL: Delete for id " + id);
         CrawlJob req = getCrawlRequest(id);
         if(req == null) {
-        	 System.out.println("CrawlJob with " + id + " is null. Cannot delete.");
+        	_logger.info("CrawlJob with " + id + " is null. Cannot delete.");
         	 return req;
         }
         
-        System.out.println("CrawlRequest " + req.getCollection() + " " + req.getState());
+        _logger.info("CrawlRequest " + req.getCollection() + " " + req.getState());
         if (req.getState() == CrawlJob.STATE.FINISHED) {
             req.setState(CrawlJob.STATE.DELETING);
             req.setLastStateChange(new Date());
@@ -139,17 +158,17 @@ public class CrawlQueueController {
             	dao.delete(req);
             }
             catch(Exception e) {
-            	System.out.println("Exception during deletion of " + id + ": " + e.getMessage());
+            	_logger.error("Exception during deletion of " + id + ": " + e.getMessage());
             }
             
-            System.out.println("Request deleted for CrawlJob " + id);
+            _logger.info("Request deleted for CrawlJob " + id);
             
             //Delete the collection DB
             try {
             	MorphiaManager.getDB(req.getCollection()).dropDatabase();
             }
             catch(Exception e) {
-            	System.out.println("Exception during dropping of " + req.getCollection() + ": " + e.getMessage());
+            	_logger.error("Exception during dropping of " + req.getCollection() + ": " + e.getMessage());
             }
             
             //Unload from memory
@@ -159,12 +178,12 @@ public class CrawlQueueController {
             		VisualIndexer.deleteCollection();
             	}	
             	else {
-            		VisualIndexer.lightinit();
+            		VisualIndexer.init(false);
             		VisualIndexer.deleteCollection(req.getCollection());
             	}
             }
             catch(Exception e) {
-            	System.out.println("Exception during visual index deletion of " + req.getCollection() + ": " + e.getMessage());
+            	_logger.error("Exception during visual index deletion of " + req.getCollection() + ": " + e.getMessage());
             }
             
             //Delete the crawl and index folders
@@ -179,34 +198,46 @@ public class CrawlQueueController {
                 cancelGeoCrawl(req.getCollection());
             else
                 cancelForName(req.getCollection());
-        }else{
-            System.out.println("CrawlRequest state "+req.getState()+". You can only delete RUNNING or FINISHED crawls");
+        }
+        else {
+        	_logger.error("CrawlRequest state " + req.getState() + ". You can only delete RUNNING or FINISHED crawls");
         }
         return req;
     }
 
     private void tryLaunch() throws Exception {
         List<CrawlJob> list = getRunningCrawls();
-        System.out.println("Running crawls list size " + list.size());
-
-        if (list.size() >= Configuration.NUM_CRAWLS)
+        _logger.info("Running crawls list size " + list.size());
+        if (list.size() >= Configuration.NUM_CRAWLS) {
+        	_logger.info("Cannot run more crawls. Number of crawls reached.");
             return;
+        }
+        
         List<CrawlJob> waitingList = getWaitingCrawls();
-        if (waitingList.isEmpty())
+        if (waitingList.isEmpty()) {
+        	_logger.info("There are no waiting crawls!");
             return;
+        }
+        
         CrawlJob req = waitingList.get(0);
         req.setState(CrawlJob.STATE.STARTING);
         dao.save(req);
+        
         startCrawl(req);
     }
 
     private void startCrawl(CrawlJob req) throws Exception {
-        System.out.println("METHOD: Startcrawl " + req.getCollection() + " " + req.getState());
+        _logger.info("METHOD: Startcrawl " + req.getCollection() + " " + req.getState());
         if (req.getKeywords().isEmpty()) {
             geoCrawlerMap.put(req.getCollection(), new GeoCrawler(req, streamManager));
-        } else {
-            RevealAgent ag = new RevealAgent("127.0.0.1", 9999, req, streamManager);
-            new Thread(ag).start();
+        } 
+        else {
+            RevealAgent agent = new RevealAgent("127.0.0.1", 9999, req, streamManager);
+            
+            Thread th = new Thread(agent);
+            th.start();
+            
+            _logger.info("Reveal agent started for collection " + req.getCollection() + ". Alive: " + th.isAlive());
         }
     }
 
@@ -223,15 +254,15 @@ public class CrawlQueueController {
     private void cancelForName(String name) {
         System.out.println("Cancel for name " + name);
         try {
-//JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
+        	//JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
             JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
             MBeanServerConnection mbsc = cc.getMBeanServerConnection();
-//This information is available in jconsole
+            //This information is available in jconsole
             ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=" + name);
-// Invoke stop operation
+            // Invoke stop operation
             mbsc.invoke(serviceConfigName, "stop", null, null);
-// Close JMX connector
+            // Close JMX connector
             cc.close();
         } catch (Exception e) {
             System.out.println("Exception occurred: " + e.toString());
@@ -244,8 +275,9 @@ public class CrawlQueueController {
     /////////////////////////////////////////////////
 
     public class Poller implements Runnable {
-        final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        Future future = null;
+        
+    	final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+        Future<?> future = null;
 
         @Override
         public void run() {
@@ -262,8 +294,9 @@ public class CrawlQueueController {
         }
 
         public void stopPolling() {
-            if (future != null && !future.isDone())
-                future.cancel(true);
+            if (future != null && !future.isDone()) {
+               future.cancel(true);
+            }
             exec.shutdownNow();
         }
 
