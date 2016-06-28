@@ -786,6 +786,11 @@ public class RevealController {
     	dbObj.put("type", type);
     	dbObj.put("id", id);
     	
+    	if(score < 0 || score > 1) {
+    		dbObj.put("action", "Media cannot be updated. Score is not in proper range!");
+    		return dbObj.toString();	
+    	}
+    	
     	Annotation scoreAnnotation = new DisturbingScore(score);
     	if(type.equals("image")) {
     		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);

@@ -18,8 +18,10 @@ import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
@@ -106,15 +108,18 @@ public class IndexingRunner implements Runnable {
         int submittedCounter = 0;
 		int completedCounter = 0;
 		int failedCounter = 0;
+		Set<String> proccessed = new HashSet<String>();
+				
         while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
             try {
             	Map<String, Media> unindexedMedia = new HashMap<String, Media>();
-            	Map<String, Media> proccessed = new HashMap<String, Media>();
+            	Map<String, Media> indexedMedia = new HashMap<String, Media>();
             	
                 final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
                 final List<Video> videoList = videoDAO.getNotVIndexed(STEP);
-                System.out.println("image list size " + imageList.size());
-                System.out.println("video list size " + videoList.size());
+                
+                LOGGER.info("image list size " + imageList.size());
+                LOGGER.info("video list size " + videoList.size());
 
                 if (imageList.isEmpty() && videoList.isEmpty()) {
                     try {
@@ -132,12 +137,20 @@ public class IndexingRunner implements Runnable {
         			// if there are more task to submit and the downloader can accept more tasks then submit
         			while (canAcceptMoreTasks()) {
         				for (Image image : imageList) {
+        					if(proccessed.contains(image.getId()))
+        						continue;
+        					
+        					proccessed.add(image.getId());
         					unindexedMedia.put(image.getId(), image);
         					submitTask(image);
         					submittedCounter++;
         				}
         				
         				for(Video video : videoList) {
+        					if(proccessed.contains(video.getId()))
+        						continue;
+        					
+        					proccessed.add(video.getId());
         					unindexedMedia.put(video.getId(), video);
         					submitTask(video);
         					submittedCounter++;
@@ -151,22 +164,19 @@ public class IndexingRunner implements Runnable {
         					if(result.vector != null && result.vector.length > 0) {
         						Media media = result.media;
         						if (_indexer.index(media, result.vector)) {
-        							proccessed.put(media.getId(), media);
+        							indexedMedia.put(media.getId(), media);
         							media.addAnnotation(ld);
         							if(media instanceof Image) {
-        								//imageDAO.save((Image)media);
         								Query<Image> q = imageDAO.createQuery().filter("url", media.getUrl());
         								UpdateOperations<Image> ops = imageDAO.createUpdateOperations().add("annotations", ld);
-        								imageDAO.update(q, ops);
-        							}
+        								imageDAO.update(q, ops);        							}
         							else if(media instanceof Video) {
-        								//videoDAO.save((Video)media);
         								Query<Video> q = videoDAO.createQuery().filter("url", media.getUrl());
         								UpdateOperations<Video> ops = videoDAO.createUpdateOperations().add("annotations", ld);
         								videoDAO.update(q, ops);
         							}
         							else {
-        								System.out.println("Unknown instance of " + media.getId());
+        								LOGGER.info("Unknown instance of " + media.getId());
         							}
         							
                                     if (_publisher != null) {
@@ -174,36 +184,36 @@ public class IndexingRunner implements Runnable {
                                     }
                                 } 
         						else {
-        							System.out.println("Failed to index" + result.media.getId() + ". Delete media");
+        							LOGGER.info("Failed to index" + result.media.getId() + ". Delete media");
                                 	deleteMedia(media);
                                 }
         					}
         					else {
-        						System.out.println("Vector for " + result.media.getId() + " is empty. Delete media");
+        						LOGGER.info("Vector for " + result.media.getId() + " is empty. Delete media");
         						deleteMedia(result.media);
         					}
         					completedCounter++;
-        					System.out.println(completedCounter + " tasks completed!");
+        					LOGGER.info(completedCounter + " tasks completed!");
         				} catch (Exception e) {
         					failedCounter++;
-        					System.out.println(failedCounter + " tasks failed!");
-        					System.out.println(e.getMessage());
+        					LOGGER.info(failedCounter + " tasks failed!");
+        					LOGGER.info(e.getMessage());
         				}
         			}
         			
-        			for(String mId : proccessed.keySet()) {
+        			for(String mId : indexedMedia.keySet()) {
         				unindexedMedia.remove(mId);
         			}
-        			System.out.println(unindexedMedia.size() + " media failed to be indexed!");
+        			
+        			LOGGER.info(unindexedMedia.size() + " media failed to be indexed!");
         			for(Media failedMedia : unindexedMedia.values()) {
         				try {
         					deleteMedia(failedMedia);
         				}
         				catch(Exception e) {
-        					
+        					LOGGER.error("Exception during deletion of " + failedMedia.getId(), e);
         				}
-        			}
-        			
+        			}	
                 }
                 
                 if (_publisher != null) {
@@ -211,20 +221,18 @@ public class IndexingRunner implements Runnable {
                 }
             } 
             catch (IllegalStateException ex) {
-                System.out.println("IllegalStateException " + ex);
-                System.out.println("Trying to recreate collections");
+               LOGGER.error("Trying to recreate collections. IllegalStateException: " + ex.getMessage());
                 try {
                     imageDAO = new MediaDAO<>(Image.class, collection);
                     videoDAO = new MediaDAO<>(Video.class, collection);
                     pageDAO = new ObjectDAO<>(Webpage.class, collection);
                 }
                 catch(Exception e) {
-                    System.out.println("Exception "+e);
-                    System.out.println("Could not recreate collections");
+                    LOGGER.error("Could not recreate collections. Exception: " + e.getMessage());
                 }
             }
             catch(Exception other){
-                System.out.println("Exception "+other);
+                LOGGER.error("Exception " + other.getMessage());
             }
         }
     }
