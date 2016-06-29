@@ -106,7 +106,8 @@ public class RevealAgent implements Runnable {
             rc.keywords = _request.getKeywords();
             rc.collectionName = _request.getCollection();
             LOGGER.info("###### Agent for request id " + _request.getId() + " started");
-            bubingAgent = new Agent(_hostname, _jmxPort, rc);
+            bubingAgent = new Agent(_hostname, _jmxPort, rc);	// agent halts here
+            
             LOGGER.info("###### Agent for request id " + _request.getId() + " finished");
             _request = dao.findOne("_id", _request.getId());
             if (_request != null) {
@@ -131,7 +132,7 @@ public class RevealAgent implements Runnable {
                     _manager.deleteAllFeeds(false, _request.getCollection());
                 }
             } 
-            else if(_request.getState() == CrawlJob.STATE.KILLING){
+            else if(_request.getState() == CrawlJob.STATE.KILLING) {
                 LOGGER.info("###### Kill " + _request.getCollection());
                 _request.setState(CrawlJob.STATE.FINISHED);
                 _request.setLastStateChange(new Date());
@@ -146,33 +147,43 @@ public class RevealAgent implements Runnable {
             else {
                 //STOPPING state
                 LOGGER.info("###### Stop " + _request.getCollection());
-                LOGGER.warn("###### stop  social media crawler");
+                
+                LOGGER.info("###### stop  social media crawler for " + _request.getCollection());
                 if (Configuration.ADD_SOCIAL_MEDIA) {
                     _manager.deleteAllFeeds(false, _request.getCollection());
                 }
-                LOGGER.warn("###### stop indexing runner when finished");
                 
+                LOGGER.info("###### stop indexing runner for " + _request.getCollection());
                 if(!VisualIndexerFactory.exists(_request.getCollection())) {
-                	LOGGER.warn("###### stop indexing runner when finished");
+                	LOGGER.info("###### stop indexing for " + _request.getCollection() + "immediately");
                 	runner.stop();
                     indexingThread.interrupt();
                 }
                 else {
+                	LOGGER.info("###### stop indexing for " + _request.getCollection() + " when finished");
                 	runner.stopWhenFinished();
-                    while (indexingThread.isAlive()) {
-                        //Wait for the indexing to finish before calling the clustering and entity extraction
+                    int k = 0;
+                	while (indexingThread.isAlive() && k < 20) {
+                        // Wait for the indexing to finish before calling the clustering and entity extraction
+                		// But not more than 10 minutes
                         Thread.sleep(30000);
+                        k++;
                     }
                 }
                 
+                LOGGER.info("###### Åxtract entities for " + _request.getCollection());
                 //extract entities for the collection
                 ExecutorService entitiesExecutor = Executors.newSingleThreadExecutor();
                 entitiesExecutor.submit(new NEandRECallable(_request.getCollection()));
                 
-                //cluster collection items
+                LOGGER.info("###### Summarization of " + _request.getCollection());
+                // summarization of the collection
                 ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
                 clusteringExecutor.submit( new MediaSummarizer(_request.getCollection(), 0.65, 0.25, 0.75, 4, 0.7));
+                
+                //cluster collection items
                 //clusteringExecutor.submit(new ClusterEverythingCallable(_request.getCollection(), 1.3, 2));
+                
                 _request.setState(CrawlJob.STATE.FINISHED);
                 _request.setLastStateChange(new Date());
                 dao.save(_request);

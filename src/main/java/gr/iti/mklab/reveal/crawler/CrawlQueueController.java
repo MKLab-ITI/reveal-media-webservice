@@ -127,6 +127,7 @@ public class CrawlQueueController {
             req.setState(immediately?CrawlJob.STATE.KILLING:CrawlJob.STATE.STOPPING);
             req.setLastStateChange(new Date());
             dao.save(req);
+            
             if (req.getKeywords().isEmpty()) {
                 cancelGeoCrawl(req.getCollection());
             }

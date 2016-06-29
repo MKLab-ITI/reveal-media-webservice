@@ -31,6 +31,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.collections15.CollectionUtils;
+import org.apache.commons.collections15.Predicate;
 import org.mongodb.morphia.query.Query;
 import org.mongodb.morphia.query.UpdateOperations;
 import org.slf4j.Logger;
@@ -108,6 +110,7 @@ public class IndexingRunner implements Runnable {
         int submittedCounter = 0;
 		int completedCounter = 0;
 		int failedCounter = 0;
+		
 		Set<String> proccessed = new HashSet<String>();
 				
         while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
@@ -117,10 +120,23 @@ public class IndexingRunner implements Runnable {
             	
                 final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
                 final List<Video> videoList = videoDAO.getNotVIndexed(STEP);
+            
+                Predicate<Media> p = new Predicate<Media>() {
+					@Override
+					public boolean evaluate(Media m) {
+						return proccessed.contains(m.getId()) ? false : true;
+					}
+				};
+				
+				LOGGER.info("image list size before filtering " + imageList.size());
+                LOGGER.info("video list size before filtering " + videoList.size());
                 
-                LOGGER.info("image list size " + imageList.size());
-                LOGGER.info("video list size " + videoList.size());
-
+				CollectionUtils.filter(imageList, p);
+				CollectionUtils.filter(videoList, p);
+				
+                LOGGER.info("image list size after filtering " + imageList.size());
+                LOGGER.info("video list size after filtering " + videoList.size());
+            
                 if (imageList.isEmpty() && videoList.isEmpty()) {
                     try {
                     	listsWereEmptyOnce = true;
@@ -137,8 +153,9 @@ public class IndexingRunner implements Runnable {
         			// if there are more task to submit and the downloader can accept more tasks then submit
         			while (canAcceptMoreTasks()) {
         				for (Image image : imageList) {
-        					if(proccessed.contains(image.getId()))
+        					if(proccessed.contains(image.getId())) {
         						continue;
+        					}
         					
         					proccessed.add(image.getId());
         					unindexedMedia.put(image.getId(), image);
@@ -147,8 +164,9 @@ public class IndexingRunner implements Runnable {
         				}
         				
         				for(Video video : videoList) {
-        					if(proccessed.contains(video.getId()))
+        					if(proccessed.contains(video.getId())) {
         						continue;
+        					}
         					
         					proccessed.add(video.getId());
         					unindexedMedia.put(video.getId(), video);

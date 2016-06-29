@@ -11,6 +11,7 @@ import gr.iti.mklab.reveal.summarization.utils.L2;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.reveal.web.RevealController;
 import gr.iti.mklab.simmo.core.annotations.SummaryScore;
 import gr.iti.mklab.simmo.core.cluster.Cluster;
 import gr.iti.mklab.simmo.core.cluster.Clusterable;
@@ -37,6 +38,7 @@ import java.util.concurrent.Callable;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.log4j.Logger;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
@@ -44,6 +46,8 @@ import org.mongodb.morphia.query.UpdateOperations;
 
 public class MediaSummarizer implements Callable<List<RankedImage>> {
 
+	private Logger _logger = Logger.getLogger(MediaSummarizer.class);
+	
 	private final static int ITEMS_PER_ITERATION = 2000;
 	
 	private String collection;
@@ -119,6 +123,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
             	if(date == null || date.getTime() == 0) {
             		date = image.getLastModifiedDate();	
             	}
+            	
             	if(date != null && date.getTime() > 0) {
             		times.put(image.getId(), date.getTime());
             	}
@@ -144,38 +149,37 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
             });
         }
 		
-		System.out.println("MediaSummarizer loaded " + graph.getVertexCount() + " images in " + (System.currentTimeMillis() - current) + " milliseconds.");
+		_logger.info("MediaSummarizer loaded " + graph.getVertexCount() + " images in " + (System.currentTimeMillis() - current) + " milliseconds.");
 		
 		current = System.currentTimeMillis();
 		try {
 			Map<String, Vector> vectorsMap = Vocabulary.createVocabulary(texts, 2);
-			System.out.println("Vocabulary created with " + Vocabulary.getNumOfTerms() + " terms.");
+			_logger.info("Vocabulary created with " + Vocabulary.getNumOfTerms() + " terms.");
 				 
 			createGraph(graph, vectorsMap);
-        	System.out.println("Graph created for " + collection  + ": " + graph.getVertexCount() + " vertices and " + graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
+			_logger.info("Graph created for " + collection  + ": " + graph.getVertexCount() + " vertices and " + graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
         
         	attachVisualEdges(graph, visualVectors);
-        	System.out.println("Graph created: " + collection + ": "  + graph.getVertexCount() + " vertices and " + graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
+        	_logger.info("Visual edges attached for " + collection + ": "  + graph.getVertexCount() + " vertices and " + graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
         	
 		}
 		catch(Exception e) {
-			System.out.println("MediaSummarizer for " + collection + " => Exception during graph generation: " + e.getMessage());
-			e.printStackTrace();
+			_logger.error("MediaSummarizer error for " + collection + " => Exception during graph generation: " + e.getMessage(), e);
 			return rankedImages;
 		}
 		
-		System.out.println("Total time for graph creation in summarizer: " + (System.currentTimeMillis() - current));
+		_logger.error("Total time for graph creation in summarizer: " + (System.currentTimeMillis() - current));
 		
 		Collection<Collection<String>> clusters = null;
 		try {
 			GraphClusterer.scanMu = mu;
         	GraphClusterer.scanEpsilon = epsilon;
         	clusters = GraphClusterer.cluster(graph, false);
-        	System.out.println("Media summarizer detected " + clusters.size() + " clusters for " + collection);
+        	
+        	_logger.info("Media summarizer detected " + clusters.size() + " clusters for " + collection);
 		}
 		catch(Exception e) {
-			System.out.println("MediaSummarizer for " + collection + " => Exception during clustering: " + e.getMessage());
-			e.printStackTrace();
+			_logger.info("MediaSummarizer error for " + collection + " => Exception during clustering: " + e.getMessage(), e);
 			return rankedImages;
 		}
         
@@ -190,13 +194,12 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 		for(Entry<String, Double> entry : divrankScores.entrySet()) {
 			RankedImage rankedImage = new RankedImage(entry.getKey(), entry.getValue());
-			rankedImages.add(rankedImage);
-			
-			try {
+			try {	
+				rankedImages.add(rankedImage);
 				rankedImagesDAO.save(rankedImage);
 			}
 			catch(Exception e) {
-				System.out.println("Collection: " + collection + ". Exception during storing of rankedImage " + rankedImage.id + " => " + e.getMessage());
+				_logger.error("Collection: " + collection + ". Exception during storing of rankedImage " + rankedImage.id + " => " + e.getMessage());
 			}
 		}
 		
@@ -219,7 +222,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			}
 			catch(Exception e) {
 				e.printStackTrace();
-				System.out.println("Exception for vertex " + vertex + " in collection " + collection + ": " + e.getMessage());
+				_logger.error("Exception for vertex " + vertex + " in collection " + collection + ": " + e.getMessage());
 			}
 		}
 		
@@ -230,7 +233,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 				MorphiaManager.getDB(collection).getName()
 			); 
 		
-		System.out.println("Save clusters for " + collection);
+		_logger.error("Save " + clusters.size() + " clusters for " + collection);
 		for(Collection<String> clst : clusters) {
 			double bestScore = 0;
     		Cluster cluster = new Cluster();
@@ -254,7 +257,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
     			clusterDAO.save(cluster);
     		}
     		catch(Exception e) {
-    			System.out.println("Collection: " + collection + ". Exception during storing of cluster " + cluster.getId() + " => " + e.getMessage());
+    			_logger.error("Collection: " + collection + ". Exception during storing of cluster " + cluster.getId() + " => " + e.getMessage(), e);
     		}
     	}
 		
@@ -299,15 +302,15 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			ratio += 0.01;
 		}
 		
-		System.out.println("K = " + k);
+		_logger.info("K = " + k);
 		
         ThreadedNNDescent<Vector> builder = new ThreadedNNDescent<Vector>();
         
         builder.setThreadCount(threadCount);
         builder.setK(k);
-        builder.setDelta(0.00001);
+        builder.setDelta(0.001);
         builder.setRho(0.5);
-        builder.setMaxIterations(20);
+        builder.setMaxIterations(40);
         
         builder.setSimilarity(new SimilarityInterface<Vector>() {
         	
@@ -322,7 +325,9 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 						}
 						
 						return similarity;
-					} catch (Exception e) {}
+					} catch (Exception e) {
+						_logger.error(e);
+					}
 				}
 				return .0;
             }
@@ -339,7 +344,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 
         Map<Node<Vector>, NeighborList> nn = builder.computeGraph(nodes);
         //builder.test(nodes);
-        System.out.println("Iterations: " + builder.getIterations());
+        _logger.info("Iterations used: " + builder.getIterations());
         for(Node<Vector> node : nn.keySet()) {
         	String v1 = node.id;
         	NeighborList nl = nn.get(node);
@@ -376,9 +381,9 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
         ThreadedNNDescent<Double[]> builder = new ThreadedNNDescent<Double[]>();
         builder.setThreadCount(threadCount);
         builder.setK(k);
-        builder.setDelta(0.00001);
+        builder.setDelta(0.001);
         builder.setRho(0.5);
-        builder.setMaxIterations(20);
+        builder.setMaxIterations(40);
         
         builder.setSimilarity(new SimilarityInterface<Double[]>() {
         	
@@ -390,7 +395,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 						double similarity = L2.similarity(ArrayUtils.toPrimitive(v1), ArrayUtils.toPrimitive(v2));
 						return similarity;
 					} catch (Exception e) {
-						
+						_logger.error(e);
 					}
 				}
 				return .0;

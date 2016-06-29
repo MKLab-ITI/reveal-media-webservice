@@ -2,6 +2,7 @@ package gr.iti.mklab.reveal.crawler;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 import gr.iti.mklab.sm.feeds.Feed;
 import gr.iti.mklab.sm.feeds.GeoFeed;
 import gr.iti.mklab.sm.feeds.KeywordsFeed;
@@ -11,6 +12,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -24,6 +26,8 @@ import java.util.Set;
  */
 public class StreamManagerClient {
 
+	private Logger _logger = Logger.getLogger(StreamManagerClient.class);
+	
     private String webServiceHost;
 
     private HttpClient httpClient;
@@ -36,6 +40,7 @@ public class StreamManagerClient {
         params.setDefaultMaxConnectionsPerHost(20);
         params.setConnectionTimeout(10000);
         cm.setParams(params);
+        
         this.httpClient = new HttpClient(cm);
     }
 
@@ -137,8 +142,12 @@ public class StreamManagerClient {
             if (code == 200) {
                 response = queryMethod.getResponseBodyAsString();
             }
+            else {
+            	response = queryMethod.getResponseBodyAsString();
+            	_logger.error("Cannot add feed. Response code: " + code + " Response: " + response);
+            }
         } catch (Exception e) {
-            e.printStackTrace();
+            _logger.error("Exception: " + e.getMessage());
         } finally {
             if (queryMethod != null) {
                 queryMethod.releaseConnection();
@@ -157,8 +166,12 @@ public class StreamManagerClient {
             if (code == 200) {
                 response = queryMethod.getResponseBodyAsString();
             }
+            else {
+            	response = queryMethod.getResponseBodyAsString();
+            	_logger.error("Cannot delete feed. Response code: " + code + " Response: " + response);
+            }
         } catch (Exception e) {
-            e.printStackTrace();
+        	_logger.error("Exception: " + e.getMessage());
         } finally {
             if (queryMethod != null) {
                 queryMethod.releaseConnection();
