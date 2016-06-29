@@ -33,10 +33,10 @@ public class Vocabulary {
 			
 			String id = entry.getKey();
 			String text = entry.getValue();
-			
 			Vector vector = process(text, ngrams);
-			if(vector != null)
+			if(vector != null) {
 				vectors.put(id, vector);
+			}
 		}
 		
 		Collection<String> stowords = Vocabulary.getStopwords();
@@ -79,6 +79,10 @@ public class Vocabulary {
 	}
 	
 	public static void addDoc(Collection<String> words) {
+		if(words == null || words.isEmpty()) {
+			return;
+		}
+		
 		docs++;
 		Set<String> tokens = new HashSet<String>(words);
 		for(String word : tokens) {

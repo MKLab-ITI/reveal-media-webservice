@@ -111,7 +111,7 @@ public class IndexingRunner implements Runnable {
 		int completedCounter = 0;
 		int failedCounter = 0;
 		
-		Set<String> proccessed = new HashSet<String>();
+		Set<String> processed = new HashSet<String>();
 				
         while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
             try {
@@ -124,7 +124,7 @@ public class IndexingRunner implements Runnable {
                 Predicate<Media> p = new Predicate<Media>() {
 					@Override
 					public boolean evaluate(Media m) {
-						return proccessed.contains(m.getId()) ? false : true;
+						return processed.contains(m.getId()) ? false : true;
 					}
 				};
 				
@@ -146,29 +146,29 @@ public class IndexingRunner implements Runnable {
    
                         Thread.sleep(INDEXING_PERIOD);
                     } catch (InterruptedException ie) {
-
+                    	LOGGER.info("Indexing runner " + collection + " interrupted.");
                     }
                 } 
                 else {
         			// if there are more task to submit and the downloader can accept more tasks then submit
         			while (canAcceptMoreTasks()) {
         				for (Image image : imageList) {
-        					if(proccessed.contains(image.getId())) {
+        					if(processed.contains(image.getId())) {
         						continue;
         					}
         					
-        					proccessed.add(image.getId());
+        					processed.add(image.getId());
         					unindexedMedia.put(image.getId(), image);
         					submitTask(image);
         					submittedCounter++;
         				}
         				
         				for(Video video : videoList) {
-        					if(proccessed.contains(video.getId())) {
+        					if(processed.contains(video.getId())) {
         						continue;
         					}
         					
-        					proccessed.add(video.getId());
+        					processed.add(video.getId());
         					unindexedMedia.put(video.getId(), video);
         					submitTask(video);
         					submittedCounter++;
@@ -237,6 +237,7 @@ public class IndexingRunner implements Runnable {
                 if (_publisher != null) {
                     _publisher.close();
                 }
+                
             } 
             catch (IllegalStateException ex) {
                LOGGER.error("Trying to recreate collections. IllegalStateException: " + ex.getMessage());
@@ -252,6 +253,8 @@ public class IndexingRunner implements Runnable {
             catch(Exception other){
                 LOGGER.error("Exception " + other.getMessage());
             }
+            
+            LOGGER.info(processed.size() + " media items processed so far.");
         }
     }
 

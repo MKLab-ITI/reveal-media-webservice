@@ -105,13 +105,16 @@ public class RevealAgent implements Runnable {
             RuntimeConfiguration rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional), dogpileUrls);
             rc.keywords = _request.getKeywords();
             rc.collectionName = _request.getCollection();
-            LOGGER.info("###### Agent for request id " + _request.getId() + " started");
+            LOGGER.info("###### Agent for collection " + _request.getCollection() + " started");
             bubingAgent = new Agent(_hostname, _jmxPort, rc);	// agent halts here
             
-            LOGGER.info("###### Agent for request id " + _request.getId() + " finished");
+            LOGGER.info("###### Agent for collection " + _request.getCollection() + " finished");
             _request = dao.findOne("_id", _request.getId());
             if (_request != null) {
                 LOGGER.info("###### Found request with id " + _request.getId() + " " + _request.getState());
+            }
+            else {
+            	LOGGER.error("Could not find a saved Crawl Job ");
             }
             
             if (_request.getState() == CrawlJob.STATE.DELETING) {
@@ -146,7 +149,7 @@ public class RevealAgent implements Runnable {
             }
             else {
                 //STOPPING state
-                LOGGER.info("###### Stop " + _request.getCollection());
+                LOGGER.info("###### Stop " + _request.getCollection() + ". State = " + _request.getState().name());
                 
                 LOGGER.info("###### stop  social media crawler for " + _request.getCollection());
                 if (Configuration.ADD_SOCIAL_MEDIA) {
@@ -155,7 +158,7 @@ public class RevealAgent implements Runnable {
                 
                 LOGGER.info("###### stop indexing runner for " + _request.getCollection());
                 if(!VisualIndexerFactory.exists(_request.getCollection())) {
-                	LOGGER.info("###### stop indexing for " + _request.getCollection() + "immediately");
+                	LOGGER.info("###### stop indexing for " + _request.getCollection() + " immediately");
                 	runner.stop();
                     indexingThread.interrupt();
                 }
@@ -169,6 +172,10 @@ public class RevealAgent implements Runnable {
                         Thread.sleep(30000);
                         k++;
                     }
+                	if(indexingThread.isAlive()) {
+                		runner.stop();
+                        indexingThread.interrupt();
+                	}
                 }
                 
                 LOGGER.info("###### Åxtract entities for " + _request.getCollection());

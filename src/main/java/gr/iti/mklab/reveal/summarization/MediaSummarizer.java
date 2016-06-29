@@ -8,10 +8,8 @@ import gr.iti.mklab.reveal.summarization.graph.GraphClusterer;
 import gr.iti.mklab.reveal.summarization.graph.GraphRanker;
 import gr.iti.mklab.reveal.summarization.graph.GraphUtils;
 import gr.iti.mklab.reveal.summarization.utils.L2;
-import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
-import gr.iti.mklab.reveal.web.RevealController;
 import gr.iti.mklab.simmo.core.annotations.SummaryScore;
 import gr.iti.mklab.simmo.core.cluster.Cluster;
 import gr.iti.mklab.simmo.core.cluster.Clusterable;
@@ -61,6 +59,8 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 	private double epsilon;
 	private int threadCount = 6;
 	 
+	private int N = 2;
+	
 	public MediaSummarizer(String collection, double similarityCuttof, double visualSimilarity, 
 			double randomJumpWeight, int mu, double epsilon) {
 		
@@ -98,6 +98,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 		VisualIndexer.init(false);
 		VisualIndexer vIndexer = VisualIndexerFactory.getVisualIndexer(collection);
+		_logger.info("Visual Indexer initialized for " + collection);
 		
 		Graph<String, Edge> graph = new UndirectedSparseGraph<String, Edge>();
 
@@ -111,7 +112,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		for (int k = 0; k < imageDAO.count(); k += ITEMS_PER_ITERATION) {
             List<Image> images = imageDAO.getItems(ITEMS_PER_ITERATION, k);
             images.stream().forEach(image -> {
-            	
+       
             	graph.addVertex(image.getId());
             	
             	String title = image.getTitle();
@@ -138,14 +139,12 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
             	}
             	
             	int popularity = image.getNumShares() + image.getNumLikes() + image.getNumComments() + image.getNumViews();
-            	
             	popularities.put(image.getId(), popularity);
             	
             	Double[] vector = vIndexer.getVector(image.getId());
             	if(vector != null && vector.length > 0) {
             		visualVectors.put(image.getId(), vector);	
             	}
-            	
             });
         }
 		
@@ -153,8 +152,8 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 		current = System.currentTimeMillis();
 		try {
-			Map<String, Vector> vectorsMap = Vocabulary.createVocabulary(texts, 2);
-			_logger.info("Vocabulary created with " + Vocabulary.getNumOfTerms() + " terms.");
+			Map<String, Vector> vectorsMap = Vocabulary.createVocabulary(texts, N);
+			_logger.info("Vocabulary created with " + Vocabulary.getNumOfTerms() + " " + N + "-grams");
 				 
 			createGraph(graph, vectorsMap);
 			_logger.info("Graph created for " + collection  + ": " + graph.getVertexCount() + " vertices and " + graph.getEdgeCount() + " edges. Density: " + GraphUtils.getGraphDensity(graph));
@@ -447,7 +446,6 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		}
 		
 		Map<String, Double> scores = new HashMap<String, Double>();
-		
 		Integer maxPop = Collections.max(popularities.values());
 		if(maxPop == null || maxPop == 0) {
 			maxPop = 1;
@@ -477,8 +475,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 				density = 1.;
 			}
 			
-			score = density * popularity * significance;
-			
+			score = density * popularity * significance;	
 			scores.put(id, score);
 		}
 		

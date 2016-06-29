@@ -16,6 +16,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,17 +94,22 @@ public class MediaCallable implements Callable<MediaCallableResult> {
             HttpResponse response = _httpclient.execute(httpget);
             StatusLine status = response.getStatusLine();
             int code = status.getStatusCode();
+            HttpEntity entity = response.getEntity();
+            
             if (code < 200 || code >= 300) {
                 _logger.error("Failed fetch media item " + id + ". URL=" + url +
                         ". Http code: " + code + " Error: " + status.getReasonPhrase());
+                EntityUtils.consumeQuietly(entity);
                 return null;
             }
-            HttpEntity entity = response.getEntity();
+            
             if (entity == null) {
                 _logger.error("Entity is null for " + id + ". URL=" + url +
                         ". Http code: " + code + " Error: " + status.getReasonPhrase());
+                EntityUtils.consumeQuietly(entity);
                 return null;
             }
+            
             InputStream input = entity.getContent();
             byte[] imageContent = IOUtils.toByteArray(input);
                         
@@ -120,11 +126,14 @@ public class MediaCallable implements Callable<MediaCallableResult> {
                     ((Video) media).setHeight(height);
                 }
                 imvec.setDebug(true);
-                System.out.println("beginning vectorization");
+                
+               _logger.info("Beginning vectorization for " + url);
                 ImageVectorizationResult imvr = imvec.call();
-                System.out.println("Vectorization called properly");
+                _logger.info("Vectorization called properly for " + url);
+                
                 double[] vector = imvr.getImageVector();
-                System.out.println("imvr collected properly");
+                _logger.info("imvr collected properly for " + url);
+                
                 if (vector == null || vector.length == 0) {
                     _logger.error("Error in feature extraction for " + id);
                     return null;
@@ -134,11 +143,11 @@ public class MediaCallable implements Callable<MediaCallableResult> {
                 	if(imageContent != null && imageContent.length > 0) {
                 		_logger.info("Call disturbing detection service for id=" + id);
                 		String resp = DisturbingDetectorClient.detect(url, imageContent, collection, id, type);
-                		_logger.info("DisturbingDetectorClient response: " + resp);
+                		_logger.info("DisturbingDetectorClient response for " + id + " : " + resp);
                 	}
                 }
                 catch(Exception e) {
-                	_logger.error("Exception for id=" + id + ", url=" + url, e);
+                	_logger.error("Exception for id=" + id + ", url=" + url + ", collection=" + collection, e);
                 }
                 
                 return vector;
