@@ -178,7 +178,7 @@ public class RevealAgent implements Runnable {
                 	}
                 }
                 
-                LOGGER.info("###### Åxtract entities for " + _request.getCollection());
+                LOGGER.info("###### Extract entities for " + _request.getCollection());
                 //extract entities for the collection
                 ExecutorService entitiesExecutor = Executors.newSingleThreadExecutor();
                 entitiesExecutor.submit(new NEandRECallable(_request.getCollection()));
