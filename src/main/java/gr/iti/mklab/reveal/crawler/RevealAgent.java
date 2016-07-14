@@ -171,7 +171,11 @@ public class RevealAgent implements Runnable {
                 		// But not more than 10 minutes
                         Thread.sleep(30000);
                         k++;
+                        if(k > 20) {
+                        	LOGGER.info("Waiting exceeded 10 minutes for " + _request.getCollection() + ". Stop immediately!");
+                        }
                     }
+                	
                 	if(indexingThread.isAlive()) {
                 		runner.stop();
                         indexingThread.interrupt();

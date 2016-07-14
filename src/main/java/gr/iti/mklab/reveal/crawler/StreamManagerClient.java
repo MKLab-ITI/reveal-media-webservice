@@ -36,8 +36,8 @@ public class StreamManagerClient {
         this.webServiceHost = webServiceHost;
         MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
         HttpConnectionManagerParams params = new HttpConnectionManagerParams();
-        params.setMaxTotalConnections(50);
-        params.setDefaultMaxConnectionsPerHost(20);
+        params.setMaxTotalConnections(100);
+        params.setDefaultMaxConnectionsPerHost(25);
         params.setConnectionTimeout(10000);
         cm.setParams(params);
         
