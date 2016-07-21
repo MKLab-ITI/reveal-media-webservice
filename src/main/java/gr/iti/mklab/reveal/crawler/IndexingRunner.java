@@ -108,6 +108,7 @@ public class IndexingRunner implements Runnable {
     			
         System.out.println("Indexing runner run");
         int submittedCounter = 0;
+        
 		int completedCounter = 0;
 		int failedCounter = 0;
 		
@@ -218,13 +219,16 @@ public class IndexingRunner implements Runnable {
         						deleteMedia(result.media);
         					}
         					completedCounter++;
-        					LOGGER.info(completedCounter + " tasks completed!");
+        				
         				} catch (Exception e) {
         					failedCounter++;
-        					LOGGER.info(failedCounter + " tasks failed!");
+        					
         					LOGGER.info(e.getMessage());
         				}
         			}
+        			
+        			LOGGER.info(completedCounter + " tasks completed!");
+        			LOGGER.info(failedCounter + " tasks failed!");
         			
         			for(String mId : indexedMedia.keySet()) {
         				unindexedMedia.remove(mId);

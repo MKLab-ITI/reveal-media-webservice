@@ -50,10 +50,11 @@ public class CrawlQueueController {
         dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
         // the client for handling the stream manager social media crawler
         streamManager = new StreamManagerClient("http://" + Configuration.STREAM_MANAGER_SERVICE_HOST + ":8080");
-        // Starts a polling thread to regularly check for empty slots
         
+        startRunningCrawlsAtStartup();
         deleteAndStopCrawlsAtStartup();
         
+        // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();
     }
@@ -275,6 +276,42 @@ public class CrawlQueueController {
         startCrawl(req);
     }
 
+    private void startRunningCrawlsAtStartup() {
+   	 List<CrawlJob> crawlsToStart = getRunningCrawls();
+   	 
+   	 int running = 0;
+   	 for(CrawlJob job : crawlsToStart) {
+   		 try {
+   			if(running < Configuration.NUM_CRAWLS) {
+   				_logger.info("Run " + job.getCollection());
+   				job.setState(CrawlJob.STATE.STARTING);
+   	        	dao.save(job);
+   	        	
+   	        	startCrawl(job);
+   	        	
+   	        	running++;
+   			}
+   			else {
+   				_logger.info("Cannot run " + job.getCollection() + ". Number of crawls reached.");
+   				job.setState(CrawlJob.STATE.WAITING);
+   	        	dao.save(job);
+   			}
+   	        
+			} catch (Exception e) {
+				_logger.error("Failed to start " + job.getCollection());
+			}
+   	 }
+   	 
+   	 List<CrawlJob> crawlsToStop = getStoppingCrawls();
+   	 for(CrawlJob job : crawlsToStop) {
+   		 try {
+				this.stop(job.getId());
+			} catch (Exception e) {
+				_logger.error("Failed to stop " + job.getCollection());
+			}
+   	 }
+   }
+    
     private void deleteAndStopCrawlsAtStartup() {
     	 List<CrawlJob> crawlsToDelete = getDeletingCrawls();
     	 for(CrawlJob job : crawlsToDelete) {
@@ -472,6 +509,7 @@ public class CrawlQueueController {
         } else if (lastVideoInserted != null) {
             status.lastItemInserted = lastVideoInserted.toString();
         }
+        
         /*try {
             int numIndexedItems = VisualIndexerFactory.getVisualIndexer(status.getCollection()).numItems();
             status.numIndexedImages = numIndexedItems;
