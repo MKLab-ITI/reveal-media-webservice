@@ -195,14 +195,62 @@ public class CrawlQueueController {
             req.setState(CrawlJob.STATE.DELETING);
             req.setLastStateChange(new Date());
             dao.save(req);
-            if (req.getKeywords().isEmpty())
+            if (req.getKeywords().isEmpty()) {
                 cancelGeoCrawl(req.getCollection());
-            else
+            }
+            else {
                 cancelForName(req.getCollection());
+                
+            }	
+        }
+        else if(CrawlJob.STATE.DELETING == req.getState()) {
+        	_logger.info("Try to stop bubbing agent for " + req.getCollection());
+            if (req.getKeywords().isEmpty()) {
+                cancelGeoCrawl(req.getCollection());
+            }
+            else {
+                cancelForName(req.getCollection());
+            }
+            
+            try {
+            	_logger.info("Delete visual index for " + req.getCollection());
+            	if(VisualIndexerFactory.exists(req.getCollection())) {
+            		VisualIndexer VisualIndexer = VisualIndexerFactory.getVisualIndexer(req.getCollection());
+            		VisualIndexer.deleteCollection();
+            	}	
+            	else {
+            		VisualIndexer.init(false);
+            		VisualIndexer.deleteCollection(req.getCollection());
+            	}
+            }
+            catch(Exception e) {
+            	_logger.error("Exception during index deletion of " + req.getCollection() + ": " + e.getMessage());
+            }
+            
+            try {
+            	_logger.info("Drop databases from mongo for " + req.getCollection());
+            	dao.delete(req);
+            	MorphiaManager.getDB(req.getCollection()).dropDatabase();
+            }
+            catch(Exception e) {
+            	_logger.error("Exception during deletion of " + req.getCollection() + ": " + e.getMessage());
+            }
+            
+            try {
+            	_logger.info("Delete the crawl and index folders for " + req.getCollection());
+                FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
+                FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
+            }
+            catch(Exception e) {
+            	_logger.error("Exception during deletion of crawl and index folders for " + req.getCollection() + ": " + e.getMessage());
+            }
+            
+            _logger.info("Request deleted for CrawlJob " + id + ". Collection: " + req.getCollection());
         }
         else {
-        	_logger.error("CrawlRequest state " + req.getState() + ". You can only delete RUNNING or FINISHED crawls");
+        	_logger.error("Collection: " + req.getCollection() + " failed to be deleted. State " + req.getState() + ". You can only delete RUNNING, FINISHED or DELETING crawls");
         }
+        
         return req;
     }
 
@@ -253,7 +301,7 @@ public class CrawlQueueController {
      * Cancels the BUbiNG Agent listening to the specified port
      */
     private void cancelForName(String name) {
-        System.out.println("Cancel for name " + name);
+        _logger.info("Cancel for name " + name);
         try {
         	//JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
             JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");

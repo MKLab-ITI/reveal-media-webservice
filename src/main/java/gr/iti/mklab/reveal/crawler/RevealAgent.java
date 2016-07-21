@@ -5,6 +5,7 @@ import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
 import gr.iti.mklab.reveal.entitites.NEandRECallable;
 import gr.iti.mklab.reveal.summarization.MediaSummarizer;
 import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
@@ -123,14 +124,26 @@ public class RevealAgent implements Runnable {
                 dao.delete(_request);
                 //Delete the collection DB
                 MorphiaManager.getDB(_request.getCollection()).dropDatabase();
+                
+                LOGGER.info("###### stop indexing runner for " + _request.getCollection());
+                runner.stop();
+                indexingThread.interrupt();
+                
                 //Unload from memory
-                VisualIndexerFactory.getVisualIndexer(_request.getCollection()).deleteCollection();
+                if(VisualIndexerFactory.exists(_request.getCollection())) {
+                	 VisualIndexer visualIndexer = VisualIndexerFactory.getVisualIndexer(_request.getCollection());
+                	 visualIndexer.deleteCollection();
+                }
+                else {
+                	VisualIndexer.init(false);
+            		VisualIndexer.deleteCollection(_request.getCollection());
+                }
+               
                 //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(_request.getCrawlDataPath()));
                 FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + _request.getCollection()));
-                LOGGER.info("###### stop indexing runner and social media crawler");
-                runner.stop();
-                indexingThread.interrupt();
+            
+                LOGGER.info("###### stop  social media crawler for " + _request.getCollection());
                 if (Configuration.ADD_SOCIAL_MEDIA) {
                     _manager.deleteAllFeeds(false, _request.getCollection());
                 }
