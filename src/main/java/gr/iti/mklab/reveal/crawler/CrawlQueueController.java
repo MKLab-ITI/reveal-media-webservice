@@ -1,14 +1,12 @@
 package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.util.Configuration;
-import gr.iti.mklab.reveal.visual.VisualIndexHandler;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
-import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.sm.streams.StreamException;
@@ -17,7 +15,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
-import org.mongodb.morphia.Key;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
@@ -54,6 +51,9 @@ public class CrawlQueueController {
         // the client for handling the stream manager social media crawler
         streamManager = new StreamManagerClient("http://" + Configuration.STREAM_MANAGER_SERVICE_HOST + ":8080");
         // Starts a polling thread to regularly check for empty slots
+        
+        deleteAndStopCrawlsAtStartup();
+        
         poller = new Poller();
         poller.startPolling();
     }
@@ -275,6 +275,26 @@ public class CrawlQueueController {
         startCrawl(req);
     }
 
+    private void deleteAndStopCrawlsAtStartup() {
+    	 List<CrawlJob> crawlsToDelete = getDeletingCrawls();
+    	 for(CrawlJob job : crawlsToDelete) {
+    		 try {
+				this.delete(job.getId());
+			} catch (Exception e) {
+				_logger.error("Failed to delete " + job.getCollection());
+			}
+    	 }
+    	 
+    	 List<CrawlJob> crawlsToStop = getStoppingCrawls();
+    	 for(CrawlJob job : crawlsToStop) {
+    		 try {
+				this.stop(job.getId());
+			} catch (Exception e) {
+				_logger.error("Failed to stop " + job.getCollection());
+			}
+    	 }
+    }
+    
     private void startCrawl(CrawlJob req) throws Exception {
         _logger.info("METHOD: Startcrawl " + req.getCollection() + " " + req.getState());
         if (req.getKeywords().isEmpty()) {
@@ -370,6 +390,14 @@ public class CrawlQueueController {
         return q.asList();
     }
 
+    private List<CrawlJob> getDeletingCrawls() {
+        return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.DELETING).asList();
+    }
+    
+    private List<CrawlJob> getStoppingCrawls() {
+        return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.STOPPING).asList();
+    }
+    
     private List<CrawlJob> getWaitingCrawls() {
         return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.WAITING).asList();
     }
