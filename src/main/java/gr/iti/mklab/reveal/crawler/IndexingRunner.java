@@ -99,8 +99,8 @@ public class IndexingRunner implements Runnable {
 		pool = new ExecutorCompletionService<MediaCallableResult>(executor);
 		
 		numPendingTasks = 0;
-		maxNumPendingTasks = NUM_THREADS * 10;
-        System.out.println("End of constructor ");
+		maxNumPendingTasks = NUM_THREADS * 50;
+		LOGGER.info("End of constructor ");
     }
 
     @Override
@@ -150,30 +150,37 @@ public class IndexingRunner implements Runnable {
                     }
                 } 
                 else {
-        			// if there are more task to submit and the downloader can accept more tasks then submit
-        			while (canAcceptMoreTasks()) {
-        				for (Image image : imageList) {
-        					if(processed.contains(image.getId())) {
-        						continue;
-        					}
-        					
-        					processed.add(image.getId());
-        					unindexedMedia.put(image.getId(), image);
-        					submitTask(image);
-        					submittedCounter++;
+        			
+        			for (Image image : imageList) {
+        				if(!canAcceptMoreTasks()) {
+        					break;
         				}
         				
-        				for(Video video : videoList) {
-        					if(processed.contains(video.getId())) {
-        						continue;
-        					}
-        					
-        					processed.add(video.getId());
-        					unindexedMedia.put(video.getId(), video);
-        					submitTask(video);
-        					submittedCounter++;
+        				if(processed.contains(image.getId())) {
+        					continue;
         				}
+        					
+        				processed.add(image.getId());
+        				unindexedMedia.put(image.getId(), image);
+        				submitTask(image);
+        				submittedCounter++;
         			}
+        				
+        			for(Video video : videoList) {
+        				if(!canAcceptMoreTasks()) {
+        					break;
+        				}
+        				
+        				if(processed.contains(video.getId())) {
+        					continue;
+        				}
+        					
+        				processed.add(video.getId());
+        				unindexedMedia.put(video.getId(), video);
+        				submitTask(video);
+        				submittedCounter++;
+        			}
+        			
         			
         			// if are submitted tasks that are pending completion ,try to consume
         			while (completedCounter + failedCounter < submittedCounter) {
@@ -283,18 +290,18 @@ public class IndexingRunner implements Runnable {
     
     private void deleteMedia(Media media) {
     	if(media instanceof Image) {
-    		System.out.println("Deleting image " + media.getId());
+    		LOGGER.info("Deleting image " + media.getId());
         	imageDAO.delete((Image)media);
         	pageDAO.deleteById(media.getId());
         	if (LinkDetectionRunner.LAST_POSITION > 0)
         		LinkDetectionRunner.LAST_POSITION--;
 		}
         else if(media instanceof Video) {
-        	System.out.println("Deleting video " + media.getId());
+        	LOGGER.info("Deleting video " + media.getId());
 			videoDAO.delete((Video)media);
 		}
     	else {
-    		System.out.println("Unknown instance for " + media.getId());
+    		LOGGER.info("Unknown instance for " + media.getId());
     	}
     }
     
