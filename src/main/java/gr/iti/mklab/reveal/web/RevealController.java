@@ -179,6 +179,7 @@ public class RevealController {
         return names;
     }*/
 
+/*
     ////////////////////////////////////////////////////////
     ///////// MANIPULATION DETECTION     ///////////////////////////
     ///////////////////////////////////////////////////////
@@ -286,9 +287,6 @@ public class RevealController {
                 ga.GhostOutput.stream().forEach(s -> newGhostOutput.add(Configuration.HTTP_HOST + "images/" + s.substring(s.lastIndexOf('/') + 1)));
             }
             ga.GhostOutput = newGhostOutput;
-            /*if (ga.GhostGIFOutput != null) {
-                ga.GhostGIFOutput = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/images/" + ga.GhostGIFOutput.substring(ga.GhostGIFOutput.lastIndexOf('/') + 1);
-            }*/
             return ga;
         } catch (Exception ex) {
             throw new RevealException(ex.getMessage(), ex);
@@ -324,7 +322,7 @@ public class RevealController {
             throw new RevealException(ex.getMessage(), ex);
         }
     }
-
+*/
     ////////////////////////////////////////////////////////
     ///////// CRAWLER            ///////////////////////////
     ///////////////////////////////////////////////////////
