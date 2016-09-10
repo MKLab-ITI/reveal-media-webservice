@@ -256,12 +256,12 @@
 		<dependency>
     		<groupId>info.debatty</groupId>
     		<artifactId>java-graphs</artifactId>
-    		<version>0.17</version>
+    		<version>0.28</version>
 		</dependency>
 		<dependency>
     		<groupId>info.debatty</groupId>
     		<artifactId>java-lsh</artifactId>
-    		<version>0.8</version>
+    		<version>0.10</version>
 		</dependency>
 
 		<dependency>
