@@ -99,8 +99,8 @@ public class IndexingRunner implements Runnable {
 		pool = new ExecutorCompletionService<MediaCallableResult>(executor);
 		
 		numPendingTasks = 0;
-		maxNumPendingTasks = NUM_THREADS * 10;
-        System.out.println("End of constructor ");
+		maxNumPendingTasks = NUM_THREADS * 50;
+		LOGGER.info("End of constructor ");
     }
 
     @Override
@@ -108,10 +108,11 @@ public class IndexingRunner implements Runnable {
     			
         System.out.println("Indexing runner run");
         int submittedCounter = 0;
+        
 		int completedCounter = 0;
 		int failedCounter = 0;
 		
-		Set<String> proccessed = new HashSet<String>();
+		Set<String> processed = new HashSet<String>();
 				
         while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
             try {
@@ -124,7 +125,7 @@ public class IndexingRunner implements Runnable {
                 Predicate<Media> p = new Predicate<Media>() {
 					@Override
 					public boolean evaluate(Media m) {
-						return proccessed.contains(m.getId()) ? false : true;
+						return processed.contains(m.getId()) ? false : true;
 					}
 				};
 				
@@ -146,34 +147,41 @@ public class IndexingRunner implements Runnable {
    
                         Thread.sleep(INDEXING_PERIOD);
                     } catch (InterruptedException ie) {
-
+                    	LOGGER.info("Indexing runner " + collection + " interrupted.");
                     }
                 } 
                 else {
-        			// if there are more task to submit and the downloader can accept more tasks then submit
-        			while (canAcceptMoreTasks()) {
-        				for (Image image : imageList) {
-        					if(proccessed.contains(image.getId())) {
-        						continue;
-        					}
-        					
-        					proccessed.add(image.getId());
-        					unindexedMedia.put(image.getId(), image);
-        					submitTask(image);
-        					submittedCounter++;
+        			
+        			for (Image image : imageList) {
+        				if(!canAcceptMoreTasks()) {
+        					break;
         				}
         				
-        				for(Video video : videoList) {
-        					if(proccessed.contains(video.getId())) {
-        						continue;
-        					}
-        					
-        					proccessed.add(video.getId());
-        					unindexedMedia.put(video.getId(), video);
-        					submitTask(video);
-        					submittedCounter++;
+        				if(processed.contains(image.getId())) {
+        					continue;
         				}
+        					
+        				processed.add(image.getId());
+        				unindexedMedia.put(image.getId(), image);
+        				submitTask(image);
+        				submittedCounter++;
         			}
+        				
+        			for(Video video : videoList) {
+        				if(!canAcceptMoreTasks()) {
+        					break;
+        				}
+        				
+        				if(processed.contains(video.getId())) {
+        					continue;
+        				}
+        					
+        				processed.add(video.getId());
+        				unindexedMedia.put(video.getId(), video);
+        				submitTask(video);
+        				submittedCounter++;
+        			}
+        			
         			
         			// if are submitted tasks that are pending completion ,try to consume
         			while (completedCounter + failedCounter < submittedCounter) {
@@ -211,13 +219,16 @@ public class IndexingRunner implements Runnable {
         						deleteMedia(result.media);
         					}
         					completedCounter++;
-        					LOGGER.info(completedCounter + " tasks completed!");
+        				
         				} catch (Exception e) {
         					failedCounter++;
-        					LOGGER.info(failedCounter + " tasks failed!");
+        					
         					LOGGER.info(e.getMessage());
         				}
         			}
+        			
+        			LOGGER.info(completedCounter + " tasks completed!");
+        			LOGGER.info(failedCounter + " tasks failed!");
         			
         			for(String mId : indexedMedia.keySet()) {
         				unindexedMedia.remove(mId);
@@ -237,6 +248,7 @@ public class IndexingRunner implements Runnable {
                 if (_publisher != null) {
                     _publisher.close();
                 }
+                
             } 
             catch (IllegalStateException ex) {
                LOGGER.error("Trying to recreate collections. IllegalStateException: " + ex.getMessage());
@@ -252,6 +264,8 @@ public class IndexingRunner implements Runnable {
             catch(Exception other){
                 LOGGER.error("Exception " + other.getMessage());
             }
+            
+            LOGGER.info(processed.size() + " media items processed so far.");
         }
     }
 
@@ -280,18 +294,18 @@ public class IndexingRunner implements Runnable {
     
     private void deleteMedia(Media media) {
     	if(media instanceof Image) {
-    		System.out.println("Deleting image " + media.getId());
+    		LOGGER.info("Deleting image " + media.getId());
         	imageDAO.delete((Image)media);
         	pageDAO.deleteById(media.getId());
         	if (LinkDetectionRunner.LAST_POSITION > 0)
         		LinkDetectionRunner.LAST_POSITION--;
 		}
         else if(media instanceof Video) {
-        	System.out.println("Deleting video " + media.getId());
+        	LOGGER.info("Deleting video " + media.getId());
 			videoDAO.delete((Video)media);
 		}
     	else {
-    		System.out.println("Unknown instance for " + media.getId());
+    		LOGGER.info("Unknown instance for " + media.getId());
     	}
     }
     

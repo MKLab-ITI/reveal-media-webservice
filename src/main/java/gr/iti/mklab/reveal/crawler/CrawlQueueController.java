@@ -1,14 +1,12 @@
 package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.util.Configuration;
-import gr.iti.mklab.reveal.visual.VisualIndexHandler;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
-import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.sm.streams.StreamException;
@@ -17,7 +15,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
-import org.mongodb.morphia.Key;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
@@ -53,6 +50,10 @@ public class CrawlQueueController {
         dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
         // the client for handling the stream manager social media crawler
         streamManager = new StreamManagerClient("http://" + Configuration.STREAM_MANAGER_SERVICE_HOST + ":8080");
+        
+        startRunningCrawlsAtStartup();
+        deleteAndStopCrawlsAtStartup();
+        
         // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();
@@ -195,14 +196,62 @@ public class CrawlQueueController {
             req.setState(CrawlJob.STATE.DELETING);
             req.setLastStateChange(new Date());
             dao.save(req);
-            if (req.getKeywords().isEmpty())
+            if (req.getKeywords().isEmpty()) {
                 cancelGeoCrawl(req.getCollection());
-            else
+            }
+            else {
                 cancelForName(req.getCollection());
+                
+            }	
+        }
+        else if(CrawlJob.STATE.DELETING == req.getState()) {
+        	_logger.info("Try to stop bubbing agent for " + req.getCollection());
+            if (req.getKeywords().isEmpty()) {
+                cancelGeoCrawl(req.getCollection());
+            }
+            else {
+                cancelForName(req.getCollection());
+            }
+            
+            try {
+            	_logger.info("Delete visual index for " + req.getCollection());
+            	if(VisualIndexerFactory.exists(req.getCollection())) {
+            		VisualIndexer VisualIndexer = VisualIndexerFactory.getVisualIndexer(req.getCollection());
+            		VisualIndexer.deleteCollection();
+            	}	
+            	else {
+            		VisualIndexer.init(false);
+            		VisualIndexer.deleteCollection(req.getCollection());
+            	}
+            }
+            catch(Exception e) {
+            	_logger.error("Exception during index deletion of " + req.getCollection() + ": " + e.getMessage());
+            }
+            
+            try {
+            	_logger.info("Drop databases from mongo for " + req.getCollection());
+            	dao.delete(req);
+            	MorphiaManager.getDB(req.getCollection()).dropDatabase();
+            }
+            catch(Exception e) {
+            	_logger.error("Exception during deletion of " + req.getCollection() + ": " + e.getMessage());
+            }
+            
+            try {
+            	_logger.info("Delete the crawl and index folders for " + req.getCollection());
+                FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
+                FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
+            }
+            catch(Exception e) {
+            	_logger.error("Exception during deletion of crawl and index folders for " + req.getCollection() + ": " + e.getMessage());
+            }
+            
+            _logger.info("Request deleted for CrawlJob " + id + ". Collection: " + req.getCollection());
         }
         else {
-        	_logger.error("CrawlRequest state " + req.getState() + ". You can only delete RUNNING or FINISHED crawls");
+        	_logger.error("Collection: " + req.getCollection() + " failed to be deleted. State " + req.getState() + ". You can only delete RUNNING, FINISHED or DELETING crawls");
         }
+        
         return req;
     }
 
@@ -227,6 +276,62 @@ public class CrawlQueueController {
         startCrawl(req);
     }
 
+    private void startRunningCrawlsAtStartup() {
+   	 List<CrawlJob> crawlsToStart = getRunningCrawls();
+   	 
+   	 int running = 0;
+   	 for(CrawlJob job : crawlsToStart) {
+   		 try {
+   			if(running < Configuration.NUM_CRAWLS) {
+   				_logger.info("Run " + job.getCollection());
+   				job.setState(CrawlJob.STATE.STARTING);
+   	        	dao.save(job);
+   	        	
+   	        	startCrawl(job);
+   	        	
+   	        	running++;
+   			}
+   			else {
+   				_logger.info("Cannot run " + job.getCollection() + ". Number of crawls reached.");
+   				job.setState(CrawlJob.STATE.WAITING);
+   	        	dao.save(job);
+   			}
+   	        
+			} catch (Exception e) {
+				_logger.error("Failed to start " + job.getCollection());
+			}
+   	 }
+   	 
+   	 List<CrawlJob> crawlsToStop = getStoppingCrawls();
+   	 for(CrawlJob job : crawlsToStop) {
+   		 try {
+				this.stop(job.getId());
+			} catch (Exception e) {
+				_logger.error("Failed to stop " + job.getCollection());
+			}
+   	 }
+   }
+    
+    private void deleteAndStopCrawlsAtStartup() {
+    	 List<CrawlJob> crawlsToDelete = getDeletingCrawls();
+    	 for(CrawlJob job : crawlsToDelete) {
+    		 try {
+				this.delete(job.getId());
+			} catch (Exception e) {
+				_logger.error("Failed to delete " + job.getCollection());
+			}
+    	 }
+    	 
+    	 List<CrawlJob> crawlsToStop = getStoppingCrawls();
+    	 for(CrawlJob job : crawlsToStop) {
+    		 try {
+				this.stop(job.getId());
+			} catch (Exception e) {
+				_logger.error("Failed to stop " + job.getCollection());
+			}
+    	 }
+    }
+    
     private void startCrawl(CrawlJob req) throws Exception {
         _logger.info("METHOD: Startcrawl " + req.getCollection() + " " + req.getState());
         if (req.getKeywords().isEmpty()) {
@@ -253,7 +358,7 @@ public class CrawlQueueController {
      * Cancels the BUbiNG Agent listening to the specified port
      */
     private void cancelForName(String name) {
-        System.out.println("Cancel for name " + name);
+        _logger.info("Cancel for name " + name);
         try {
         	//JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
             JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
@@ -322,6 +427,14 @@ public class CrawlQueueController {
         return q.asList();
     }
 
+    private List<CrawlJob> getDeletingCrawls() {
+        return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.DELETING).asList();
+    }
+    
+    private List<CrawlJob> getStoppingCrawls() {
+        return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.STOPPING).asList();
+    }
+    
     private List<CrawlJob> getWaitingCrawls() {
         return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.WAITING).asList();
     }
@@ -396,6 +509,7 @@ public class CrawlQueueController {
         } else if (lastVideoInserted != null) {
             status.lastItemInserted = lastVideoInserted.toString();
         }
+        
         /*try {
             int numIndexedItems = VisualIndexerFactory.getVisualIndexer(status.getCollection()).numItems();
             status.numIndexedImages = numIndexedItems;

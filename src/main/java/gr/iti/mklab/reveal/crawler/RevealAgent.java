@@ -5,6 +5,7 @@ import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
 import gr.iti.mklab.reveal.entitites.NEandRECallable;
 import gr.iti.mklab.reveal.summarization.MediaSummarizer;
 import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
@@ -105,13 +106,16 @@ public class RevealAgent implements Runnable {
             RuntimeConfiguration rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional), dogpileUrls);
             rc.keywords = _request.getKeywords();
             rc.collectionName = _request.getCollection();
-            LOGGER.info("###### Agent for request id " + _request.getId() + " started");
+            LOGGER.info("###### Agent for collection " + _request.getCollection() + " started");
             bubingAgent = new Agent(_hostname, _jmxPort, rc);	// agent halts here
             
-            LOGGER.info("###### Agent for request id " + _request.getId() + " finished");
+            LOGGER.info("###### Agent for collection " + _request.getCollection() + " finished");
             _request = dao.findOne("_id", _request.getId());
             if (_request != null) {
                 LOGGER.info("###### Found request with id " + _request.getId() + " " + _request.getState());
+            }
+            else {
+            	LOGGER.error("Could not find a saved Crawl Job ");
             }
             
             if (_request.getState() == CrawlJob.STATE.DELETING) {
@@ -120,14 +124,26 @@ public class RevealAgent implements Runnable {
                 dao.delete(_request);
                 //Delete the collection DB
                 MorphiaManager.getDB(_request.getCollection()).dropDatabase();
+                
+                LOGGER.info("###### stop indexing runner for " + _request.getCollection());
+                runner.stop();
+                indexingThread.interrupt();
+                
                 //Unload from memory
-                VisualIndexerFactory.getVisualIndexer(_request.getCollection()).deleteCollection();
+                if(VisualIndexerFactory.exists(_request.getCollection())) {
+                	 VisualIndexer visualIndexer = VisualIndexerFactory.getVisualIndexer(_request.getCollection());
+                	 visualIndexer.deleteCollection();
+                }
+                else {
+                	VisualIndexer.init(false);
+            		VisualIndexer.deleteCollection(_request.getCollection());
+                }
+               
                 //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(_request.getCrawlDataPath()));
                 FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + _request.getCollection()));
-                LOGGER.info("###### stop indexing runner and social media crawler");
-                runner.stop();
-                indexingThread.interrupt();
+            
+                LOGGER.info("###### stop  social media crawler for " + _request.getCollection());
                 if (Configuration.ADD_SOCIAL_MEDIA) {
                     _manager.deleteAllFeeds(false, _request.getCollection());
                 }
@@ -146,7 +162,7 @@ public class RevealAgent implements Runnable {
             }
             else {
                 //STOPPING state
-                LOGGER.info("###### Stop " + _request.getCollection());
+                LOGGER.info("###### Stop " + _request.getCollection() + ". State = " + _request.getState().name());
                 
                 LOGGER.info("###### stop  social media crawler for " + _request.getCollection());
                 if (Configuration.ADD_SOCIAL_MEDIA) {
@@ -155,7 +171,7 @@ public class RevealAgent implements Runnable {
                 
                 LOGGER.info("###### stop indexing runner for " + _request.getCollection());
                 if(!VisualIndexerFactory.exists(_request.getCollection())) {
-                	LOGGER.info("###### stop indexing for " + _request.getCollection() + "immediately");
+                	LOGGER.info("###### stop indexing for " + _request.getCollection() + " immediately");
                 	runner.stop();
                     indexingThread.interrupt();
                 }
@@ -168,10 +184,18 @@ public class RevealAgent implements Runnable {
                 		// But not more than 10 minutes
                         Thread.sleep(30000);
                         k++;
+                        if(k > 20) {
+                        	LOGGER.info("Waiting exceeded 10 minutes for " + _request.getCollection() + ". Stop immediately!");
+                        }
                     }
+                	
+                	if(indexingThread.isAlive()) {
+                		runner.stop();
+                        indexingThread.interrupt();
+                	}
                 }
                 
-                LOGGER.info("###### Åxtract entities for " + _request.getCollection());
+                LOGGER.info("###### Extract entities for " + _request.getCollection());
                 //extract entities for the collection
                 ExecutorService entitiesExecutor = Executors.newSingleThreadExecutor();
                 entitiesExecutor.submit(new NEandRECallable(_request.getCollection()));

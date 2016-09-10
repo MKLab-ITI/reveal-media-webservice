@@ -36,3 +36,16 @@ java.net.UnknownHostException: xxx.xxx.xxx.xxx
 2016-06-22 14:43:33 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:14158}] to 160.40.51.20:27017
 2016-06-22 14:43:33 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=678645}
 2016-06-22 14:43:33 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:14159}] to 160.40.51.20:27017
+2016-06-22 19:11:05 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-06-22 19:11:06 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:40552}] to 160.40.51.20:27017
+2016-06-22 19:11:06 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=661748}
+2016-06-22 19:11:06 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:40553}] to 160.40.51.20:27017
+2016-06-22 19:11:46 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-06-22 19:11:46 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:40554}] to 160.40.51.20:27017
+2016-06-22 19:11:46 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=710865}
+2016-06-22 19:11:46 INFO  connection:71 - Opened connection [connectionId{localValue:2, serverValue:40555}] to 160.40.51.20:27017
+2016-06-23 15:14:43 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-06-23 15:15:07 INFO  cluster:71 - Cluster created with settings {hosts=[160.40.51.20:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+2016-06-23 15:15:07 INFO  connection:71 - Opened connection [connectionId{localValue:1, serverValue:175820}] to 160.40.51.20:27017
+2016-06-23 15:15:07 INFO  cluster:71 - Monitor thread successfully connected to server with description ServerDescription{address=160.40.51.20:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[2, 0, 4]}, minWireVersion=0, maxWireVersion=0, electionId=null, maxDocumentSize=16777216, roundTripTimeNanos=726444}
+2016-06-23 15:32:11 ERROR VisualIndexHandler:345 - Indexing failed: {"code":405,"msg":"cannot index"}
