@@ -122,7 +122,7 @@ public class CrawlQueueController {
     private synchronized CrawlJob cancel(String id, boolean immediately) throws Exception {
     	_logger.info("CRAWL: Cancel for id " + id);
         CrawlJob req = getCrawlRequest(id);
-        if(CrawlJob.STATE.RUNNING == req.getState()) {
+        if(CrawlJob.STATE.RUNNING == req.getState() || CrawlJob.STATE.STOPPING == req.getState()) {
         	
         	_logger.info("CrawlRequest " + req.getCollection() + " " + req.getState());
             req.setState(immediately?CrawlJob.STATE.KILLING:CrawlJob.STATE.STOPPING);
@@ -137,7 +137,7 @@ public class CrawlQueueController {
             }
         }
         else{
-        	_logger.info("CrawlRequest state "+req.getState()+". You can only stop RUNNING crawls");
+        	_logger.info("CrawlRequest state "+req.getState()+". You can only stop RUNNING/STOPPING crawls");
         }
         
         return req;
@@ -248,6 +248,43 @@ public class CrawlQueueController {
             
             _logger.info("Request deleted for CrawlJob " + id + ". Collection: " + req.getCollection());
         }
+        else if(CrawlJob.STATE.KILLING == req.getState() || CrawlJob.STATE.STOPPING == req.getState()) {
+        	kill(req.getId());
+        	try {
+        		_logger.info("Delete visual index for " + req.getCollection());
+             	if(VisualIndexerFactory.exists(req.getCollection())) {
+             		VisualIndexer VisualIndexer = VisualIndexerFactory.getVisualIndexer(req.getCollection());
+             		VisualIndexer.deleteCollection();
+             	}	
+             	else {
+             		VisualIndexer.init(false);
+             		VisualIndexer.deleteCollection(req.getCollection());
+             	}
+             }
+             catch(Exception e) {
+             	_logger.error("Exception during index deletion of " + req.getCollection() + ": " + e.getMessage());
+             }
+             
+             try {
+             	_logger.info("Drop databases from mongo for " + req.getCollection());
+             	dao.delete(req);
+             	MorphiaManager.getDB(req.getCollection()).dropDatabase();
+             }
+             catch(Exception e) {
+             	_logger.error("Exception during deletion of " + req.getCollection() + ": " + e.getMessage());
+             }
+             
+             try {
+             	_logger.info("Delete the crawl and index folders for " + req.getCollection());
+                 FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
+                 FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
+             }
+             catch(Exception e) {
+             	_logger.error("Exception during deletion of crawl and index folders for " + req.getCollection() + ": " + e.getMessage());
+             }
+             
+             _logger.info("Request deleted for CrawlJob " + id + ". Collection: " + req.getCollection());
+        }
         else {
         	_logger.error("Collection: " + req.getCollection() + " failed to be deleted. State " + req.getState() + ". You can only delete RUNNING, FINISHED or DELETING crawls");
         }
@@ -325,7 +362,7 @@ public class CrawlQueueController {
     	 List<CrawlJob> crawlsToStop = getStoppingCrawls();
     	 for(CrawlJob job : crawlsToStop) {
     		 try {
-				this.stop(job.getId());
+				this.kill(job.getId());
 			} catch (Exception e) {
 				_logger.error("Failed to stop " + job.getCollection());
 			}
