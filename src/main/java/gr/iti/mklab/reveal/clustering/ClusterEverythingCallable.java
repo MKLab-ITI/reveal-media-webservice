@@ -1,28 +1,23 @@
 package gr.iti.mklab.reveal.clustering;
 
 import com.aliasi.tokenizer.TokenizerFactory;
+
 import gr.iti.mklab.reveal.util.Configuration;
-import gr.iti.mklab.reveal.visual.VisualIndexer;
-import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.simmo.core.annotations.Clustered;
-import gr.iti.mklab.simmo.core.cluster.Clusterable;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
-import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
+import gr.iti.mklab.simmo.core.morphia.MorphiaManager; 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.math3.ml.clustering.Cluster;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * A clustering callable which incrementally clusters all items in the given collection
@@ -46,9 +41,12 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
     @Override
     public List<org.apache.commons.math3.ml.clustering.Cluster<ClusterableMedia>> call() throws Exception {
         System.out.println("Cluster everything callable call method");
-
+        
+        String indexServiceHost = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService";
+		VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, collection);   
+		
         TokenizerFactory tokFactory = new NormalizedTokenizerFactory();
-        DBSCANClustererIncr<ClusterableMedia> clusterer = new DBSCANClustererIncr(eps, minpoints);
+        DBSCANClustererIncr<ClusterableMedia> clusterer = new DBSCANClustererIncr<ClusterableMedia>(eps, minpoints);
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         List<org.apache.commons.math3.ml.clustering.Cluster<ClusterableMedia>> centroids = null;
 
@@ -60,36 +58,27 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
             System.out.println("Clustering images iteration " + k);
             List<ClusterableMedia> list = new ArrayList<>();
             List<Image> images = imageDAO.getItems(ITEMS_PER_ITERATION, k);
-            images.stream().forEach(i -> {
-                Double[] vector = new Double[0];
-                try {
-                    vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
-                } catch (ExecutionException e) {
-                    //ignore
-                } catch (IOException e) {
-                    e.printStackTrace();
+            images.stream().forEach(image -> {
+                Double[] vector = vIndexClient.getVector(image.getId());
+           
+                if (vector != null && vector.length == 1024) {
+                    list.add(new ClusterableMedia(image, ArrayUtils.toPrimitive(vector)));
                 }
-                if (vector != null && vector.length == 1024)
-                    list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));
+                
             });
             centroids = clusterer.clusterIncremental(list, centroids);
         }
+        
         //videos
         for (int k = 0; k < videoDAO.count(); k += ITEMS_PER_ITERATION) {
             System.out.println("Clustering videos iteration " + k);
             List<ClusterableMedia> list = new ArrayList<>();
             List<Video> videos = videoDAO.getItems(ITEMS_PER_ITERATION, k);
-            videos.stream().forEach(i -> {
-                Double[] vector = new Double[0];
-                try {
-                    vector = VisualIndexerFactory.getVisualIndexer(collection).getVector(i.getId());
-                } catch (ExecutionException e) {
-                    //ignore
-                } catch (IOException e) {
-                    e.printStackTrace();
+            videos.stream().forEach(video -> {
+                Double[] vector = vIndexClient.getVector(video.getId());
+                if (vector != null && vector.length == 1024) {
+                    list.add(new ClusterableMedia(video, ArrayUtils.toPrimitive(vector)));
                 }
-                if (vector != null && vector.length == 1024)
-                    list.add(new ClusterableMedia(i, ArrayUtils.toPrimitive(vector)));
             });
 
             centroids = clusterer.clusterIncremental(list, centroids);
@@ -125,14 +114,4 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
         return centroids;
     }
 
-    public static void main(String[] args) throws Exception {
-        Configuration.load("local.properties");
-        MorphiaManager.setup("160.40.51.20");
-        VisualIndexer.init();
-        VisualIndexer vi = VisualIndexerFactory.getVisualIndexer("eurogroup");
-        ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
-        clusteringExecutor.submit(new ClusterEverythingCallable("eurogroup", 1.2, 2)).get();
-        clusteringExecutor.shutdown();
-        MorphiaManager.tearDown();
-    }
 }

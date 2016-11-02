@@ -13,7 +13,7 @@ import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualFeatureExtractor;
 import gr.iti.mklab.reveal.visual.VisualIndexClient;
-import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.reveal.web.Responses.SimilarityResponse;
 import gr.iti.mklab.reveal.web.Responses.SummaryResponse;
 import gr.iti.mklab.simmo.core.Annotation;
 import gr.iti.mklab.simmo.core.Association;
@@ -536,12 +536,6 @@ public class RevealController {
         return response;
     }
 
-    private List<Responses.SimilarityResponse> simList;
-    private String lastImageUrl2;
-    private double lastThreshold2;
-    private boolean isBusy2 = false;
-    private long lastCall = System.currentTimeMillis();
-
     @RequestMapping(value = "/media/{collection}/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<Responses.SimilarityResponse> findSimilarImages(@PathVariable(value = "collection") String collectionName,
@@ -551,46 +545,32 @@ public class RevealController {
                                                               	@RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
             System.out.println("Find similar images " + imageurl);
-            if (System.currentTimeMillis() - lastCall > 10 * 1000) {
-                isBusy2 = false;
-            }
-            
-            if (isBusy2) {
-                return new ArrayList<>();
-            }
-            
-            if (!imageurl.equals(lastImageUrl2) || simList == null || (simList != null && offset + count > simList.size()) || lastThreshold2 != threshold) {
-                System.out.println("Entering main block");
-                isBusy2 = true;
-                lastCall = System.currentTimeMillis();
-                
-                MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collectionName);
-                MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collectionName);
-                lastThreshold2 = threshold;
-                lastImageUrl2 = imageurl;
-                
-                VisualIndexClient handler = new VisualIndexClient("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
+    
+            MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collectionName);
+            MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collectionName);
+
+            VisualIndexClient handler = new VisualIndexClient("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
                
-                // TODO: 
-                List<JsonResultSet.JsonResult> temp = vIndexer.findSimilar(imageurl, threshold);
-                System.out.println("Result num " + temp.size());
-                simList = new ArrayList<Responses.SimilarityResponse>(temp.size());
-                for (JsonResultSet.JsonResult r : temp) {
-                    System.out.println("r.getExternalId " + r.getId());
-                    Media found = imageDAO.getDatastore().find(Image.class).field("_id").equal(r.getId()).get();
-                    if (found != null) {
-                    	simList.add(new Responses.SimilarityResponse(found, r.getRank()));
-                    }
-                    
-                    found = videoDAO.getDatastore().find(Video.class).field("_id").equal(r.getId()).get();
-                    if (found != null) {
-                    	simList.add(new Responses.SimilarityResponse(found, r.getRank()));
-                    }
+            VisualFeatureExtractor vfe = new VisualFeatureExtractor(collectionName);
+            double[] vector = vfe.vectorizeImageFromUrl(imageurl);
+            JsonResultSet similar = handler.getSimilarImages(vector, threshold);
+                
+            List<JsonResultSet.JsonResult> temp = similar.getResults();
+            System.out.println("Result num " + temp.size());
+            List<SimilarityResponse> simList = new ArrayList<Responses.SimilarityResponse>(temp.size());
+            for (JsonResultSet.JsonResult r : temp) {
+            	System.out.println("r.getExternalId " + r.getId());
+                Media found = imageDAO.getDatastore().find(Image.class).field("_id").equal(r.getId()).get();
+                if (found != null) {
+                	simList.add(new Responses.SimilarityResponse(found, r.getRank()));
                 }
-                System.out.println("Exiting main block");
+                    
+                found = videoDAO.getDatastore().find(Video.class).field("_id").equal(r.getId()).get();
+                if (found != null) {
+                	simList.add(new Responses.SimilarityResponse(found, r.getRank()));
+                }
             }
             
-            isBusy2 = false;
             if (simList.size() < count) {
                 return simList;
             }
@@ -599,7 +579,6 @@ public class RevealController {
             }
 
         } catch (Exception e) {
-            isBusy2 = false;
             System.out.println(e);
             return new ArrayList<>();
         }

@@ -6,8 +6,6 @@ import gr.iti.mklab.reveal.entitites.NEandRECallable;
 import gr.iti.mklab.reveal.summarization.MediaSummarizer;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexClient;
-import gr.iti.mklab.reveal.visual.VisualIndexer;
-import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import it.unimi.di.law.bubing.Agent;
@@ -43,10 +41,12 @@ public class RevealAgent implements Runnable {
 
     private final String _hostname;
     private final int _jmxPort;
+    
     private final StreamManagerClient _manager;
     private CrawlJob _request;
     private DAO<CrawlJob, ObjectId> dao;
-    private Agent bubingAgent;
+    
+    private Agent _bubingAgent;
 
     public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
         System.out.println("RevealAgent constructor for hostname " + hostname);
@@ -108,7 +108,7 @@ public class RevealAgent implements Runnable {
             rc.keywords = _request.getKeywords();
             rc.collectionName = _request.getCollection();
             LOGGER.info("###### Agent for collection " + _request.getCollection() + " started");
-            bubingAgent = new Agent(_hostname, _jmxPort, rc);	// agent halts here
+            _bubingAgent = new Agent(_hostname, _jmxPort, rc);	// agent halts here
             
             LOGGER.info("###### Agent for collection " + _request.getCollection() + " finished");
             _request = dao.findOne("_id", _request.getId());
@@ -132,9 +132,9 @@ public class RevealAgent implements Runnable {
                 
                 //Unload from memory
                 String indexServiceHost = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService";
-        		VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, _request.getCollection());
+        		VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, _request.getCollection());        		
+        		vIndexClient.removeCollection();
         		
-               
                 //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(_request.getCrawlDataPath()));
                 FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + _request.getCollection()));
@@ -166,32 +166,9 @@ public class RevealAgent implements Runnable {
                 }
                 
                 LOGGER.info("###### stop indexing runner for " + _request.getCollection());
+                runner.stop();
+                indexingThread.interrupt();
                 
-                
-                if(!VisualIndexerFactory.exists(_request.getCollection())) {
-                	LOGGER.info("###### stop indexing for " + _request.getCollection() + " immediately");
-                	runner.stop();
-                    indexingThread.interrupt();
-                }
-                else {
-                	LOGGER.info("###### stop indexing for " + _request.getCollection() + " when finished");
-                	runner.stopWhenFinished();
-                    int k = 0;
-                	while (indexingThread.isAlive() && k < 20) {
-                        // Wait for the indexing to finish before calling the clustering and entity extraction
-                		// But not more than 10 minutes
-                        Thread.sleep(30000);
-                        k++;
-                        if(k > 20) {
-                        	LOGGER.info("Waiting exceeded 10 minutes for " + _request.getCollection() + ". Stop immediately!");
-                        }
-                    }
-                	
-                	if(indexingThread.isAlive()) {
-                		runner.stop();
-                        indexingThread.interrupt();
-                	}
-                }
                 
                 LOGGER.info("###### Extract entities for " + _request.getCollection());
                 //extract entities for the collection
@@ -219,7 +196,7 @@ public class RevealAgent implements Runnable {
     }
 
     public void stop() {
-        bubingAgent.stop();
+    	_bubingAgent.stop();
     }
 
     private void unregisterBeanForName(String name) {

@@ -5,8 +5,7 @@ import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.util.DisturbingDetectorClient;
 import gr.iti.mklab.reveal.visual.MediaCallable;
 import gr.iti.mklab.reveal.visual.MediaCallableResult;
-import gr.iti.mklab.reveal.visual.VisualIndexer;
-import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
 import gr.iti.mklab.simmo.core.documents.Webpage;
 import gr.iti.mklab.simmo.core.items.Image;
@@ -51,8 +50,6 @@ public class IndexingRunner implements Runnable {
     private final static int INDEXING_PERIOD = 30 * 1000;
     private final static int STEP = 100;
     
-    private VisualIndexer _indexer;
-    
     private RabbitMQPublisher _publisher;
     private MediaDAO<Image> imageDAO;
     private MediaDAO<Video> videoDAO;
@@ -70,13 +67,12 @@ public class IndexingRunner implements Runnable {
 	private final int maxNumPendingTasks;
 	private int NUM_THREADS = 10;
 
+	private VisualIndexClient vIndexClient;
+
     public IndexingRunner(String collection) throws ExecutionException, IOException {
         
     	LOGGER.info("Creating IndexingRunner for collection " + collection);
         this.collection = collection;
-        _indexer = VisualIndexerFactory.getVisualIndexer(collection);
-        LOGGER.info("After creating the indexer ");
-       
         if (Configuration.PUBLISH_RABBITMQ) {
             _publisher = new RabbitMQPublisher("localhost", collection);
         }
@@ -84,6 +80,9 @@ public class IndexingRunner implements Runnable {
         if(Configuration.DISTURBING_DETECTOR_HOST != null) {
         	DisturbingDetectorClient.initialize(Configuration.DISTURBING_DETECTOR_HOST);
         }
+        
+        String indexServiceHost = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService";
+        vIndexClient = new VisualIndexClient(indexServiceHost, collection);    
         
         imageDAO = new MediaDAO<>(Image.class, collection);
         videoDAO = new MediaDAO<>(Video.class, collection);
@@ -189,7 +188,9 @@ public class IndexingRunner implements Runnable {
         					MediaCallableResult result = getResultWait();
         					if(result.vector != null && result.vector.length > 0) {
         						Media media = result.media;
-        						if (_indexer.index(media, result.vector)) {
+        						
+        						boolean indexed = vIndexClient.index(media.getId(), result.vector);
+        						if (indexed) {
         							indexedMedia.put(media.getId(), media);
         							media.addAnnotation(ld);
         							if(media instanceof Image) {
@@ -338,12 +339,4 @@ public class IndexingRunner implements Runnable {
 		}
 	}
 
-    public static void main(String[] args) throws Exception {
-        Configuration.load("local.properties");
-        MorphiaManager.setup("127.0.0.1");
-        VisualIndexer.init(true);
-        IndexingRunner runner = new IndexingRunner("tessdfasdftest");
-        Thread t = new Thread(runner);
-        t.start();
-    }
 }
