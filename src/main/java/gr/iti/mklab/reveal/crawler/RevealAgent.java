@@ -5,6 +5,7 @@ import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
 import gr.iti.mklab.reveal.entitites.NEandRECallable;
 import gr.iti.mklab.reveal.summarization.MediaSummarizer;
 import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
@@ -130,14 +131,9 @@ public class RevealAgent implements Runnable {
                 indexingThread.interrupt();
                 
                 //Unload from memory
-                if(VisualIndexerFactory.exists(_request.getCollection())) {
-                	 VisualIndexer visualIndexer = VisualIndexerFactory.getVisualIndexer(_request.getCollection());
-                	 visualIndexer.deleteCollection();
-                }
-                else {
-                	VisualIndexer.init(false);
-            		VisualIndexer.deleteCollection(_request.getCollection());
-                }
+                String indexServiceHost = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService";
+        		VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, _request.getCollection());
+        		
                
                 //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(_request.getCrawlDataPath()));
@@ -170,6 +166,8 @@ public class RevealAgent implements Runnable {
                 }
                 
                 LOGGER.info("###### stop indexing runner for " + _request.getCollection());
+                
+                
                 if(!VisualIndexerFactory.exists(_request.getCollection())) {
                 	LOGGER.info("###### stop indexing for " + _request.getCollection() + " immediately");
                 	runner.stop();

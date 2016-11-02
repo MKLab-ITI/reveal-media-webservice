@@ -8,8 +8,8 @@ import gr.iti.mklab.reveal.summarization.graph.GraphClusterer;
 import gr.iti.mklab.reveal.summarization.graph.GraphRanker;
 import gr.iti.mklab.reveal.summarization.graph.GraphUtils;
 import gr.iti.mklab.reveal.summarization.utils.L2;
-import gr.iti.mklab.reveal.visual.VisualIndexer;
-import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.simmo.core.annotations.SummaryScore;
 import gr.iti.mklab.simmo.core.cluster.Cluster;
 import gr.iti.mklab.simmo.core.cluster.Clusterable;
@@ -59,8 +59,6 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 	private double epsilon;
 	 
 	private int N = 2;
-	
-	private VisualIndexer vIndexer = null;
 
 	private String nnAlgo = "nndescent";	//nndescent or nnctph
 	
@@ -91,6 +89,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		this.epsilon = epsilon;
 		
 		this.collection = collection;
+		
 	}
 	
 	@Override
@@ -108,14 +107,8 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 			);
 		
 		
-		try {
-			VisualIndexer.init(false);
-			vIndexer = VisualIndexerFactory.getVisualIndexer(collection);
-		}
-		catch(Exception e) {
-			_logger.error(e);
-			_logger.info("Visual Indexer failed to be initialized for " + collection);
-		}
+		String indexServiceHost = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService";
+		VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, collection);
 		
 		Graph<String, Edge> graph = new UndirectedSparseGraph<String, Edge>();
 
@@ -166,11 +159,10 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
             		popularities.put(image.getId(), 0);
             	}
             	
-            	if(vIndexer != null) {
-            		Double[] vector = vIndexer.getVector(image.getId());
-            		if(vector != null && vector.length > 0) {
-            			visualVectors.put(image.getId(), vector);	
-            		}
+     
+            	Double[] vector = vIndexClient.getVector(image.getId());
+            	if(vector != null && vector.length > 0) {
+            		visualVectors.put(image.getId(), vector);	
             	}
             	
             });

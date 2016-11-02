@@ -6,12 +6,23 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Created by kandreadou on 7/31/15.
- */
-/** {"collection":"germanwings","isNew":true,"keywords":["germanwings","crash"] } **/
-
-/**
- * {"collection":"paris","lon_min":2.282352,"lat_min":48.837379,"lon_max":2.394619,"lat_max":48.891358 } *
+ * 
+ * 	Created by kandreadou on 7/31/15.
+ * 
+ *  
+ * 	{
+ * 		"collection":"germanwings",
+ * 		"isNew":true,
+ * 		"keywords":["germanwings","crash"] 
+ * 	} 
+ * 
+ * 	{
+ * 		"collection":"paris",
+ * 		"lon_min":2.282352,
+ * 		"lat_min":48.837379,
+ * 		"lon_max":2.394619,
+ * 		"lat_max":48.891358 
+ * 	} 
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CrawlPostRequest {

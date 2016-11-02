@@ -1,6 +1,5 @@
 package gr.iti.mklab.reveal.visual;
 
-
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,6 +24,7 @@ import org.apache.commons.httpclient.methods.multipart.StringPart;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.json.JSONObject;
 
 /**
  * Client for Visual Indexer.
@@ -32,14 +32,15 @@ import org.apache.log4j.Logger;
  * @author Schinas Manos
  * @email manosetro@iti.gr
  */
-public class VisualIndexHandler {
+public class VisualIndexClient {
+	
     private static double default_threshold = 0.75;
-    private Logger _logger = Logger.getLogger(VisualIndexHandler.class);
+    private Logger _logger = Logger.getLogger(VisualIndexClient.class);
     private String webServiceHost;
     private String collectionName;
     private HttpClient httpClient;
 
-    public VisualIndexHandler(String webServiceHost, String collectionName) {
+    public VisualIndexClient(String webServiceHost, String collectionName) {
         System.out.println("VisualIndexHandler start of constructor");
         this.webServiceHost = webServiceHost;
         this.collectionName = collectionName;
@@ -441,6 +442,65 @@ public class VisualIndexHandler {
             return new JsonResultSet();
         }
     }
+    
+    public boolean createCollection() throws IOException {
+        String request = webServiceHost + "/rest/visual/add/" + collectionName;
+        GetMethod httpget = new GetMethod(request.replaceAll(" ", "%20"));
+        int code = httpClient.executeMethod(httpget);
+        if (code < 200 || code >= 300) {
+            _logger.error("Failed create collection with name " + collectionName + 
+            		". Http code: " + code + " Error: " + httpget.getStatusLine());
+            return false;
+        }
+        return true;
+    }
+    
+    public boolean deleteCollection() throws Exception {
+        String request = webServiceHost + "/rest/visual/delete/" + collectionName;
+        GetMethod httpget = new GetMethod(request.replaceAll(" ", "%20"));
+        int code = httpClient.executeMethod(httpget);
+        if (code < 200 || code >= 300) { 	
+            _logger.error("Failed delete collection with name " + collectionName +
+                    ". Http code: " + code + " Error: " + httpget.getStatusLine());
+            return false;
+        }
+       
+        return true;
+    }
+    
+    public boolean removeCollection() throws Exception {
+        String request = webServiceHost + "/rest/visual/remove/" + collectionName;
+        GetMethod httpget = new GetMethod(request.replaceAll(" ", "%20"));
+       
+        int code = httpClient.executeMethod(httpget);
+        if (code < 200 || code >= 300) {
+            _logger.error("Failed delete collection with name " + collectionName +
+                    ". Http code: " + code + " Error: " + httpget.getStatusLine());
+            return false;
+        }
+       
+        return true;
+    }
+    
+    public int numItems() throws Exception {
+        String request = webServiceHost + "/rest/visual/statistics/" + collectionName;
+        GetMethod httpget = new GetMethod(request.replaceAll(" ", "%20"));
+        
+        System.out.println(httpget);
+        int code = httpClient.executeMethod(httpget);
+        if (code < 200 || code >= 300) {
+            _logger.error("Failed delete collection with name " + collectionName +
+                    ". Http code: " + code + " Error: " + httpget.getStatusLine());
+            return 0;
+        }
+        
+        InputStream entityAsString = httpget.getResponseBodyAsStream();
+        JSONObject jsonObject = new JSONObject(entityAsString);
+        
+        return jsonObject.getInt("ivfpqIndex");
+    }
+    
+    
 }
 
 

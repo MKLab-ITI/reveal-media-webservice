@@ -1,8 +1,7 @@
 package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.util.Configuration;
-import gr.iti.mklab.reveal.visual.VisualIndexer;
-import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
+import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Video;
@@ -38,6 +37,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class CrawlQueueController {
 
+	private String indexServiceHost = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService";
+	
     private StreamManagerClient streamManager;
     private Map<String, GeoCrawler> geoCrawlerMap = new HashMap<>();
     private DAO<CrawlJob, ObjectId> dao;
@@ -62,7 +63,7 @@ public class CrawlQueueController {
     public static void main(String[] args) throws Exception {
         Configuration.load("local.properties");
         MorphiaManager.setup("127.0.0.1");
-        VisualIndexer.init();
+        
         CrawlQueueController controller = new CrawlQueueController();
         String colName = "tsipras";
         Set<String> keywords = new HashSet<String>();
@@ -174,15 +175,9 @@ public class CrawlQueueController {
             }
             
             //Unload from memory
-            try {
-            	if(VisualIndexerFactory.exists(req.getCollection())) {
-            		VisualIndexer VisualIndexer = VisualIndexerFactory.getVisualIndexer(req.getCollection());
-            		VisualIndexer.deleteCollection();
-            	}	
-            	else {
-            		VisualIndexer.init(false);
-            		VisualIndexer.deleteCollection(req.getCollection());
-            	}
+            try {	
+            	VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, req.getCollection());
+            	vIndexClient.deleteCollection();
             }
             catch(Exception e) {
             	_logger.error("Exception during visual index deletion of " + req.getCollection() + ": " + e.getMessage());
@@ -215,14 +210,8 @@ public class CrawlQueueController {
             
             try {
             	_logger.info("Delete visual index for " + req.getCollection());
-            	if(VisualIndexerFactory.exists(req.getCollection())) {
-            		VisualIndexer VisualIndexer = VisualIndexerFactory.getVisualIndexer(req.getCollection());
-            		VisualIndexer.deleteCollection();
-            	}	
-            	else {
-            		VisualIndexer.init(false);
-            		VisualIndexer.deleteCollection(req.getCollection());
-            	}
+            	VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, req.getCollection());
+            	vIndexClient.deleteCollection();
             }
             catch(Exception e) {
             	_logger.error("Exception during index deletion of " + req.getCollection() + ": " + e.getMessage());
@@ -252,14 +241,8 @@ public class CrawlQueueController {
         	kill(req.getId());
         	try {
         		_logger.info("Delete visual index for " + req.getCollection());
-             	if(VisualIndexerFactory.exists(req.getCollection())) {
-             		VisualIndexer VisualIndexer = VisualIndexerFactory.getVisualIndexer(req.getCollection());
-             		VisualIndexer.deleteCollection();
-             	}	
-             	else {
-             		VisualIndexer.init(false);
-             		VisualIndexer.deleteCollection(req.getCollection());
-             	}
+        		VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, req.getCollection());
+            	vIndexClient.deleteCollection();
              }
              catch(Exception e) {
              	_logger.error("Exception during index deletion of " + req.getCollection() + ": " + e.getMessage());
@@ -546,35 +529,7 @@ public class CrawlQueueController {
         } else if (lastVideoInserted != null) {
             status.lastItemInserted = lastVideoInserted.toString();
         }
-        
-        /*try {
-            int numIndexedItems = VisualIndexerFactory.getVisualIndexer(status.getCollection()).numItems();
-            status.numIndexedImages = numIndexedItems;
-        }catch(Exception ex){
-            System.out.println("Exception when getting num "+ex);
-        }*/
+
         return status;
-    }
-
-    private Image getRepresentativeImage(MediaDAO<Image> images, Set<String> keywords) {
-
-        int offset = 0;
-        int count = (int) images.count();
-        if (images.count() > 2501) {
-            offset = 500;
-            count = 2000;
-        }
-
-        List<Image> res = images.search("lastModifiedDate", new Date(0), 500, 400, count, offset, null, null, null);
-        if (res == null || res.size() == 0)
-            return null;
-        for (Image i : res) {
-
-            for (String keyword : keywords) {
-                if ((i.getTitle() != null && i.getTitle().contains(keyword)) || (i.getDescription() != null && i.getDescription().contains(keyword)))
-                    return i;
-            }
-        }
-        return res.get(0);
     }
 }

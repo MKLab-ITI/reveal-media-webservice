@@ -9,7 +9,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(value= HttpStatus.INTERNAL_SERVER_ERROR, reason="Indexing Service Exception") //500
 public class RevealException extends Exception{
 
-    public RevealException(String message, Throwable throwable){
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public RevealException(String message, Throwable throwable){
         super(message, throwable);
     }
 }

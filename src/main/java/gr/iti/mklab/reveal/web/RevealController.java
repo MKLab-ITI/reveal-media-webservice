@@ -1,7 +1,5 @@
 package gr.iti.mklab.reveal.web;
 
-import ForensicsToolbox.*;
-
 import com.google.gson.Gson;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -13,7 +11,8 @@ import gr.iti.mklab.reveal.summarization.RankedImage;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
 import gr.iti.mklab.reveal.visual.JsonResultSet;
-import gr.iti.mklab.reveal.visual.VisualIndexer;
+import gr.iti.mklab.reveal.visual.VisualFeatureExtractor;
+import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.reveal.visual.VisualIndexerFactory;
 import gr.iti.mklab.reveal.web.Responses.SummaryResponse;
 import gr.iti.mklab.simmo.core.Annotation;
@@ -58,31 +57,32 @@ public class RevealController {
 
     private Logger _logger = Logger.getLogger(RevealController.class);
     
-    protected CrawlQueueController crawlerCtrler;
+    private CrawlQueueController crawlerCtrler;
 
+    private ExecutorService executorService = Executors.newFixedThreadPool(6);
+    
     public RevealController() throws Exception {
-        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
-        //Configuration.load(getClass().getResourceAsStream("/remote.properties"));
+        Configuration.load(getClass().getResourceAsStream("/docker.properties"));
         MorphiaManager.setup(Configuration.MONGO_HOST);
-        VisualIndexer.init(true);
+        VisualFeatureExtractor.init(true);
         
         crawlerCtrler = new CrawlQueueController();
     }
 
     @PreDestroy
     public void cleanUp() throws Exception {
-        System.out.println("Spring Container destroy");
-        clusteringExecutor.shutdownNow();
+    	_logger.info("Spring Container destroy");
+    	executorService.shutdownNow();
+    	
         MorphiaManager.tearDown();
-        if (crawlerCtrler != null)
+        if (crawlerCtrler != null) {
             crawlerCtrler.shutdown();
+        }
     }
 
     ////////////////////////////////////////////////////////
     ///////// NAMED ENTITIES     ///////////////////////////
     ///////////////////////////////////////////////////////
-
-    private ExecutorService entitiesExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Extracts named entities from all the collection items, ranks them by frequency and stores them in a new table
@@ -94,8 +94,8 @@ public class RevealController {
     @RequestMapping(value = "/media/{collection}/extract", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public String extractEntities(@PathVariable(value = "collection") String collection) throws Exception {
-        entitiesExecutor.submit(new NEandRECallable(collection));
-        return "Extracting entities";
+    	executorService.submit(new NEandRECallable(collection));
+        return "{ \"status\" : \"Extracting entities for " + collection + "\"}";
     }
 
     /**
@@ -107,8 +107,10 @@ public class RevealController {
      */
     @RequestMapping(value = "/media/{collection}/entities", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<NamedEntity> entitiesForCollection(@PathVariable(value = "collection") String collection) throws Exception {
-        DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+    public List<NamedEntity> entitiesForCollection(
+    		@PathVariable(value = "collection") String collection) throws Exception {
+        
+    	DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         int numberofEntitiesToReturn = 300;
         if(rankedEntities != null && rankedEntities.count() > 0) {
         	List<NamedEntity> list = rankedEntities.find().asList();
@@ -334,6 +336,7 @@ public class RevealController {
         try {
             Gson gson = new Gson();
             CrawlPostRequest request = gson.fromJson(json, CrawlPostRequest.class);
+            
             if (request.getKeywords() == null || request.getKeywords().isEmpty()) {
                 return crawlerCtrler.submit(request.getCollection(), request.getLon_min(), request.getLat_min(), request.getLon_max(), request.getLat_max());
             }
@@ -397,12 +400,9 @@ public class RevealController {
             if(job.getState() == CrawlJob.STATE.KILLING) {
        	
                 // extract entities for the collection
-                entitiesExecutor.submit(new NEandRECallable(job.getCollection()));
+            	executorService.submit(new NEandRECallable(job.getCollection()));
                 // cluster and summarize 
-            	clusteringExecutor.submit( new MediaSummarizer(job.getCollection(), 0.65, 0.25, 0.75, 4, 0.7));
-                //cluster collection items
-                //clusteringExecutor.submit(new ClusterEverythingCallable(job.getCollection(), 1.3, 2));
-
+            	executorService.submit( new MediaSummarizer(job.getCollection(), 0.65, 0.25, 0.75, 4, 0.7));
             }
             return job;
         } catch (Exception ex) {
@@ -445,7 +445,11 @@ public class RevealController {
             @RequestParam(value = "name", required = true) String name,
             @RequestParam(value = "size", required = false, defaultValue = "100000") int numVectors) {
         try {
-            VisualIndexerFactory.getVisualIndexer(name);
+        	String indexServiceHost = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService";
+    		VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, name);
+    		
+    		vIndexClient.createCollection();
+    		
             return new Responses.IndexResponse();
         } catch (Exception ex) {
             return new Responses.IndexResponse(false, ex.toString());
@@ -458,8 +462,8 @@ public class RevealController {
 
     @RequestMapping(value = "/media/{collection}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public Responses.MediaResponse mediaItemsV2(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
-                                                @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+    public Responses.MediaResponse mediaItems(@RequestParam(value = "count", required = false, defaultValue = "10") int count,
+                                           		@RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                                 @RequestParam(value = "type", required = false) String type,
                                                 @PathVariable(value = "collection") String collection) {
         Responses.MediaResponse response = new Responses.MediaResponse();
@@ -481,7 +485,7 @@ public class RevealController {
 
     @RequestMapping(value = "/media/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public Media mediaItemByIdV2(@PathVariable(value = "collection") String collection,
+    public Media mediaItemById(@PathVariable(value = "collection") String collection,
                                  @PathVariable("id") String id) {
         Media result;
         MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
@@ -540,11 +544,11 @@ public class RevealController {
 
     @RequestMapping(value = "/media/{collection}/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public List<Responses.SimilarityResponse> findSimilarImagesV2(@PathVariable(value = "collection") String collectionName,
-                                                                  @RequestParam(value = "imageurl", required = true) String imageurl,
-                                                                  @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
-                                                                  @RequestParam(value = "count", required = false, defaultValue = "50") int count,
-                                                                  @RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
+    public List<Responses.SimilarityResponse> findSimilarImages(@PathVariable(value = "collection") String collectionName,
+                                                              	@RequestParam(value = "imageurl", required = true) String imageurl,
+                                                              	@RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                              	@RequestParam(value = "count", required = false, defaultValue = "50") int count,
+                                                              	@RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
             System.out.println("Find similar images " + imageurl);
             if (System.currentTimeMillis() - lastCall > 10 * 1000) {
@@ -565,7 +569,9 @@ public class RevealController {
                 lastThreshold2 = threshold;
                 lastImageUrl2 = imageurl;
                 
-                VisualIndexer vIndexer = VisualIndexerFactory.getVisualIndexer(collectionName);
+                VisualIndexClient handler = new VisualIndexClient("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
+               
+                // TODO: 
                 List<JsonResultSet.JsonResult> temp = vIndexer.findSimilar(imageurl, threshold);
                 System.out.println("Result num " + temp.size());
                 simList = new ArrayList<Responses.SimilarityResponse>(temp.size());
@@ -603,9 +609,6 @@ public class RevealController {
     ////////// C L U S T E R I N G /////////////////////////
     ///////////////////////////////////////////////////////
 
-
-    private ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
-
     @RequestMapping(value = "/media/{collection}/cluster", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public String clusterCommandIncremental(@PathVariable(value = "collection") String collection,
@@ -613,8 +616,8 @@ public class RevealController {
                                             @RequestParam(value = "minpoints", required = true, defaultValue = "2") int minpoints,
 
                                             @RequestParam(value = "count", required = true, defaultValue = "1000") int count) throws RevealException {
-        clusteringExecutor.submit(new ClusteringCallable(collection, count, eps, minpoints));
-        return "Clustering command submitted";
+    	executorService.submit(new ClusteringCallable(collection, count, eps, minpoints));
+        return "Clustering command submitted for collection " + collection;
     }
 
     @RequestMapping(value = "/clusters/{collection}", method = RequestMethod.GET, produces = "application/json")
@@ -848,67 +851,5 @@ public class RevealController {
     @ResponseBody
     public RevealException handleCustomException(RevealException ex) {
         return ex;
-    }
-
-
-    public static void main(String[] args) throws Exception {
-
-    	MorphiaManager.setup("160.40.51.20");
-    	MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "test2");
-    	
-    	List<Image> nvi = imageDAO.getNotVIndexed(1000);
-    	System.out.println(nvi.size() + " not indexed!");
-    	
-    	if(nvi != null)
-    		return;
-    	
-        /*ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://nyulocal.com/wp-content/uploads/2015/02/oscars.1.jpg", "/tmp/reveal/images/");
-        if (fa.DQ_Lin_Output != null)
-            fa.DQ_Lin_Output = "http://localhost:8080/images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
-        if (fa.Noise_Mahdian_Output != null)
-            fa.Noise_Mahdian_Output = "http://localhost:8080/images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
-
-        final List<String> newGhostOutput = new ArrayList<>();
-        if (fa.GhostOutput != null) {
-            fa.GhostOutput.stream().forEach(s -> newGhostOutput.add("http://localhost:8080/images/" + s.substring(s.lastIndexOf('/') + 1)));
-        }
-        fa.GhostOutput = newGhostOutput;
-        int m = 5;
-        //ForensicAnalysis fa = ToolboxAPI.analyzeImage("http://eices.columbia.edu/files/2012/04/SEE-U_Main_Photo-540x359.jpg");*/
-
-
-        //Configuration.load("remote.properties");
-        MorphiaManager.setup("160.40.51.20");
-        AssociationDAO associationDAO = new AssociationDAO("syria_migrants");
-        List<Association> assList = associationDAO.getDatastore().find(Association.class).disableValidation().filter("className", TextualRelation.class.getName()).
-                limit(300).asList();
-        List<TextualRelation> trlist = new ArrayList<>(assList.size());
-        assList.stream().forEach(association ->
-                        trlist.add(((TextualRelation) association))
-        );
-
-        //MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, "eurogroup");
-        //List<String> s = new ArrayList<>();
-        //s.add("Twitter");
-        //List<Image> imgs = imageDAO.search("crawlDate", null, 100, 100, 50, 0, null, null, s);
-        //DAO<NamedEntity, String> rankedEntities = new BasicDAO<>(NamedEntity.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB("eurogroup").getName());
-        //List<NamedEntity> list = rankedEntities.find().asList();
-        int m = 5;
-
-        /*Pattern p = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
-        Query<Image> q = imageDAO.createQuery();
-        q.and(
-                q.criteria("lastModifiedDate").greaterThanOrEq(new Date(date)),
-                q.criteria("width").greaterThanOrEq(w),
-                q.criteria("height").greaterThanOrEq(h),
-                q.or(
-                        q.criteria("title").equal(p),
-                        q.criteria("description").equal(p)
-                )*/
-
-        /*VisualIndexer.init();
-        ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
-        clusteringExecutor.submit(new ClusteringCallable("camerona", 60, 1.3, 2));
-        MorphiaManager.tearDown();*/
     }
 }
