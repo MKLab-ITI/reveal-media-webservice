@@ -3,8 +3,8 @@ package gr.iti.mklab.reveal.crawler;
 import gr.iti.mklab.reveal.rabbitmq.RabbitMQPublisher;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.util.DisturbingDetectorClient;
-import gr.iti.mklab.reveal.visual.MediaCallable;
-import gr.iti.mklab.reveal.visual.MediaCallableResult;
+import gr.iti.mklab.reveal.visual.IndexingCallable;
+import gr.iti.mklab.reveal.visual.IndexingResult;
 import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
 import gr.iti.mklab.simmo.core.documents.Webpage;
@@ -16,15 +16,15 @@ import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -43,33 +43,32 @@ import org.slf4j.LoggerFactory;
  *
  * @author kandreadou
  */
-public class IndexingRunner implements Runnable {
+public class VisualIndexer implements Runnable {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(IndexingRunner.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(VisualIndexer.class);
     
-    private final static int INDEXING_PERIOD = 30 * 1000;
-    private final static int STEP = 100;
+    private final static int INDEXING_PERIOD = 30 * 1000;	// 30 seconds delay if no new media are available
+    private final static int STEP = 200;					// number of media to be indexed per batch 
     
     private RabbitMQPublisher _publisher;
+    
     private MediaDAO<Image> imageDAO;
     private MediaDAO<Video> videoDAO;
     private ObjectDAO<Webpage> pageDAO;
     
-    private LocalDescriptors ld;
+    private LocalDescriptors ld = new LocalDescriptors();
+    
     private boolean isRunning = true;
-    private boolean shouldStop = false;
-    private boolean listsWereEmptyOnce = false;
+    
     private final String collection;
     
     private ExecutorService executor;
-	private CompletionService<MediaCallableResult> pool;
-	private int numPendingTasks;
-	private final int maxNumPendingTasks;
+
 	private int NUM_THREADS = 10;
 
 	private VisualIndexClient vIndexClient;
-
-    public IndexingRunner(String collection) throws ExecutionException, IOException {
+	
+    public VisualIndexer(String collection) throws ExecutionException, IOException {
         
     	LOGGER.info("Creating IndexingRunner for collection " + collection);
         this.collection = collection;
@@ -88,156 +87,63 @@ public class IndexingRunner implements Runnable {
         videoDAO = new MediaDAO<>(Video.class, collection);
         pageDAO = new ObjectDAO<>(Webpage.class, collection);
         
-        ld = new LocalDescriptors();
         ld.setDescriptorType(LocalDescriptors.DESCRIPTOR_TYPE.SURF);
         ld.setFeatureEncoding(LocalDescriptors.FEATURE_ENCODING.Vlad);
         ld.setNumberOfFeatures(1024);
         ld.setFeatureEncodingLibrary("multimedia-indexing");
         
         executor = Executors.newFixedThreadPool(NUM_THREADS);
-		pool = new ExecutorCompletionService<MediaCallableResult>(executor);
 		
-		numPendingTasks = 0;
-		maxNumPendingTasks = NUM_THREADS * 50;
-		LOGGER.info("End of constructor ");
     }
 
     @Override
     public void run() {
     			
-        System.out.println("Indexing runner run");
-        int submittedCounter = 0;
-        
-		int completedCounter = 0;
-		int failedCounter = 0;
+        LOGGER.info("Indexing runner run for " + collection);
 		
 		Set<String> processed = new HashSet<String>();
 				
-        while (isRunning && !(shouldStop && listsWereEmptyOnce)) {
-            try {
-            	Map<String, Media> unindexedMedia = new HashMap<String, Media>();
-            	Map<String, Media> indexedMedia = new HashMap<String, Media>();
-            	
-                final List<Image> imageList = imageDAO.getNotVIndexed(STEP);
-                final List<Video> videoList = videoDAO.getNotVIndexed(STEP);
-            
-                Predicate<Media> p = new Predicate<Media>() {
+        while (isRunning) {
+            try {            	
+                List<Media> mediaToIndex = new ArrayList<Media>();
+                mediaToIndex.addAll(imageDAO.getNotVIndexed(STEP));
+                mediaToIndex.addAll(videoDAO.getNotVIndexed(STEP));
+                
+				LOGGER.info("media list size before filtering " + mediaToIndex.size());
+				CollectionUtils.filter(mediaToIndex, new Predicate<Media>() {
 					@Override
 					public boolean evaluate(Media m) {
 						return processed.contains(m.getId()) ? false : true;
 					}
-				};
-				
-				LOGGER.info("image list size before filtering " + imageList.size());
-                LOGGER.info("video list size before filtering " + videoList.size());
-                
-				CollectionUtils.filter(imageList, p);
-				CollectionUtils.filter(videoList, p);
-				
-                LOGGER.info("image list size after filtering " + imageList.size());
-                LOGGER.info("video list size after filtering " + videoList.size());
+				});
+                LOGGER.info("media list size after filtering " + mediaToIndex.size());
             
-                if (imageList.isEmpty() && videoList.isEmpty()) {
+                if (mediaToIndex.isEmpty()) {
                     try {
-                    	listsWereEmptyOnce = true;
-                    	if(shouldStop) {
+                    	if(!isRunning) {
                     		break;
                     	}
-   
                         Thread.sleep(INDEXING_PERIOD);
                     } catch (InterruptedException ie) {
                     	LOGGER.info("Indexing runner " + collection + " interrupted.");
                     }
                 } 
                 else {
-        			
-        			for (Image image : imageList) {
-        				if(!canAcceptMoreTasks()) {
-        					break;
-        				}
-        				
-        				if(processed.contains(image.getId())) {
-        					continue;
-        				}
-        					
-        				processed.add(image.getId());
-        				unindexedMedia.put(image.getId(), image);
-        				submitTask(image);
-        				submittedCounter++;
+                	Map<String, Media> unindexedMedia = new HashMap<String, Media>();
+        			for (Media media : mediaToIndex) {
+        				processed.add(media.getId());
+            			unindexedMedia.put(media.getId(), media);
         			}
-        				
-        			for(Video video : videoList) {
-        				if(!canAcceptMoreTasks()) {
-        					break;
-        				}
-        				
-        				if(processed.contains(video.getId())) {
-        					continue;
-        				}
-        					
-        				processed.add(video.getId());
-        				unindexedMedia.put(video.getId(), video);
-        				submitTask(video);
-        				submittedCounter++;
-        			}
-        			
-        			
-        			// if are submitted tasks that are pending completion ,try to consume
-        			while (completedCounter + failedCounter < submittedCounter) {
-        				try {
-        					MediaCallableResult result = getResultWait();
-        					if(result.vector != null && result.vector.length > 0) {
-        						Media media = result.media;
-        						
-        						boolean indexed = vIndexClient.index(media.getId(), result.vector);
-        						if (indexed) {
-        							indexedMedia.put(media.getId(), media);
-        							media.addAnnotation(ld);
-        							if(media instanceof Image) {
-        								Query<Image> q = imageDAO.createQuery().filter("url", media.getUrl());
-        								UpdateOperations<Image> ops = imageDAO.createUpdateOperations().add("annotations", ld);
-        								imageDAO.update(q, ops);        							}
-        							else if(media instanceof Video) {
-        								Query<Video> q = videoDAO.createQuery().filter("url", media.getUrl());
-        								UpdateOperations<Video> ops = videoDAO.createUpdateOperations().add("annotations", ld);
-        								videoDAO.update(q, ops);
-        							}
-        							else {
-        								LOGGER.info("Unknown instance of " + media.getId());
-        							}
-        							
-                                    if (_publisher != null) {
-                                        _publisher.publish(MorphiaManager.getMorphia().toDBObject(media).toString());
-                                    }
-                                } 
-        						else {
-        							LOGGER.info("Failed to index" + result.media.getId() + ". Delete media");
-                                	deleteMedia(media);
-                                }
-        					}
-        					else {
-        						LOGGER.info("Vector for " + result.media.getId() + " is empty. Delete media");
-        						deleteMedia(result.media);
-        					}
-        					completedCounter++;
-        				
-        				} catch (Exception e) {
-        					failedCounter++;
-        					
-        					LOGGER.info(e.getMessage());
-        				}
-        			}
-        			
-        			LOGGER.info(completedCounter + " tasks completed!");
-        			LOGGER.info(failedCounter + " tasks failed!");
-        			
-        			for(String mId : indexedMedia.keySet()) {
-        				unindexedMedia.remove(mId);
+        			List<Future<IndexingResult>> futures = submitTasks(mediaToIndex);
+        			Map<String, Media> indexedMedia = consume(futures);
+        			for(String mediaId : indexedMedia.keySet()) {
+        				unindexedMedia.remove(mediaId);
         			}
         			
         			LOGGER.info(unindexedMedia.size() + " media failed to be indexed!");
         			for(Media failedMedia : unindexedMedia.values()) {
         				try {
+        					LOGGER.info("Delete " + failedMedia.getId() + " from mongodb.");
         					deleteMedia(failedMedia);
         				}
         				catch(Exception e) {
@@ -269,7 +175,7 @@ public class IndexingRunner implements Runnable {
             LOGGER.info(processed.size() + " media items processed so far.");
         }
     }
-
+    
     public void stop() {
         isRunning = false;
         executor.shutdown(); // Disable new tasks from being submitted
@@ -278,8 +184,9 @@ public class IndexingRunner implements Runnable {
 			if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
 				executor.shutdownNow(); // Cancel currently executing tasks
 				// Wait a while for tasks to respond to being cancelled
-				if (!executor.awaitTermination(60, TimeUnit.SECONDS))
-					System.err.println("Pool did not terminate");
+				if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+					LOGGER.error("Visual idnexer pool did not terminate for " + collection);
+				}
 			}
 		} catch (InterruptedException ie) {
 			// (Re-)Cancel if current thread also interrupted
@@ -288,18 +195,15 @@ public class IndexingRunner implements Runnable {
 			Thread.currentThread().interrupt();
 		}
     }
-
-    public void stopWhenFinished() {
-        shouldStop = true;
-    }
     
     private void deleteMedia(Media media) {
     	if(media instanceof Image) {
     		LOGGER.info("Deleting image " + media.getId());
         	imageDAO.delete((Image)media);
         	pageDAO.deleteById(media.getId());
-        	if (LinkDetectionRunner.LAST_POSITION > 0)
-        		LinkDetectionRunner.LAST_POSITION--;
+        	if (LinkDetector.LAST_POSITION > 0) {
+        		LinkDetector.LAST_POSITION--;
+        	}
 		}
         else if(media instanceof Video) {
         	LOGGER.info("Deleting video " + media.getId());
@@ -309,34 +213,78 @@ public class IndexingRunner implements Runnable {
     		LOGGER.info("Unknown instance for " + media.getId());
     	}
     }
-    
-    public MediaCallableResult getResultWait() throws Exception {
-		try {
-			Future<MediaCallableResult> future = pool.take();
-			MediaCallableResult imdr = future.get();
-			
-			return imdr;
-		} catch (InterruptedException e) {
-			throw e;
-		} finally {
-			// in any case (Exception or not) the numPendingTask should be reduced
-			numPendingTasks--;
-		}
+
+	public Future<IndexingResult> submitTask(Media media) {
+		Callable<IndexingResult> task = new IndexingCallable(media, collection);
+		return executor.submit(task);
 	}
 
-	public void submitTask(Media media) {
-		Callable<MediaCallableResult> call = new MediaCallable(media, collection);
-		pool.submit(call);
-		numPendingTasks++;
+	public List<Future<IndexingResult>> submitTasks(List<Media> media) throws InterruptedException {
+		List<Callable<IndexingResult>> tasks = new ArrayList<Callable<IndexingResult>>();
+		for(Media m : media) {
+			Callable<IndexingResult> task = new IndexingCallable(m, collection);	
+			tasks.add(task);
+		}
+		return executor.invokeAll(tasks);
 	}
 	
-	public boolean canAcceptMoreTasks() {
-		if (numPendingTasks < maxNumPendingTasks) {
-			return true;
-		} 
-		else {
-			return false;
-		}
-	}
 
+	public Map<String, Media> consume(List<Future<IndexingResult>> futures) {
+		Map<String, Media> indexedMedia = new HashMap<String, Media>();
+		ArrayDeque<Future<IndexingResult>> queue = new ArrayDeque<Future<IndexingResult>>();
+		while (!queue.isEmpty()) {	
+			Future<IndexingResult> future = queue.poll();
+			if(future.isCancelled()) {
+				continue;
+			}
+				
+			if(!future.isDone()) {
+				queue.offer(future);
+			}
+
+			try {
+				IndexingResult result = future.get();	
+				if(result.vector != null && result.vector.length > 0) {
+					Media media = result.media;		
+					boolean indexed = vIndexClient.index(media.getId(), result.vector);
+					if (indexed) {
+						media.addAnnotation(ld);
+						if(media instanceof Image) {
+							Query<Image> q = imageDAO.createQuery().filter("url", media.getUrl());
+							UpdateOperations<Image> ops = imageDAO.createUpdateOperations().add("annotations", ld);
+							imageDAO.update(q, ops);        							
+						}
+						else if(media instanceof Video) {
+							Query<Video> q = videoDAO.createQuery().filter("url", media.getUrl());
+							UpdateOperations<Video> ops = videoDAO.createUpdateOperations().add("annotations", ld);
+							videoDAO.update(q, ops);
+						}
+						else {
+							LOGGER.error("Unknown instance of " + media.getId());
+							continue;
+						}
+						
+						indexedMedia.put(media.getId(), media);
+						
+						if (_publisher != null) {
+							_publisher.publish(MorphiaManager.getMorphia().toDBObject(media).toString());
+						}
+					} 
+					else {
+						LOGGER.info("Failed to index" + result.media.getId() + ". This will be deleted!");
+					}
+				}
+				else {
+						LOGGER.info("Vector for " + result.media.getId() + " is empty. This will be deleted!");
+					}
+				} catch (InterruptedException e) {
+					LOGGER.error(e.getMessage());
+				} catch (ExecutionException e) {
+					LOGGER.error(e.getMessage());
+				}
+				
+		}
+		return indexedMedia;
+	}	
+	
 }

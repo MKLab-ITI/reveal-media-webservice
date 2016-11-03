@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -28,13 +29,14 @@ import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.visual.vectorization.ImageVectorization;
 import gr.iti.mklab.visual.vectorization.ImageVectorizationResult;
 
-public class MediaCallable implements Callable<MediaCallableResult> {
+public class IndexingCallable implements Callable<IndexingResult> {
 	
 	protected static int maxNumPixels = 768 * 512;
     protected static int targetLengthMax = 1024;
     private Media media;
 	private String collection;
-    private static Logger _logger = LoggerFactory.getLogger(MediaCallable.class);
+	
+    private static Logger _logger = LoggerFactory.getLogger(IndexingCallable.class);
     private static CloseableHttpClient _httpclient;
     private static RequestConfig _requestConfig;
     static{
@@ -48,20 +50,20 @@ public class MediaCallable implements Callable<MediaCallableResult> {
                  .build();
     }
 	
-	public MediaCallable(Media media, String collection) {
+	public IndexingCallable(Media media, String collection) {
 		this.media = media;
 		this.collection = collection;
 	}
 	
 	@Override
-	public MediaCallableResult call() {
+	public IndexingResult call() {
 		try {
 			double[] vector = process();
-			return new MediaCallableResult(media, vector);
+			return new IndexingResult(media, vector);
 		}
 		catch(Exception e) {
 			_logger.error("Exception for " + media.getId(), e);
-			return new MediaCallableResult(media, null);
+			return new IndexingResult(media, null);
 		}
 	}
 	
@@ -111,13 +113,17 @@ public class MediaCallable implements Callable<MediaCallableResult> {
             }
             
             InputStream input = entity.getContent();
+            Header contentType = entity.getContentType();
             byte[] imageContent = IOUtils.toByteArray(input);
-                        
+            if(!ImageUtils.checkContentHeaders(imageContent.length, contentType.getValue())) {
+            	return null;
+            }
+            
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageContent));
-            int width = image.getWidth();
-            int height = image.getHeight();
-            if (image != null && (ImageUtils.isImageBigEnough(width, height) || (media instanceof Video))) {
-                ImageVectorization imvec = new ImageVectorization(id, image, targetLengthMax, maxNumPixels);
+            if (ImageUtils.checkImage(image) || (media instanceof Video)) {
+                int width = image.getWidth();
+                int height = image.getHeight();
+            	ImageVectorization imvec = new ImageVectorization(id, image, targetLengthMax, maxNumPixels);
                 if (media instanceof Image) {
                     ((Image) media).setWidth(width);
                     ((Image) media).setHeight(height);

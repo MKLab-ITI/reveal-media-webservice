@@ -13,14 +13,14 @@ import java.util.regex.Pattern;
  *
  * @author kandreadou
  */
-public abstract class LinkDetectionRunner {
+public abstract class LinkDetector {
 
     private long LAST_CALL = System.currentTimeMillis();
     public static int LAST_POSITION = 0;
     private static final int STEP = 1000;
     private ObjectDAO<Webpage> pageDAO;
 
-    public LinkDetectionRunner(String collection) throws ExecutionException {
+    public LinkDetector(String collection) throws ExecutionException {
         pageDAO = new ObjectDAO<>(Webpage.class, collection);
     }
 

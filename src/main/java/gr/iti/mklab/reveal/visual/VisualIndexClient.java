@@ -35,13 +35,15 @@ import org.json.JSONObject;
 public class VisualIndexClient {
 	
     private static double default_threshold = 0.75;
+    
     private Logger _logger = Logger.getLogger(VisualIndexClient.class);
+    
     private String webServiceHost;
     private String collectionName;
     private HttpClient httpClient;
 
     public VisualIndexClient(String webServiceHost, String collectionName) {
-        System.out.println("VisualIndexHandler start of constructor");
+    	_logger.info("VisualIndexHandler start of constructor");
         this.webServiceHost = webServiceHost;
         this.collectionName = collectionName;
         MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
@@ -52,7 +54,7 @@ public class VisualIndexClient {
         params.setSoTimeout(30000);
         cm.setParams(params);
         this.httpClient = new HttpClient(cm);
-        System.out.println("VisualIndexHandler end of constructor");
+        _logger.info("VisualIndexHandler end of constructor");
     }
 
     public JsonResultSet getSimilarImages(String imageId) {

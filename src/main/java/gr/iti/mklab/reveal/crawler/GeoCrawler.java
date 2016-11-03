@@ -18,7 +18,7 @@ import org.mongodb.morphia.dao.DAO;
 public class GeoCrawler {
 
     private StreamManagerClient manager;
-    private IndexingRunner runner;
+    private VisualIndexer runner;
     private DAO<CrawlJob, ObjectId> dao;
     private CrawlJob req;
 
@@ -26,7 +26,7 @@ public class GeoCrawler {
         this.manager = manager;
         dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
         manager.addAllGeoFeeds(req.getLon_min(), req.getLat_min(), req.getLon_max(), req.getLat_max(), req.getCollection());
-        runner = new IndexingRunner(req.getCollection());
+        runner = new VisualIndexer(req.getCollection());
         new Thread(runner).start();
         req.setState(Job.STATE.RUNNING);
         this.req = req;
@@ -35,7 +35,7 @@ public class GeoCrawler {
 
     public void stop() throws StreamException {
         manager.deleteAllFeeds(true, req.getCollection());
-        runner.stopWhenFinished();
+        runner.stop();
         req.setState(Job.STATE.FINISHED);
         dao.save(req);
     }

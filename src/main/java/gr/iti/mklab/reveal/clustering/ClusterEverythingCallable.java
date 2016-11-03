@@ -31,7 +31,9 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
     private int minpoints;
     private final static int ITEMS_PER_ITERATION = 2000;
 
+    // eps = 1.2, minpoints=2
     public ClusterEverythingCallable(String collection, double eps, int minpoints) {
+    	
         System.out.println("DBSCAN for " + collection + " eps= " + eps + " minpoints= " + minpoints);
         this.collection = collection;
         this.eps = eps;

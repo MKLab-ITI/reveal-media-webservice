@@ -46,10 +46,10 @@ public class RevealAgent implements Runnable {
     private CrawlJob _request;
     private DAO<CrawlJob, ObjectId> dao;
     
-    private Agent _bubingAgent;
+    private Agent _bubingAgent;	// Web crawler
 
     public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
-        System.out.println("RevealAgent constructor for hostname " + hostname);
+    	LOGGER.info("RevealAgent constructor for hostname " + hostname);
         _hostname = hostname;
         _jmxPort = jmxPort;
         _request = request;
@@ -62,9 +62,9 @@ public class RevealAgent implements Runnable {
             LOGGER.info("###### REVEAL agent run method");
             // Mark the request as running
             dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
-            IndexingRunner runner = null;
+            VisualIndexer runner = null;
             try {
-                runner = new IndexingRunner(_request.getCollection());
+                runner = new VisualIndexer(_request.getCollection());
             } catch (Exception ex) {
             	LOGGER.error("###### Cathing exception during initiliazation of indexing runner: " + ex.getMessage(), ex);
             	
@@ -179,9 +179,6 @@ public class RevealAgent implements Runnable {
                 // summarization of the collection
                 ExecutorService clusteringExecutor = Executors.newSingleThreadExecutor();
                 clusteringExecutor.submit( new MediaSummarizer(_request.getCollection(), 0.65, 0.25, 0.75, 4, 0.7));
-                
-                //cluster collection items
-                //clusteringExecutor.submit(new ClusterEverythingCallable(_request.getCollection(), 1.3, 2));
                 
                 _request.setState(CrawlJob.STATE.FINISHED);
                 _request.setLastStateChange(new Date());
