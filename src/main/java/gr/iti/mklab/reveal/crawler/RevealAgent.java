@@ -7,6 +7,7 @@ import gr.iti.mklab.reveal.summarization.MediaSummarizer;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
+import gr.iti.mklab.simmo.core.jobs.Job.STATE;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import it.unimi.di.law.bubing.Agent;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
@@ -29,13 +30,14 @@ import javax.management.remote.JMXServiceURL;
 import java.io.File;
 import java.util.Date;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
  * Created by kandreadou on 2/10/15.
  */
-public class RevealAgent implements Runnable {
+public class RevealAgent implements Callable<STATE> {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(RevealAgent.class);
 
@@ -47,7 +49,8 @@ public class RevealAgent implements Runnable {
     private DAO<CrawlJob, ObjectId> dao;
     
     private Agent _bubingAgent;	// Web crawler
-
+    private VisualIndexer runner = null;
+    
     public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
     	LOGGER.info("RevealAgent constructor for hostname " + hostname);
         _hostname = hostname;
@@ -55,25 +58,16 @@ public class RevealAgent implements Runnable {
         _request = request;
         _manager = manager;
     }
-
+	
     @Override
-    public void run() {
+    public STATE call() {
         try {
-            LOGGER.info("###### REVEAL agent run method");
+            LOGGER.info("###### REVEAL agent call method for collection " + _request.getCollection());
+            
             // Mark the request as running
-            dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
-            VisualIndexer runner = null;
-            try {
-                runner = new VisualIndexer(_request.getCollection());
-            } catch (Exception ex) {
-            	LOGGER.error("###### Cathing exception during initiliazation of indexing runner: " + ex.getMessage(), ex);
-            	
-                // If there is an error, change the state and return
-                _request.setState(CrawlJob.STATE.WAITING);
-                dao.save(_request);
-                return;
-            }
-           
+            dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());           
+            runner = new VisualIndexer(_request.getCollection());
+
             Thread indexingThread = new Thread(runner);
             indexingThread.start();
             
@@ -112,11 +106,12 @@ public class RevealAgent implements Runnable {
             
             LOGGER.info("###### Agent for collection " + _request.getCollection() + " finished");
             _request = dao.findOne("_id", _request.getId());
+            
             if (_request != null) {
                 LOGGER.info("###### Found request with id " + _request.getId() + " " + _request.getState());
             }
             else {
-            	LOGGER.error("Could not find a saved Crawl Job ");
+            	LOGGER.error("Could not find a saved Crawl Job");
             }
             
             if (_request.getState() == CrawlJob.STATE.DELETING) {
@@ -190,6 +185,8 @@ public class RevealAgent implements Runnable {
         } catch (Exception e) {
             LOGGER.error("Exception for collection " + _request.getCollection() + ". Message: "+ e.getMessage(), e);
         }
+        
+        return _request.getState();
     }
 
     public void stop() {

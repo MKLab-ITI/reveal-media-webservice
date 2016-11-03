@@ -59,11 +59,16 @@ public class RevealController {
     
     private CrawlQueueController crawlerCtrler;
 
-    private ExecutorService executorService = Executors.newFixedThreadPool(6);
+    private ExecutorService executorService = Executors.newFixedThreadPool(8);
     
     public RevealController() throws Exception {
+    	
         Configuration.load(getClass().getResourceAsStream("/docker.properties"));
+        
+        // initialize mongodb
         MorphiaManager.setup(Configuration.MONGO_HOST);
+        
+        // initialize visual feature extractor
         VisualFeatureExtractor.init(true);
         
         crawlerCtrler = new CrawlQueueController();

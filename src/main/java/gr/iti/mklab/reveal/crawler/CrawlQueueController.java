@@ -6,6 +6,7 @@ import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
+import gr.iti.mklab.simmo.core.jobs.Job.STATE;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.sm.streams.StreamException;
@@ -26,6 +27,7 @@ import javax.management.remote.JMXServiceURL;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,11 +46,15 @@ public class CrawlQueueController {
     private DAO<CrawlJob, ObjectId> dao;
     private Poller poller;
 
+    private Map<String, Future<STATE>> agents = new HashMap<String, Future<STATE>>();
+    private ExecutorService executorService = Executors.newFixedThreadPool(8);
+    
     private Logger _logger = Logger.getLogger(CrawlQueueController.class);
     
     public CrawlQueueController() {
         // Creates a DAO object to persist submitted crawl requests
         dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());
+        
         // the client for handling the stream manager social media crawler
         streamManager = new StreamManagerClient("http://" + Configuration.STREAM_MANAGER_SERVICE_HOST + ":8080");
         
@@ -60,19 +66,8 @@ public class CrawlQueueController {
         poller.startPolling();
     }
 
-    public static void main(String[] args) throws Exception {
-        Configuration.load("local.properties");
-        MorphiaManager.setup("127.0.0.1");
-        
-        CrawlQueueController controller = new CrawlQueueController();
-        String colName = "tsipras";
-        Set<String> keywords = new HashSet<String>();
-        keywords.add("tsipras");
-        controller.submit(true, colName, keywords);
-    }
 
     public void shutdown() throws Exception {
-
         poller.stopPolling();
         List<CrawlJob> list = getRunningCrawls();
         for (CrawlJob job : list) {
@@ -98,6 +93,7 @@ public class CrawlQueueController {
         
         CrawlJob r = new CrawlJob(crawlDataPath, collectionName, keywords, isNew);
         dao.save(r);
+        
         tryLaunch();
         
         return r;
@@ -112,11 +108,11 @@ public class CrawlQueueController {
         return r;
     }
 
-    public CrawlJob stop(String id) throws Exception{
+    public CrawlJob stop(String id) throws Exception {
         return cancel(id, false);
     }
 
-    public CrawlJob kill(String id) throws Exception{
+    public CrawlJob kill(String id) throws Exception {
         return cancel(id, true);
     }
 
@@ -276,20 +272,24 @@ public class CrawlQueueController {
     }
 
     private void tryLaunch() throws Exception {
-        List<CrawlJob> list = getRunningCrawls();
-        _logger.info("Running crawls list size " + list.size());
-        if (list.size() >= Configuration.NUM_CRAWLS) {
+        List<CrawlJob> runningCrawls = getRunningCrawls();
+        _logger.info("Running crawls list size: " + runningCrawls.size());
+        if (runningCrawls.size() >= Configuration.NUM_CRAWLS) {
         	_logger.info("Cannot run more crawls. Number of crawls reached.");
             return;
         }
         
-        List<CrawlJob> waitingList = getWaitingCrawls();
-        if (waitingList.isEmpty()) {
-        	_logger.info("There are no waiting crawls!");
+        List<CrawlJob> waitingCrawls = getWaitingCrawls();
+        if (waitingCrawls.isEmpty()) {
+        	_logger.info("There are no waiting crawls to start!");
             return;
         }
         
-        CrawlJob req = waitingList.get(0);
+        _logger.info(waitingCrawls.size() + " crawls waiting to start.");
+        
+        CrawlJob req = waitingCrawls.get(0);
+        _logger.info("Start " + req.getCollection());
+        
         req.setState(CrawlJob.STATE.STARTING);
         dao.save(req);
         
@@ -359,11 +359,11 @@ public class CrawlQueueController {
         } 
         else {
             RevealAgent agent = new RevealAgent("127.0.0.1", 9999, req, streamManager);
+            Future<STATE> agentResult = executorService.submit(agent);
+           
+            agents.put(req.getCollection(), agentResult);
             
-            Thread th = new Thread(agent);
-            th.start();
-            
-            _logger.info("Reveal agent started for collection " + req.getCollection() + ". Alive: " + th.isAlive());
+            _logger.info("Reveal agent started for collection " + req.getCollection());
         }
     }
 
@@ -384,53 +384,23 @@ public class CrawlQueueController {
             JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
             MBeanServerConnection mbsc = cc.getMBeanServerConnection();
+            
             //This information is available in jconsole
             ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=" + name);
+            
             // Invoke stop operation
             mbsc.invoke(serviceConfigName, "stop", null, null);
+            
             // Close JMX connector
             cc.close();
         } catch (Exception e) {
-            System.out.println("Exception occurred: " + e.toString());
-            e.printStackTrace();
+        	_logger.error("Exception occurred for " + name, e);
         }
     }
 
-    //////////////////////////////////////////////////
-    //////////// POLLING ///////////////////////////
-    /////////////////////////////////////////////////
-
-    public class Poller implements Runnable {
-        
-    	final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        Future<?> future = null;
-
-        @Override
-        public void run() {
-            System.out.println("NEW polling event");
-            try {
-                tryLaunch();
-            } catch (Exception ex) {
-                System.out.println(ex);
-            }
-        }
-
-        public void startPolling() {
-            exec.scheduleAtFixedRate(this, 10, 60, TimeUnit.SECONDS);
-        }
-
-        public void stopPolling() {
-            if (future != null && !future.isDone()) {
-               future.cancel(true);
-            }
-            exec.shutdownNow();
-        }
-
-    }
-
-    //////////////////////////////////////////////////
-    //////////// DB STUFF ///////////////////////////
-    /////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////
+    ///////////////// DB STUFF ///////////////////////////
+    //////////////////////////////////////////////////////
 
     private CrawlJob getCrawlRequest(String id) {
         return dao.findOne("_id", id);
@@ -439,10 +409,8 @@ public class CrawlQueueController {
     private List<CrawlJob> getRunningCrawls() {
         Query<CrawlJob> q = dao.createQuery();
         q.or(
-                q.criteria("requestState").equal(CrawlJob.STATE.RUNNING),
-                //q.criteria("requestState").equal(CrawlJob.STATE.STOPPING),
-                //q.criteria("requestState").equal(CrawlJob.STATE.DELETING),
-                q.criteria("requestState").equal(CrawlJob.STATE.STARTING)
+        		q.criteria("requestState").equal(CrawlJob.STATE.RUNNING),
+        		q.criteria("requestState").equal(CrawlJob.STATE.STARTING)
         );
         return q.asList();
     }
@@ -531,5 +499,35 @@ public class CrawlQueueController {
         }
 
         return status;
+    }
+    
+    /////////////////////////////////////////////////////
+    ///////////////// POLLING ///////////////////////////
+    ////////////////////////////////////////////////////
+    public class Poller implements Runnable {
+        
+    	final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+        Future<?> future = null;
+
+        @Override
+        public void run() {
+            try {
+                tryLaunch();
+            } catch (Exception ex) {
+            	_logger.error(ex);
+            }
+        }
+
+        public void startPolling() {
+            exec.scheduleAtFixedRate(this, 10, 60, TimeUnit.SECONDS);
+        }
+
+        public void stopPolling() {
+            if (future != null && !future.isDone()) {
+               future.cancel(true);
+            }
+            exec.shutdownNow();
+        }
+
     }
 }

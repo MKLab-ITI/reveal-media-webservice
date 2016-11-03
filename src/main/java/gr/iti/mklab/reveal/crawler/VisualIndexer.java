@@ -15,7 +15,6 @@ import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -68,17 +67,14 @@ public class VisualIndexer implements Runnable {
 
 	private VisualIndexClient vIndexClient;
 	
-    public VisualIndexer(String collection) throws ExecutionException, IOException {
+    public VisualIndexer(String collection) {
         
     	LOGGER.info("Creating IndexingRunner for collection " + collection);
         this.collection = collection;
         if (Configuration.PUBLISH_RABBITMQ) {
             _publisher = new RabbitMQPublisher("localhost", collection);
         }
-        
-        if(Configuration.DISTURBING_DETECTOR_HOST != null) {
-        	DisturbingDetectorClient.initialize(Configuration.DISTURBING_DETECTOR_HOST);
-        }
+        DisturbingDetectorClient.initialize(Configuration.DISTURBING_DETECTOR_HOST);
         
         String indexServiceHost = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService";
         vIndexClient = new VisualIndexClient(indexServiceHost, collection);    

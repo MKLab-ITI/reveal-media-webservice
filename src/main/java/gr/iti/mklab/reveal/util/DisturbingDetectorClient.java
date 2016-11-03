@@ -24,15 +24,17 @@ public class DisturbingDetectorClient {
 	private static String webServiceHost;
 	
 	public static void initialize(String webServiceHost) {
-		DisturbingDetectorClient.webServiceHost = webServiceHost;
-		MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
-		HttpConnectionManagerParams params = new HttpConnectionManagerParams();
-		params.setMaxTotalConnections(100);
-		params.setDefaultMaxConnectionsPerHost(20);
-		params.setConnectionTimeout(30000);
-		params.setSoTimeout(30000);
-		cm.setParams(params);
-		httpClient = new HttpClient(cm);    
+		if(webServiceHost != null) {
+			DisturbingDetectorClient.webServiceHost = webServiceHost;
+			MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
+			HttpConnectionManagerParams params = new HttpConnectionManagerParams();
+			params.setMaxTotalConnections(100);
+			params.setDefaultMaxConnectionsPerHost(20);
+			params.setConnectionTimeout(30000);
+			params.setSoTimeout(30000);
+			cm.setParams(params);
+			httpClient = new HttpClient(cm);    
+		}
 	}
 	
     public static String detect(String url, byte[] image, String collection, String id, String type) {
