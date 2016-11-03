@@ -6,7 +6,6 @@ import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Video;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
-import gr.iti.mklab.simmo.core.jobs.Job.STATE;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.sm.streams.StreamException;
@@ -18,12 +17,6 @@ import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
-
-import javax.management.MBeanServerConnection;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
 
 import java.io.File;
 import java.util.*;
@@ -46,8 +39,8 @@ public class CrawlQueueController {
     private DAO<CrawlJob, ObjectId> dao;
     private Poller poller;
 
-    private Map<String, Future<STATE>> agents = new HashMap<String, Future<STATE>>();
-    private ExecutorService executorService = Executors.newFixedThreadPool(8);
+    private Map<String, RevealAgent> agents = new HashMap<String, RevealAgent>();
+    private ExecutorService executorService = Executors.newFixedThreadPool(Configuration.NUM_CRAWLS + 1);
     
     private Logger _logger = Logger.getLogger(CrawlQueueController.class);
     
@@ -91,21 +84,22 @@ public class CrawlQueueController {
             throw new Exception("The collection " + collectionName + " already exists. Choose a different name or mark not new");
         }
         
-        CrawlJob r = new CrawlJob(crawlDataPath, collectionName, keywords, isNew);
-        dao.save(r);
+        CrawlJob job = new CrawlJob(crawlDataPath, collectionName, keywords, isNew);
+        dao.save(job);
         
         tryLaunch();
         
-        return r;
+        return job;
     }
 
+    // submit geo-location crawl job
     public synchronized CrawlJob submit(String collectionName, double lon_min, double lat_min, double lon_max, double lat_max) throws Exception {
-    	_logger.info("CRAWL: submit " + collectionName + " coordinates [" + lon_min + ", " + lat_min + "]");
-    	
-        CrawlJob r = new CrawlJob(collectionName, lon_min, lat_min, lon_max, lat_max);
-        dao.save(r);
+    	_logger.info("CRAWL: submit " + collectionName + " coordinates [<" + lon_min + ", " + lat_min + ">, <" + lon_max + ", " + lat_max + ">]");
+        CrawlJob job = new CrawlJob(collectionName, lon_min, lat_min, lon_max, lat_max);
+        dao.save(job);
+        
         tryLaunch();
-        return r;
+        return job;
     }
 
     public CrawlJob stop(String id) throws Exception {
@@ -130,11 +124,17 @@ public class CrawlQueueController {
                 cancelGeoCrawl(req.getCollection());
             }
             else {
-                cancelForName(req.getCollection());
+            	RevealAgent agent = agents.remove(req.getCollection());
+            	if(agent != null) {
+            		agent.stop();
+            	}
+            	else {
+            		_logger.error("Agent is null. Cannot stop for " + req.getCollection());
+            	}
             }
         }
-        else{
-        	_logger.info("CrawlRequest state "+req.getState()+". You can only stop RUNNING/STOPPING crawls");
+        else {
+        	_logger.info("CrawlRequest state "+req.getState()+". You can only stop RUNNING / STOPPING crawls");
         }
         
         return req;
@@ -150,119 +150,33 @@ public class CrawlQueueController {
         
         _logger.info("CrawlRequest " + req.getCollection() + " " + req.getState());
         if (req.getState() == CrawlJob.STATE.FINISHED) {
-            req.setState(CrawlJob.STATE.DELETING);
-            req.setLastStateChange(new Date());
             //Delete the request from the request DB
-            try {
-            	dao.delete(req);
-            }
-            catch(Exception e) {
-            	_logger.error("Exception during deletion of " + id + ": " + e.getMessage());
-            }
-            
-            _logger.info("Request deleted for CrawlJob " + id);
-            
-            //Delete the collection DB
-            try {
-            	MorphiaManager.getDB(req.getCollection()).dropDatabase();
-            }
-            catch(Exception e) {
-            	_logger.error("Exception during dropping of " + req.getCollection() + ": " + e.getMessage());
-            }
+        	dao.delete(req);
+            MorphiaManager.getDB(req.getCollection()).dropDatabase();
             
             //Unload from memory
             try {	
             	VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, req.getCollection());
-            	vIndexClient.deleteCollection();
-            }
-            catch(Exception e) {
-            	_logger.error("Exception during visual index deletion of " + req.getCollection() + ": " + e.getMessage());
-            }
-            
-            //Delete the crawl and index folders
-            FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
-            FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
-        } 
-        else if(CrawlJob.STATE.RUNNING == req.getState()) {
-            req.setState(CrawlJob.STATE.DELETING);
-            req.setLastStateChange(new Date());
-            dao.save(req);
-            if (req.getKeywords().isEmpty()) {
-                cancelGeoCrawl(req.getCollection());
-            }
-            else {
-                cancelForName(req.getCollection());
-                
-            }	
-        }
-        else if(CrawlJob.STATE.DELETING == req.getState()) {
-        	_logger.info("Try to stop bubbing agent for " + req.getCollection());
-            if (req.getKeywords().isEmpty()) {
-                cancelGeoCrawl(req.getCollection());
-            }
-            else {
-                cancelForName(req.getCollection());
-            }
-            
-            try {
-            	_logger.info("Delete visual index for " + req.getCollection());
-            	VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, req.getCollection());
-            	vIndexClient.deleteCollection();
-            }
-            catch(Exception e) {
-            	_logger.error("Exception during index deletion of " + req.getCollection() + ": " + e.getMessage());
-            }
-            
-            try {
-            	_logger.info("Drop databases from mongo for " + req.getCollection());
-            	dao.delete(req);
-            	MorphiaManager.getDB(req.getCollection()).dropDatabase();
-            }
-            catch(Exception e) {
-            	_logger.error("Exception during deletion of " + req.getCollection() + ": " + e.getMessage());
-            }
-            
-            try {
-            	_logger.info("Delete the crawl and index folders for " + req.getCollection());
+            	vIndexClient.removeCollection();
+            	
+                //Delete the crawl and index folders
                 FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
                 FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
             }
             catch(Exception e) {
-            	_logger.error("Exception during deletion of crawl and index folders for " + req.getCollection() + ": " + e.getMessage());
+            	_logger.error("Exception during visual index deletion of " + req.getCollection() + " => " + e.getMessage(), e);
             }
-            
-            _logger.info("Request deleted for CrawlJob " + id + ". Collection: " + req.getCollection());
+
+        } 
+        else if(CrawlJob.STATE.RUNNING == req.getState()) {
+        	cancel(id, true);
+        	delete(id);
         }
         else if(CrawlJob.STATE.KILLING == req.getState() || CrawlJob.STATE.STOPPING == req.getState()) {
-        	kill(req.getId());
-        	try {
-        		_logger.info("Delete visual index for " + req.getCollection());
-        		VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, req.getCollection());
-            	vIndexClient.deleteCollection();
-             }
-             catch(Exception e) {
-             	_logger.error("Exception during index deletion of " + req.getCollection() + ": " + e.getMessage());
-             }
-             
-             try {
-             	_logger.info("Drop databases from mongo for " + req.getCollection());
-             	dao.delete(req);
-             	MorphiaManager.getDB(req.getCollection()).dropDatabase();
-             }
-             catch(Exception e) {
-             	_logger.error("Exception during deletion of " + req.getCollection() + ": " + e.getMessage());
-             }
-             
-             try {
-             	_logger.info("Delete the crawl and index folders for " + req.getCollection());
-                 FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
-                 FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
-             }
-             catch(Exception e) {
-             	_logger.error("Exception during deletion of crawl and index folders for " + req.getCollection() + ": " + e.getMessage());
-             }
-             
-             _logger.info("Request deleted for CrawlJob " + id + ". Collection: " + req.getCollection());
+        	while(CrawlJob.STATE.KILLING == req.getState() || CrawlJob.STATE.STOPPING == req.getState()) {
+        		Thread.sleep(5000);
+        	}
+        	delete(id);
         }
         else {
         	_logger.error("Collection: " + req.getCollection() + " failed to be deleted. State " + req.getState() + ". You can only delete RUNNING, FINISHED or DELETING crawls");
@@ -353,15 +267,15 @@ public class CrawlQueueController {
     }
     
     private void startCrawl(CrawlJob req) throws Exception {
-        _logger.info("METHOD: Startcrawl " + req.getCollection() + " " + req.getState());
+        _logger.info("METHOD: Start crawl " + req.getCollection() + " " + req.getState());
         if (req.getKeywords().isEmpty()) {
             geoCrawlerMap.put(req.getCollection(), new GeoCrawler(req, streamManager));
         } 
         else {
             RevealAgent agent = new RevealAgent("127.0.0.1", 9999, req, streamManager);
-            Future<STATE> agentResult = executorService.submit(agent);
+            executorService.execute(agent);
            
-            agents.put(req.getCollection(), agentResult);
+            agents.put(req.getCollection(), agent);
             
             _logger.info("Reveal agent started for collection " + req.getCollection());
         }
@@ -373,31 +287,8 @@ public class CrawlQueueController {
             geoCrawlerMap.remove(name);
         }
     }
-
-    /**
-     * Cancels the BUbiNG Agent listening to the specified port
-     */
-    private void cancelForName(String name) {
-        _logger.info("Cancel for name " + name);
-        try {
-        	//JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:9999/jmxrmi");
-            JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
-            JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
-            MBeanServerConnection mbsc = cc.getMBeanServerConnection();
-            
-            //This information is available in jconsole
-            ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=" + name);
-            
-            // Invoke stop operation
-            mbsc.invoke(serviceConfigName, "stop", null, null);
-            
-            // Close JMX connector
-            cc.close();
-        } catch (Exception e) {
-        	_logger.error("Exception occurred for " + name, e);
-        }
-    }
-
+    
+    
     ///////////////////////////////////////////////////////
     ///////////////// DB STUFF ///////////////////////////
     //////////////////////////////////////////////////////

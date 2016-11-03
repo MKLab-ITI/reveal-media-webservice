@@ -152,187 +152,8 @@ public class RevealController {
         return trlist;
     }
 
-    /*@RequestMapping(value = "/text/entities", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
-    @ResponseBody
-    public List<NamedEntity> entitiesFromString(@RequestBody Requests.EntitiesPostRequest req) throws Exception {
-
-        TextPreprocessing textPre = new TextPreprocessing(req.text);
-        // Get the cleaned text
-        ArrayList<String> cleanedText = textPre.getCleanedSentences();
-        //Run the NER
-        List<NamedEntity> names = nte.tagIt(cleanedText);
-        return names;
-    }
-
-    @RequestMapping(value = "/text/entities", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<NamedEntity> entitiesFromURL(
-            @RequestParam(value = "url", required = true) String urlStr) throws Exception {
-
-        long now = System.currentTimeMillis();
-        BoilerpipeContentExtraction bp = new BoilerpipeContentExtraction();
-        //Extract content from URL
-        Content c = bp.contentFromURL(urlStr);
-        System.out.println("Boilerpipe time " + (System.currentTimeMillis() - now));
-        String text = c.getTitle() + " " + c.getText();
-        now = System.currentTimeMillis();
-        TextPreprocessing textPre = new TextPreprocessing(text);
-        // Get the cleaned text
-        ArrayList<String> cleanedText = textPre.getCleanedSentences();
-        System.out.println("Preprocessing time " + (System.currentTimeMillis() - now));
-        //Run the NER
-        now = System.currentTimeMillis();
-        List<NamedEntity> names = nte.tagIt(cleanedText);
-        System.out.println("Named Entity time " + (System.currentTimeMillis() - now));
-        return names;
-    }*/
-
-/*
     ////////////////////////////////////////////////////////
-    ///////// MANIPULATION DETECTION     ///////////////////////////
-    ///////////////////////////////////////////////////////
-
-
-    @RequestMapping(value = "/media/verificationreport/addurl", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public String addverification(@RequestParam(value = "url", required = true) String url) throws RevealException {
-        try {
-            System.out.println("Received new URL. Downloading...");
-            String URL=ReportManagement.DownloadURL(url, Configuration.MANIPULATION_REPORT_PATH, Configuration.MONGO_HOST);
-            System.out.println("Downloaded.");
-            return URL;
-        } catch (Exception ex) {
-            throw new RevealException((ex.getMessage()), ex);
-        }
-    }
-
-    @RequestMapping(value = "/media/verificationreport/generatereport", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public String generateReport(@RequestParam(value = "hash", required = true) String hash) throws RevealException {
-        try {
-            System.out.println("Received new hash for analysis. Beginning...");
-            String ReportResult=ReportManagement.CreateReport(hash, Configuration.MONGO_HOST, Configuration.MANIPULATION_REPORT_PATH,Configuration.MAX_GHOST_IMAGE_SMALL_DIM,Configuration.NUM_GHOST_THREADS,Configuration.FORENSIC_PROCESS_TIMEOUT);
-            System.out.println("Analysis complete with message: " + ReportResult);
-            return ReportResult;
-        } catch (Exception ex) {
-            throw new RevealException((ex.getMessage()), ex);
-        }
-    }
-
-    @RequestMapping(value = "/media/verificationreport/getreport", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public ForensicReport returnReport(@RequestParam(value = "hash", required = true) String hash) throws RevealException {
-        try {
-            System.out.println("Request for forensic report received, hash=" + hash + ".");
-            ForensicReport Report=ReportManagement.GetReport(hash, Configuration.MONGO_HOST);
-            if (Report!=null) {
-            if (Report.ELA_Report.completed)
-                Report.ELA_Report.Map=Report.ELA_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH, Configuration.HTTP_HOST + "images/");
-            if (Report.DQ_Report.completed)
-                Report.DQ_Report.Map=Report.DQ_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.HTTP_HOST + "images/");
-            if (Report.DisplayImage!=null)
-                Report.DisplayImage=Report.DisplayImage.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.HTTP_HOST + "images/");
-            if (Report.NoiseDW_Report.completed)
-                Report.NoiseDW_Report.Map=Report.NoiseDW_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.HTTP_HOST + "images/");
-            if (Report.Ghost_Report.completed) {
-                for (int GhostInd = 0; GhostInd < Report.Ghost_Report.Maps.size(); GhostInd++) {
-                    Report.Ghost_Report.Maps.set(GhostInd, Report.Ghost_Report.Maps.get(GhostInd).replace(Configuration.MANIPULATION_REPORT_PATH, Configuration.HTTP_HOST + "images/"));
-                }
-            }
-                if (Report.Thumbnail_Report.NumberOfThumbnails>0) {
-                    for (int ThumbInd = 0; ThumbInd < Report.Thumbnail_Report.ThumbnailList.size(); ThumbInd++) {
-                        Report.Thumbnail_Report.ThumbnailList.set(ThumbInd, Report.Thumbnail_Report.ThumbnailList.get(ThumbInd).replace(Configuration.MANIPULATION_REPORT_PATH, Configuration.HTTP_HOST + "images/"));
-                    }
-                }
-                if (Report.BLK_Report.completed)
-                    Report.BLK_Report.Map=Report.BLK_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.HTTP_HOST + "images/");
-                if (Report.MedianNoise_Report.completed)
-                    Report.MedianNoise_Report.Map=Report.MedianNoise_Report.Map.replace(Configuration.MANIPULATION_REPORT_PATH,Configuration.HTTP_HOST + "images/");
-
-            }
-            return Report;
-
-        } catch (Exception ex) {
-            throw new RevealException((ex.getMessage()), ex);
-        }
-    }
-
-    @RequestMapping(value = "/media/verify", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public ForensicAnalysis verify(@RequestParam(value = "url", required = true) String url) throws RevealException {
-        try {
-            System.out.println("Verify image " + url);
-            ForensicAnalysis fa = ToolboxAPI.analyzeImage(url, Configuration.MANIPULATION_REPORT_PATH);
-            System.out.println("After analyze method");
-            if (fa.DQ_Lin_Output != null)
-                fa.DQ_Lin_Output = Configuration.HTTP_HOST + "images/" + fa.DQ_Lin_Output.substring(fa.DQ_Lin_Output.lastIndexOf('/') + 1);
-            if (fa.Noise_Mahdian_Output != null)
-                fa.Noise_Mahdian_Output = Configuration.HTTP_HOST + "images/" + fa.Noise_Mahdian_Output.substring(fa.Noise_Mahdian_Output.lastIndexOf('/') + 1);
-            final List<String> newGhostOutput = new ArrayList<>();
-            if (fa.GhostOutput != null) {
-                fa.GhostOutput.stream().forEach(s -> newGhostOutput.add(Configuration.HTTP_HOST + "images/" + s.substring(s.lastIndexOf('/') + 1)));
-            }
-            fa.GhostOutput = newGhostOutput;
-            if (fa.GhostGIFOutput != null) {
-                fa.GhostGIFOutput = Configuration.HTTP_HOST + "images/" + fa.GhostGIFOutput.substring(fa.GhostGIFOutput.lastIndexOf('/') + 1);
-            }
-            return fa;
-        } catch (Exception ex) {
-            throw new RevealException(ex.getMessage(), ex);
-        }
-    }
-
-    @RequestMapping(value = "/media/verify/ghost", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public GhostAnalysis verifyGhost(@RequestParam(value = "url", required = true) String url) throws RevealException {
-        try {
-            System.out.println("Verify ghost image " + url);
-            GhostAnalysis ga = ToolboxAPI.getImageGhost(url, Configuration.MANIPULATION_REPORT_PATH);
-            System.out.println("After ghost analyze method");
-
-            final List<String> newGhostOutput = new ArrayList<>();
-            if (ga.GhostOutput != null) {
-                ga.GhostOutput.stream().forEach(s -> newGhostOutput.add(Configuration.HTTP_HOST + "images/" + s.substring(s.lastIndexOf('/') + 1)));
-            }
-            ga.GhostOutput = newGhostOutput;
-            return ga;
-        } catch (Exception ex) {
-            throw new RevealException(ex.getMessage(), ex);
-        }
-    }
-
-    @RequestMapping(value = "/media/verify/dq", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public DQAnalysis verifyDQ(@RequestParam(value = "url", required = true) String url) throws RevealException {
-        try {
-            System.out.println("Verify dq image " + url);
-            DQAnalysis dq = ToolboxAPI.getImageDQ(url, Configuration.MANIPULATION_REPORT_PATH);
-            System.out.println("After dq analyze method");
-            if (dq.DQ_Lin_Output != null)
-                dq.DQ_Lin_Output = Configuration.HTTP_HOST + "images/" + dq.DQ_Lin_Output.substring(dq.DQ_Lin_Output.lastIndexOf('/') + 1);
-            return dq;
-        } catch (Exception ex) {
-            throw new RevealException(ex.getMessage(), ex);
-        }
-    }
-
-    @RequestMapping(value = "/media/verify/noisemahdian", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public NoiseMahdianAnalysis verifyNoiseMahdian(@RequestParam(value = "url", required = true) String url) throws RevealException {
-        try {
-            System.out.println("Verify noisemahdian image " + url);
-            NoiseMahdianAnalysis nm = ToolboxAPI.getImageMahdianNoise(url, Configuration.MANIPULATION_REPORT_PATH);
-            System.out.println("After noisemahdian analyze method");
-            if (nm.Noise_Mahdian_Output != null)
-                nm.Noise_Mahdian_Output = "http://" + Configuration.HTTP_HOST + ":8080/images/" + nm.Noise_Mahdian_Output.substring(nm.Noise_Mahdian_Output.lastIndexOf('/') + 1);
-            return nm;
-        } catch (Exception ex) {
-            throw new RevealException(ex.getMessage(), ex);
-        }
-    }
-*/
-    ////////////////////////////////////////////////////////
-    ///////// CRAWLER            ///////////////////////////
+    /////////////////// CRAWLER ///////////////////////////
     ///////////////////////////////////////////////////////
 
     @RequestMapping(value = "/crawls/add", method = RequestMethod.GET, produces = "application/json")
@@ -381,7 +202,7 @@ public class RevealController {
      */
     @RequestMapping(value = "/crawls/{id}/stop", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public CrawlJob cancelCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
+    public CrawlJob stopCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
         try {
             return crawlerCtrler.stop(id);
         } catch (Exception ex) {
@@ -398,21 +219,12 @@ public class RevealController {
      */
     @RequestMapping(value = "/crawls/{id}/kill", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public CrawlJob interruptCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
+    public CrawlJob killCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
         try {
-            CrawlJob job = crawlerCtrler.kill(id);
-            // Check that it is stopping, because cancel is not always successful
-            if(job.getState() == CrawlJob.STATE.KILLING) {
-       	
-                // extract entities for the collection
-            	executorService.submit(new NEandRECallable(job.getCollection()));
-                // cluster and summarize 
-            	executorService.submit( new MediaSummarizer(job.getCollection(), 0.65, 0.25, 0.75, 4, 0.7));
-            }
-            return job;
+        	return crawlerCtrler.kill(id);
         } catch (Exception ex) {
         	_logger.error("Error when killing id=" + id + ": " + ex.getMessage());
-            throw new RevealException("Error when killing", ex);
+            throw new RevealException("Error when killing " + id, ex);
         }
     }
 
@@ -472,18 +284,19 @@ public class RevealController {
                                                 @RequestParam(value = "type", required = false) String type,
                                                 @PathVariable(value = "collection") String collection) {
         Responses.MediaResponse response = new Responses.MediaResponse();
+        
         if (type == null || type.equalsIgnoreCase("image")) {
             MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-            //response.images = imageDAO.getDatastore().find(Image.class).order("lastModifiedDate").offset(offset).limit(count).asList();
             response.images = imageDAO.getItems(count, offset);
             response.numImages = imageDAO.count();
         }
+        
         if (type == null || type.equalsIgnoreCase("video")) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
             response.videos = videoDAO.getItems(count, offset);
-            //response.images = videoDAO.getDatastore().find(Image.class).order("lastModifiedDate").offset(offset).limit(count).asList();
             response.numVideos = videoDAO.count();
         }
+        
         response.offset = offset;
         return response;
     }
@@ -499,6 +312,7 @@ public class RevealController {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
             result = videoDAO.get(id);
         }
+        
         return result;
     }
 
@@ -643,10 +457,12 @@ public class RevealController {
                                                               @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         gr.iti.mklab.simmo.core.cluster.Cluster c = clusterDAO.get(id);
-        if (offset < c.getMembers().size())
+        if (offset < c.getMembers().size()) {
             c.setMembers(c.getMembers().subList(offset, c.getMembers().size() < offset + count ? c.getMembers().size() : offset + count));
-        else
+        }
+        else {
             c = new gr.iti.mklab.simmo.core.cluster.Cluster();
+        }
         return c;
     }
 

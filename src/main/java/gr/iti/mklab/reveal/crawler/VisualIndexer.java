@@ -33,6 +33,7 @@ import org.apache.commons.collections15.CollectionUtils;
 import org.apache.commons.collections15.Predicate;
 import org.mongodb.morphia.query.Query;
 import org.mongodb.morphia.query.UpdateOperations;
+import org.mongodb.morphia.query.UpdateResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,7 +182,7 @@ public class VisualIndexer implements Runnable {
 				executor.shutdownNow(); // Cancel currently executing tasks
 				// Wait a while for tasks to respond to being cancelled
 				if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-					LOGGER.error("Visual idnexer pool did not terminate for " + collection);
+					LOGGER.error("Visual indexer pool did not terminate for " + collection);
 				}
 			}
 		} catch (InterruptedException ie) {
@@ -248,12 +249,18 @@ public class VisualIndexer implements Runnable {
 						if(media instanceof Image) {
 							Query<Image> q = imageDAO.createQuery().filter("url", media.getUrl());
 							UpdateOperations<Image> ops = imageDAO.createUpdateOperations().add("annotations", ld);
-							imageDAO.update(q, ops);        							
+							UpdateResults r = imageDAO.update(q, ops); 
+							if(!r.getUpdatedExisting()) {
+								continue;
+							}
 						}
 						else if(media instanceof Video) {
 							Query<Video> q = videoDAO.createQuery().filter("url", media.getUrl());
 							UpdateOperations<Video> ops = videoDAO.createUpdateOperations().add("annotations", ld);
-							videoDAO.update(q, ops);
+							UpdateResults r = videoDAO.update(q, ops);
+							if(!r.getUpdatedExisting()) {
+								continue;
+							}
 						}
 						else {
 							LOGGER.error("Unknown instance of " + media.getId());
@@ -271,14 +278,13 @@ public class VisualIndexer implements Runnable {
 					}
 				}
 				else {
-						LOGGER.info("Vector for " + result.media.getId() + " is empty. This will be deleted!");
-					}
-				} catch (InterruptedException e) {
-					LOGGER.error(e.getMessage());
-				} catch (ExecutionException e) {
-					LOGGER.error(e.getMessage());
+					LOGGER.info("Vector for " + result.media.getId() + " is empty. This will be deleted!");
 				}
-				
+			} catch (InterruptedException e) {
+				LOGGER.error(e.getMessage());
+			} catch (ExecutionException e) {
+				LOGGER.error(e.getMessage());
+			}		
 		}
 		return indexedMedia;
 	}	

@@ -69,6 +69,7 @@ public class MediaSummarizer implements Callable<List<RankedImage>> {
 		
 	}
 	
+	//0.65, 0.25, 0.75, 4, 0.7
 	public MediaSummarizer(String collection, double similarityCuttof, double visualSimilarity, 
 			double randomJumpWeight, int mu, double epsilon) {
 		
