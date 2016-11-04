@@ -103,8 +103,8 @@ public class TextPreprocessing {
      * Swaps At Mentions and Hashtags.
      */
     private void swapSymbols(ArrayList<String> atMentions, ArrayList<String> hashtags) {
-        Iterator ith = hashtags.iterator();
-        Iterator itm = atMentions.iterator();
+        Iterator<String> ith = hashtags.iterator();
+        Iterator<String> itm = atMentions.iterator();
 
         for (int i = 0; i < tokenizedText.length; i++) {
             if (tokenizedText[i].startsWith("@") && itm.hasNext()) {

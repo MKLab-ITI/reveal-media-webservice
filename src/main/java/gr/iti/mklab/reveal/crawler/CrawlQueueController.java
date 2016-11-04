@@ -111,12 +111,14 @@ public class CrawlQueueController {
     }
 
     private synchronized CrawlJob cancel(String id, boolean immediately) throws Exception {
-    	_logger.info("CRAWL: Cancel for id " + id);
         CrawlJob req = getCrawlRequest(id);
-        if(CrawlJob.STATE.RUNNING == req.getState() || CrawlJob.STATE.STOPPING == req.getState()) {
-        	
-        	_logger.info("CrawlRequest " + req.getCollection() + " " + req.getState());
-            req.setState(immediately?CrawlJob.STATE.KILLING:CrawlJob.STATE.STOPPING);
+        if(req == null) {
+        	_logger.error("Cannot find job with id=" + id);
+        }
+        
+        _logger.info("Cancel crawl for id " + id + " (" + req.getCollection() + ")");
+        if(CrawlJob.STATE.RUNNING == req.getState() || CrawlJob.STATE.WAITING == req.getState() || CrawlJob.STATE.STARTING == req.getState()) {
+            req.setState(immediately ? CrawlJob.STATE.KILLING : CrawlJob.STATE.STOPPING);
             req.setLastStateChange(new Date());
             dao.save(req);
             
@@ -129,30 +131,33 @@ public class CrawlQueueController {
             		agent.stop();
             	}
             	else {
-            		_logger.error("Agent is null. Cannot stop for " + req.getCollection());
+            		_logger.error("Agent is null. Cannot stop it for " + req.getCollection());
             	}
             }
         }
+        else if(CrawlJob.STATE.STOPPING == req.getState() || CrawlJob.STATE.KILLING == req.getState()) {
+        	_logger.info("Crawl state of " + req.getState() + " is " + req.getState()+". It will stop eventually.");
+        }
         else {
-        	_logger.info("CrawlRequest state "+req.getState()+". You can only stop RUNNING / STOPPING crawls");
+        	_logger.info("Crawl state of " + req.getState() + " is " + req.getState()+". You can only stop RUNNING / WAITING / STARTING crawls.");
         }
         
         return req;
     }
 
     public synchronized CrawlJob delete(String id) throws Exception {
-    	_logger.info("CRAWL: Delete for id " + id);
         CrawlJob req = getCrawlRequest(id);
         if(req == null) {
         	_logger.info("CrawlJob with " + id + " is null. Cannot delete.");
         	 return req;
         }
         
-        _logger.info("CrawlRequest " + req.getCollection() + " " + req.getState());
-        if (req.getState() == CrawlJob.STATE.FINISHED) {
-            //Delete the request from the request DB
-        	dao.delete(req);
-            MorphiaManager.getDB(req.getCollection()).dropDatabase();
+        _logger.info("Delete crawl for id " + id + " (" + req.getCollection() + ")");
+        if (req.getState() == CrawlJob.STATE.FINISHED || req.getState() == CrawlJob.STATE.DELETING) {
+            
+        	req.setState(CrawlJob.STATE.DELETING);
+            req.setLastStateChange(new Date());
+            dao.save(req);
             
             //Unload from memory
             try {	
@@ -166,9 +171,14 @@ public class CrawlQueueController {
             catch(Exception e) {
             	_logger.error("Exception during visual index deletion of " + req.getCollection() + " => " + e.getMessage(), e);
             }
+            
+            //Delete the request from the request DB
+            dao.delete(req);
+            MorphiaManager.getDB(req.getCollection()).dropDatabase();
+            
 
         } 
-        else if(CrawlJob.STATE.RUNNING == req.getState()) {
+        else if(CrawlJob.STATE.RUNNING == req.getState() || CrawlJob.STATE.WAITING == req.getState() || CrawlJob.STATE.STARTING == req.getState()) {
         	cancel(id, true);
         	delete(id);
         }
@@ -211,59 +221,50 @@ public class CrawlQueueController {
     }
 
     private void startRunningCrawlsAtStartup() {
-   	 List<CrawlJob> crawlsToStart = getRunningCrawls();
+    	List<CrawlJob> crawlsToStart = getRunningCrawls();
    	 
-   	 int running = 0;
-   	 for(CrawlJob job : crawlsToStart) {
-   		 try {
-   			if(running < Configuration.NUM_CRAWLS) {
-   				_logger.info("Run " + job.getCollection());
-   				job.setState(CrawlJob.STATE.STARTING);
-   	        	dao.save(job);
+   	 	int running = 0;
+   	 	for(CrawlJob job : crawlsToStart) {
+   	 		try {
+   	 			if(running < Configuration.NUM_CRAWLS) {
+   	 				_logger.info("Run " + job.getCollection());
+   	 				job.setState(CrawlJob.STATE.STARTING);
+   	 				dao.save(job);
    	        	
-   	        	startCrawl(job);
+   	 				startCrawl(job);
    	        	
-   	        	running++;
-   			}
-   			else {
-   				_logger.info("Cannot run " + job.getCollection() + ". Number of crawls reached.");
-   				job.setState(CrawlJob.STATE.WAITING);
-   	        	dao.save(job);
-   			}
+   	 				running++;
+   	 			}
+   	 			else {
+   	 				_logger.info("Cannot run " + job.getCollection() + ". Number of crawls reached.");
+   	 				job.setState(CrawlJob.STATE.WAITING);
+   	 				dao.save(job);
+   	 			}
    	        
-			} catch (Exception e) {
+   	 		} catch (Exception e) {
 				_logger.error("Failed to start " + job.getCollection());
 			}
-   	 }
-   	 
-   	 List<CrawlJob> crawlsToStop = getStoppingCrawls();
-   	 for(CrawlJob job : crawlsToStop) {
-   		 try {
-				this.stop(job.getId());
-			} catch (Exception e) {
-				_logger.error("Failed to stop " + job.getCollection());
-			}
-   	 }
-   }
+   	 	}
+    }
     
     private void deleteAndStopCrawlsAtStartup() {
-    	 List<CrawlJob> crawlsToDelete = getDeletingCrawls();
-    	 for(CrawlJob job : crawlsToDelete) {
-    		 try {
-				this.delete(job.getId());
+    	List<CrawlJob> crawlsToDelete = getDeletingCrawls();
+    	for(CrawlJob job : crawlsToDelete) {
+    		try {
+    			this.delete(job.getId());
 			} catch (Exception e) {
 				_logger.error("Failed to delete " + job.getCollection());
 			}
-    	 }
+    	}
     	 
-    	 List<CrawlJob> crawlsToStop = getStoppingCrawls();
-    	 for(CrawlJob job : crawlsToStop) {
-    		 try {
-				this.kill(job.getId());
-			} catch (Exception e) {
-				_logger.error("Failed to stop " + job.getCollection());
-			}
-    	 }
+    	List<CrawlJob> crawlsToStop = getStoppingCrawls();
+    	for(CrawlJob job : crawlsToStop) {
+    		try {
+    			this.kill(job.getId());
+    		} catch (Exception e) {
+    			_logger.error("Failed to stop " + job.getCollection());
+    		}
+    	}
     }
     
     private void startCrawl(CrawlJob req) throws Exception {
@@ -274,7 +275,6 @@ public class CrawlQueueController {
         else {
             RevealAgent agent = new RevealAgent("127.0.0.1", 9999, req, streamManager);
             executorService.execute(agent);
-           
             agents.put(req.getCollection(), agent);
             
             _logger.info("Reveal agent started for collection " + req.getCollection());
@@ -306,12 +306,18 @@ public class CrawlQueueController {
         return q.asList();
     }
 
-    private List<CrawlJob> getDeletingCrawls() {
-        return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.DELETING).asList();
+    private List<CrawlJob> getStoppingCrawls() {
+    	Query<CrawlJob> q = dao.createQuery();
+        q.or(
+        		q.criteria("requestState").equal(CrawlJob.STATE.STOPPING),
+                q.criteria("requestState").equal(CrawlJob.STATE.KILLING)
+        	);
+                
+        return dao.find(q).asList();
     }
     
-    private List<CrawlJob> getStoppingCrawls() {
-        return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.STOPPING).asList();
+    private List<CrawlJob> getDeletingCrawls() {
+        return dao.getDatastore().find(CrawlJob.class).filter("requestState", CrawlJob.STATE.DELETING).asList();
     }
     
     private List<CrawlJob> getWaitingCrawls() {
@@ -354,7 +360,6 @@ public class CrawlQueueController {
         if (imageDAO != null && imageDAO.count() > 0) {
             status.numImages = imageDAO.count();
             status.image = imageDAO.getItems(1, 0).get(0);
-            //status.image = getRepresentativeImage(imageDAO, status.getKeywords());
             List<Image> imgs = imageDAO.getDatastore().find(Image.class).order("-crawlDate").limit(100).asList();
             if (imgs != null && imgs.size() > 0)
                 lastImageInserted = imgs.get(0).getCrawlDate();

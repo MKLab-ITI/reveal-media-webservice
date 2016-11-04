@@ -2,6 +2,7 @@ package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.crawler.seeds.DogpileSource;
 import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
+import gr.iti.mklab.reveal.entities.IncrementalNeReExtractor;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
@@ -43,7 +44,9 @@ public class RevealAgent implements Runnable {
     private DAO<CrawlJob, ObjectId> dao;
 
     private VisualIndexer visualIndexer = null;
-    private Future<?> visualIndexerHandle = null;
+    private IncrementalNeReExtractor inereExtractor = null;
+    
+    private Future<?> visualIndexerHandle = null, inereHandle = null;
     private ExecutorService executorService = Executors.newFixedThreadPool(3);
     
     public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
@@ -62,6 +65,9 @@ public class RevealAgent implements Runnable {
             dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());           
             visualIndexer = new VisualIndexer(_request.getCollection());
             visualIndexerHandle = executorService.submit(visualIndexer);
+            
+            inereExtractor = new IncrementalNeReExtractor(_request.getCollection());
+            inereHandle = executorService.submit(inereExtractor);
             
             if (Configuration.ADD_SOCIAL_MEDIA) {
             	try {
@@ -100,28 +106,31 @@ public class RevealAgent implements Runnable {
             LOGGER.info("###### unregister bean for " + _request.getCollection());
             unregisterBean(_request.getCollection());
             
-            stopAllServices();
+            stopServices();
+            
+            // STOP or KILL 
+            if(_request.getState() == CrawlJob.STATE.KILLING || _request.getState() == CrawlJob.STATE.STOPPING) {
+            	LOGGER.info("###### Stop " + _request.getCollection());
+                _request.setState(CrawlJob.STATE.FINISHED);
+                _request.setLastStateChange(new Date());
+                dao.save(_request);
+            }
+            
         } catch (Exception e) {
             LOGGER.error("Exception for collection " + _request.getCollection() + ". Message: "+ e.getMessage(), e);
         }
     }
 
-    public void stopAllServices() {
+    public void stopServices() {
         
     	LOGGER.info("###### stop indexing runner and social media crawler for " + _request.getCollection());
     	visualIndexer.stop();
         visualIndexerHandle.cancel(true);
         
+        inereHandle.cancel(true);
+
         if (Configuration.ADD_SOCIAL_MEDIA) {
             _manager.deleteAllFeeds(false, _request.getCollection());
-        }
-   	
-        // STOP or KILL 
-        if(_request.getState() == CrawlJob.STATE.KILLING || _request.getState() == CrawlJob.STATE.STOPPING) {
-        	LOGGER.info("###### Stop " + _request.getCollection());
-            _request.setState(CrawlJob.STATE.FINISHED);
-            _request.setLastStateChange(new Date());
-            dao.save(_request);
         }
     }
     

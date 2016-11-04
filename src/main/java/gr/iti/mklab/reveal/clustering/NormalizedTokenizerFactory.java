@@ -17,7 +17,12 @@ import com.aliasi.tokenizer.TokenizerFactory;
 public class NormalizedTokenizerFactory extends ModifyTokenTokenizerFactory {
 
 
-    public NormalizedTokenizerFactory(TokenizerFactory factory) {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 3409160503287501162L;
+
+	public NormalizedTokenizerFactory(TokenizerFactory factory) {
         super(factory);
     }
 

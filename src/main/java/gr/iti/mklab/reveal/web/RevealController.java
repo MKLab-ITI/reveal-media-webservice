@@ -5,11 +5,11 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
-import gr.iti.mklab.reveal.entitites.NEandRECallable;
 import gr.iti.mklab.reveal.summarization.MediaSummarizer;
 import gr.iti.mklab.reveal.summarization.RankedImage;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.crawler.CrawlQueueController;
+import gr.iti.mklab.reveal.entities.NEandRECallable;
 import gr.iti.mklab.reveal.visual.JsonResultSet;
 import gr.iti.mklab.reveal.visual.VisualFeatureExtractor;
 import gr.iti.mklab.reveal.visual.VisualIndexClient;
@@ -57,7 +57,7 @@ public class RevealController {
 
     private Logger _logger = Logger.getLogger(RevealController.class);
     
-    private CrawlQueueController crawlerCtrler;
+    private CrawlQueueController crawlControler;
 
     private ExecutorService executorService = Executors.newFixedThreadPool(8);
     
@@ -71,7 +71,7 @@ public class RevealController {
         // initialize visual feature extractor
         VisualFeatureExtractor.init(true);
         
-        crawlerCtrler = new CrawlQueueController();
+        crawlControler = new CrawlQueueController();
     }
 
     @PreDestroy
@@ -80,8 +80,8 @@ public class RevealController {
     	executorService.shutdownNow();
     	
         MorphiaManager.tearDown();
-        if (crawlerCtrler != null) {
-            crawlerCtrler.shutdown();
+        if (crawlControler != null) {
+        	crawlControler.shutdown();
         }
     }
 
@@ -164,10 +164,10 @@ public class RevealController {
             CrawlPostRequest request = gson.fromJson(json, CrawlPostRequest.class);
             
             if (request.getKeywords() == null || request.getKeywords().isEmpty()) {
-                return crawlerCtrler.submit(request.getCollection(), request.getLon_min(), request.getLat_min(), request.getLon_max(), request.getLat_max());
+                return crawlControler.submit(request.getCollection(), request.getLon_min(), request.getLat_min(), request.getLon_max(), request.getLat_max());
             }
             else {
-                return crawlerCtrler.submit(request.isNew(), request.getCollection(), request.getKeywords());
+                return crawlControler.submit(request.isNew(), request.getCollection(), request.getKeywords());
             }
         } catch (Exception ex) {
         	_logger.error("Exception during crawl submission: " + ex.getMessage());
@@ -185,7 +185,7 @@ public class RevealController {
     @ResponseBody
     public boolean deleteCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
         try {
-            crawlerCtrler.delete(id);
+        	crawlControler.delete(id);
             return true;
         } catch (Exception ex) {
         	_logger.error("Exception during crawl delete: " + ex.getMessage());
@@ -204,7 +204,7 @@ public class RevealController {
     @ResponseBody
     public CrawlJob stopCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
         try {
-            return crawlerCtrler.stop(id);
+            return crawlControler.stop(id);
         } catch (Exception ex) {
         	_logger.error("Exception during crawl stopping: " + ex.getMessage());
             throw new RevealException("Error when stopping", ex);
@@ -221,7 +221,7 @@ public class RevealController {
     @ResponseBody
     public CrawlJob killCrawlingJob(@PathVariable(value = "id") String id) throws RevealException {
         try {
-        	return crawlerCtrler.kill(id);
+        	return crawlControler.kill(id);
         } catch (Exception ex) {
         	_logger.error("Error when killing id=" + id + ": " + ex.getMessage());
             throw new RevealException("Error when killing " + id, ex);
@@ -231,7 +231,7 @@ public class RevealController {
     @RequestMapping(value = "/crawls/{id}/status", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public Responses.CrawlStatus getCrawlingJobStatus(@PathVariable(value = "id") String id) {
-        return crawlerCtrler.getStatus(id);
+        return crawlControler.getStatus(id);
     }
 
     /**
@@ -240,7 +240,7 @@ public class RevealController {
     @RequestMapping(value = "/crawls/status", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public List<Responses.CrawlStatus> getCrawlerStatus() {
-        List<Responses.CrawlStatus> s = crawlerCtrler.getActiveCrawls();
+        List<Responses.CrawlStatus> s = crawlControler.getActiveCrawls();
         return s;
     }
 

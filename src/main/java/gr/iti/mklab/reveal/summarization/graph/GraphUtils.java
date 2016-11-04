@@ -31,9 +31,7 @@ import edu.uci.ics.jung.graph.DirectedSparseGraph;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 import edu.uci.ics.jung.io.GraphIOException;
-import edu.uci.ics.jung.io.GraphMLMetadata;
 import edu.uci.ics.jung.io.GraphMLWriter;
-import edu.uci.ics.jung.io.graphml.DataMetadata;
 import edu.uci.ics.jung.io.graphml.EdgeMetadata;
 import edu.uci.ics.jung.io.graphml.GraphMLReader2;
 import edu.uci.ics.jung.io.graphml.GraphMetadata;
@@ -528,6 +526,4 @@ public class GraphUtils {
 		
 		System.out.println("Clustered Vertices: " + clustered + ", Removed Edges: " + removedEdges);
 	}
-	
-	
 }

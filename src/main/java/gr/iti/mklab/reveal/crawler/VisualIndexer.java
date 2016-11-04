@@ -131,6 +131,7 @@ public class VisualIndexer implements Runnable {
         				processed.add(media.getId());
             			unindexedMedia.put(media.getId(), media);
         			}
+        			
         			List<Future<IndexingResult>> futures = submitTasks(mediaToIndex);
         			Map<String, Media> indexedMedia = consume(futures);
         			for(String mediaId : indexedMedia.keySet()) {
@@ -210,11 +211,6 @@ public class VisualIndexer implements Runnable {
     		LOGGER.info("Unknown instance for " + media.getId());
     	}
     }
-
-	public Future<IndexingResult> submitTask(Media media) {
-		Callable<IndexingResult> task = new IndexingCallable(media, collection);
-		return executor.submit(task);
-	}
 
 	public List<Future<IndexingResult>> submitTasks(List<Media> media) throws InterruptedException {
 		List<Callable<IndexingResult>> tasks = new ArrayList<Callable<IndexingResult>>();

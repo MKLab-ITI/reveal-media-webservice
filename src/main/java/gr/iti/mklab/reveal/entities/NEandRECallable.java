@@ -1,4 +1,4 @@
-package gr.iti.mklab.reveal.entitites;
+package gr.iti.mklab.reveal.entities;
 
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;

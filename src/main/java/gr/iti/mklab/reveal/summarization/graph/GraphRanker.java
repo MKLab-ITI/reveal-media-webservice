@@ -242,9 +242,9 @@ public class GraphRanker {
 		}
 		
 		for(String id : ids) {
-			Double popularity = popularities.get(id).doubleValue();
+			Integer popularity = popularities.get(id);
 			if(popularity != null) {
-				priors.put(id, (popularity+1)/popularitySum);
+				priors.put(id, (popularity.doubleValue() + 1)/popularitySum);
 			}
 			else {
 				priors.put(id, .0);
