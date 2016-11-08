@@ -207,6 +207,7 @@ public class DBSCANClusterer<T extends Clusterable> extends Clusterer<T> {
             if (visited.get(point) != null) {
                 continue;
             }
+            
             final List<T> neighbors = getNeighbors(point, points);
             if (neighbors.size() >= minPts) {
                 // DBSCAN does not care about center points

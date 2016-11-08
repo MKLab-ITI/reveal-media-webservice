@@ -526,4 +526,5 @@ public class GraphUtils {
 		
 		System.out.println("Clustered Vertices: " + clustered + ", Removed Edges: " + removedEdges);
 	}
+	
 }

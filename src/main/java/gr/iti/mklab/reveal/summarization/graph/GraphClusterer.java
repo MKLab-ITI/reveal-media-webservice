@@ -18,13 +18,13 @@ public class GraphClusterer {
 	public static double scanEpsilon = 0.5;
 	public static int scanMu = 3;
 	
-    public static Collection<Collection<String>> cluster(Graph<String, Edge> graph, boolean singleItemClusters) {
+    public static <K> Collection<Collection<K>> cluster(Graph<K, Edge> graph, boolean singleItemClusters) {
     	
-    	Set<String> clustered = new HashSet<String>();
-    	Collection<Collection<String>> clusters = new ArrayList<Collection<String>>();
+    	Set<K> clustered = new HashSet<K>();
+    	Collection<Collection<K>> clusters = new ArrayList<Collection<K>>();
     	 
-    	ScanCommunityDetector<String, Edge> detector = new ScanCommunityDetector<String, Edge>(scanEpsilon, scanMu);
-		ScanCommunityStructure<String, Edge> structure = detector.getCommunityStructure(graph);
+    	ScanCommunityDetector<K, Edge> detector = new ScanCommunityDetector<K, Edge>(scanEpsilon, scanMu);
+		ScanCommunityStructure<K, Edge> structure = detector.getCommunityStructure(graph);
 		
 		int numCommunities = structure.getNumberOfCommunities();
         
@@ -34,9 +34,9 @@ public class GraphClusterer {
 		System.out.println("#outliers " + structure.getOutliers().size());
 		
 		for(Integer i=0; i<=numCommunities; i++) {
-        	Community<String, Edge> community = structure.getCommunity(i);
+        	Community<K, Edge> community = structure.getCommunity(i);
               if(community != null) {
-            	  Set<String> cluster = new HashSet<String>();
+            	  Set<K> cluster = new HashSet<K>();
             	  cluster.addAll(community.getMembers());
             	  clustered.addAll(cluster);
             	  clusters.add(cluster);
@@ -44,21 +44,21 @@ public class GraphClusterer {
         }
         
         if(singleItemClusters) {
-        	List<String> singleItems = new ArrayList<String>();
+        	List<K> singleItems = new ArrayList<K>();
         	singleItems.addAll(structure.getHubs());
         	singleItems.addAll(structure.getOutliers());
-        	for(String item : singleItems) {
-        		Set<String> cluster = new HashSet<String>();
+        	for(K item : singleItems) {
+        		Set<K> cluster = new HashSet<K>();
           	  	cluster.add(item);
           	  	clustered.addAll(cluster);
           	  	clusters.add(cluster);
         	}
         	
-        	Set<String> unclustered = new HashSet<String>();
+        	Set<K> unclustered = new HashSet<K>();
     		unclustered.addAll(graph.getVertices());
     		unclustered.removeAll(clustered);			
-    		for(String item : unclustered) {
-    			Set<String> cluster = new HashSet<String>();
+    		for(K item : unclustered) {
+    			Set<K> cluster = new HashSet<K>();
           	  	cluster.add(item);
           	  	clusters.add(cluster);
     		}
@@ -67,4 +67,5 @@ public class GraphClusterer {
 		return clusters;
 	}	
 
+    
 }
