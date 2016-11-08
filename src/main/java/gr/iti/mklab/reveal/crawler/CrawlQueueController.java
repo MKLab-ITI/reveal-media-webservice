@@ -58,6 +58,7 @@ public class CrawlQueueController {
         // Starts a polling thread to regularly check for empty slots
         poller = new Poller();
         poller.startPolling();
+        
     }
 
 
@@ -178,8 +179,6 @@ public class CrawlQueueController {
             //Delete the request from the request DB
             dao.delete(req);
             MorphiaManager.getDB(req.getCollection()).dropDatabase();
-            
-
         } 
         else if(CrawlJob.STATE.RUNNING == req.getState() || CrawlJob.STATE.WAITING == req.getState() || CrawlJob.STATE.STARTING == req.getState()) {
         	kill(id);
@@ -202,7 +201,7 @@ public class CrawlQueueController {
         List<CrawlJob> runningCrawls = getRunningCrawls();
         _logger.info("Running crawls list size: " + runningCrawls.size());
         if (runningCrawls.size() >= Configuration.NUM_CRAWLS) {
-        	_logger.info("Cannot run more crawls. Number of crawls reached.");
+        	_logger.info("Cannot run more crawls. Number of crawls reached: " + Configuration.NUM_CRAWLS);
             return;
         }
         
@@ -235,7 +234,6 @@ public class CrawlQueueController {
    	 				dao.save(job);
    	        	
    	 				startCrawl(job);
-   	        	
    	 				running++;
    	 			}
    	 			else {
@@ -243,7 +241,6 @@ public class CrawlQueueController {
    	 				job.setState(CrawlJob.STATE.WAITING);
    	 				dao.save(job);
    	 			}
-   	        
    	 		} catch (Exception e) {
 				_logger.error("Failed to start " + job.getCollection());
 			}
@@ -418,14 +415,14 @@ public class CrawlQueueController {
         }
 
         public void startPolling() {
-            exec.scheduleAtFixedRate(this, 10, 60, TimeUnit.SECONDS);
+        	future = exec.scheduleAtFixedRate(this, 10, 60, TimeUnit.SECONDS);
         }
 
         public void stopPolling() {
-            if (future != null && !future.isDone()) {
+        	exec.shutdownNow();
+        	if (future != null && !future.isDone()) {
                future.cancel(true);
             }
-            exec.shutdownNow();
         }
 
     }

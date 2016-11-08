@@ -41,6 +41,9 @@ public class IndexingCallable implements Callable<IndexingResult> {
     private static RequestConfig _requestConfig;
     static{
     	 PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+    	 cm.setMaxTotal(50);
+    	 cm.setDefaultMaxPerRoute(20);
+    	 
     	 _httpclient = HttpClients.custom()
                  .setConnectionManager(cm)
                  .build();
@@ -93,21 +96,20 @@ public class IndexingCallable implements Callable<IndexingResult> {
             
             httpget = new HttpGet(url.replaceAll(" ", "%20"));
             httpget.setConfig(_requestConfig);
+            
             HttpResponse response = _httpclient.execute(httpget);
             StatusLine status = response.getStatusLine();
             int code = status.getStatusCode();
             HttpEntity entity = response.getEntity();
             
             if (code < 200 || code >= 300) {
-                _logger.error("Failed fetch media item " + id + ". URL=" + url +
-                        ". Http code: " + code + " Error: " + status.getReasonPhrase());
+                _logger.error("Failed fetch media item " + id + ". URL=" + url + ". Http code: " + code + " Error: " + status.getReasonPhrase());
                 EntityUtils.consumeQuietly(entity);
                 return null;
             }
             
             if (entity == null) {
-                _logger.error("Entity is null for " + id + ". URL=" + url +
-                        ". Http code: " + code + " Error: " + status.getReasonPhrase());
+                _logger.error("Entity is null for " + id + ". URL=" + url +". Http code: " + code + " Error: " + status.getReasonPhrase());
                 EntityUtils.consumeQuietly(entity);
                 return null;
             }
@@ -116,6 +118,8 @@ public class IndexingCallable implements Callable<IndexingResult> {
             Header contentType = entity.getContentType();
             byte[] imageContent = IOUtils.toByteArray(input);
             if(!ImageUtils.checkContentHeaders(imageContent.length, contentType.getValue())) {
+            	_logger.error("Checking content and content type failed for id=" + id 
+            			+ ". Content:" + imageContent.length + " bytes, type:" + contentType.getValue());
             	return null;
             }
             
@@ -131,7 +135,6 @@ public class IndexingCallable implements Callable<IndexingResult> {
                     ((Video) media).setWidth(width);
                     ((Video) media).setHeight(height);
                 }
-                imvec.setDebug(true);
                 
                _logger.info("Beginning vectorization for " + url);
                 ImageVectorizationResult imvr = imvec.call();
@@ -147,9 +150,7 @@ public class IndexingCallable implements Callable<IndexingResult> {
                 
                 try {
                 	if(imageContent != null && imageContent.length > 0) {
-                		_logger.info("Call disturbing detection service for id=" + id);
-                		String resp = DisturbingDetectorClient.detect(url, imageContent, collection, id, type);
-                		_logger.info("DisturbingDetectorClient response for " + id + " : " + resp);
+                		DisturbingDetectorClient.detect(url, imageContent, collection, id, type);
                 	}
                 }
                 catch(Exception e) {

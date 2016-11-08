@@ -42,12 +42,10 @@ import org.apache.commons.math3.util.MathUtils;
 /**
  * DBSCAN (density-based spatial clustering of applications with noise) algorithm.
  * <p/>
- * The DBSCAN algorithm forms clusters based on the idea of density connectivity, i.e.
- * a point p is density connected to another point q, if there exists a chain of
- * points p<sub>i</sub>, with i = 1 .. n and p<sub>1</sub> = p and p<sub>n</sub> = q,
- * such that each pair &lt;p<sub>i</sub>, p<sub>i+1</sub>&gt; is directly density-reachable.
- * A point q is directly density-reachable from point p if it is in the &epsilon;-neighborhood
- * of this point.
+ * 
+ * The DBSCAN algorithm forms clusters based on the idea of density connectivity, i.e. a point p is density connected to another point q, if there exists a chain of
+ * points p<sub>i</sub>, with i = 1 .. n and p<sub>1</sub> = p and p<sub>n</sub> = q, such that each pair &lt;p<sub>i</sub>, p<sub>i+1</sub>&gt; is directly density-reachable.
+ * A point q is directly density-reachable from point p if it is in the &epsilon;-neighborhood of this point.
  * <p/>
  * Any point that is not density-reachable from a formed cluster is treated as noise, and
  * will thus not be present in the result.
@@ -64,7 +62,7 @@ import org.apache.commons.math3.util.MathUtils;
  * A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise</a>
  * @since 3.2
  */
-public class DBSCANClustererIncr<T extends Clusterable> extends Clusterer<T> {
+public class DBSCANClusterer<T extends Clusterable> extends Clusterer<T> {
 
     /**
      * Maximum radius of the neighborhood to be considered.
@@ -84,6 +82,7 @@ public class DBSCANClustererIncr<T extends Clusterable> extends Clusterer<T> {
          * The point has is considered to be noise.
          */
         NOISE,
+        
         /**
          * The point is already part of a cluster.
          */
@@ -99,8 +98,7 @@ public class DBSCANClustererIncr<T extends Clusterable> extends Clusterer<T> {
      * @param minPts minimum number of points needed for a cluster
      * @throws NotPositiveException if {@code eps < 0.0} or {@code minPts < 0}
      */
-    public DBSCANClustererIncr(final double eps, final int minPts)
-            throws NotPositiveException {
+    public DBSCANClusterer(final double eps, final int minPts) throws NotPositiveException {
         this(eps, minPts, new EuclideanDistance());
     }
 
@@ -112,8 +110,7 @@ public class DBSCANClustererIncr<T extends Clusterable> extends Clusterer<T> {
      * @param measure the distance measure to use
      * @throws NotPositiveException if {@code eps < 0.0} or {@code minPts < 0}
      */
-    public DBSCANClustererIncr(final double eps, final int minPts, final DistanceMeasure measure)
-            throws NotPositiveException {
+    public DBSCANClusterer(final double eps, final int minPts, final DistanceMeasure measure) throws NotPositiveException {
         super(measure);
 
         if (eps < 0.0d) {
@@ -291,10 +288,12 @@ public class DBSCANClustererIncr<T extends Clusterable> extends Clusterer<T> {
      */
     private boolean isNeighbor(final T point, final Collection<T> points) {
         for (final T neighbor : points) {
-            if (distance(neighbor, point) <= eps)
+            if (distance(neighbor, point) <= eps) {
                 continue;
-            else
+            }
+            else {
                 return false;
+            }
         }
         return true;
     }

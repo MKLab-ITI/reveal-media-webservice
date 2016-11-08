@@ -1,11 +1,9 @@
-package gr.iti.mklab.reveal.crawler;
+package gr.iti.mklab.reveal.visual;
 
+import gr.iti.mklab.reveal.crawler.LinkDetector;
 import gr.iti.mklab.reveal.rabbitmq.RabbitMQPublisher;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.util.DisturbingDetectorClient;
-import gr.iti.mklab.reveal.visual.IndexingCallable;
-import gr.iti.mklab.reveal.visual.IndexingResult;
-import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.simmo.core.annotations.lowleveldescriptors.LocalDescriptors;
 import gr.iti.mklab.simmo.core.documents.Webpage;
 import gr.iti.mklab.simmo.core.items.Image;

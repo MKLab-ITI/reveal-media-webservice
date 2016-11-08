@@ -112,11 +112,12 @@ public class StreamManagerClient {
     }
 
     public void deleteAllFeeds(boolean isGeo, String collection){
-        if(isGeo){
+        if(isGeo) {
             deleteFeed("StreetView#" + collection);
             deleteFeed("Panoramio#" + collection);
             deleteFeed("Wikimapia#" + collection);
-        }else{
+        }
+        else {
             deleteFeed("Flickr#" + collection);
             deleteFeed("Twitter#" + collection);
             deleteFeed("Instagram#" + collection);

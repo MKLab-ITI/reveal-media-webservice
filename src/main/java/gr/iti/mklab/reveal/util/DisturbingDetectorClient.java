@@ -43,6 +43,7 @@ public class DisturbingDetectorClient {
     		return "DisturbingDetectorClient has not been initialized.";
     	}
     	
+    	_logger.info("Call disturbing detection service for id=" + id);
         PostMethod postMethod = null;
         try {
             ByteArrayPartSource source = new ByteArrayPartSource("bytes", image);

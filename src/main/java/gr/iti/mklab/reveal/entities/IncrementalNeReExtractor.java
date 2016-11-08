@@ -58,6 +58,8 @@ public class IncrementalNeReExtractor implements Runnable {
     private DAO<Association, String> _associationDAO;
 
     private Date since = new Date(0L);
+
+	private boolean isRunning = true;
    
     public IncrementalNeReExtractor(String collection) {
         _collection = collection;
@@ -66,74 +68,89 @@ public class IncrementalNeReExtractor implements Runnable {
         _associationDAO = new BasicDAO<>(Association.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
     }
 
+    public void stop() {
+    	isRunning = false;
+    }
+    
     @Override
     public void run() {
 
-        Date until = new Date();
+    	while(isRunning) {
+    		
+    		try {
+				Thread.sleep(60000L);
+			} catch (InterruptedException e) {
+				LOGGER.info("NeRe extractor interrupted for " + _collection, e);
+				if(!isRunning) {
+					break;
+				}
+			}
+    		
+    		Date until = new Date();
         
-        MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, _collection);
-        Query<Image> q = imageDAO.createQuery();
-        q.filter("crawlDate >", since);
-        q.filter("crawlDate <=", until);
+    		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, _collection);
+    		Query<Image> q = imageDAO.createQuery();
+    		q.filter("crawlDate >", since);
+    		q.filter("crawlDate <=", until);
         
-		QueryResults<Image> result = imageDAO.find(q);
-		List<Image> images = result.asList();
+    		QueryResults<Image> result = imageDAO.find(q);
+    		List<Image> images = result.asList();
 		
-		since.setTime(until.getTime());
+    		since.setTime(until.getTime());
 		 
-        HashMap<String, NamedEntityList> REmap = new HashMap<>();
-        for (Image image : images) {
-            if (!StringUtils.isEmpty(image.getTitle())) {
-                NamedEntityList entities = API.NER(image.getTitle(), API.FORMAT.TEXT_CERTH_TWEET, false);
-                
-                REmap.put(image.getTitle(), entities);
-                for (gr.demokritos.iit.ner.NamedEntity ne : entities) {
-                    NamedEntity namedEntity = new NamedEntity(ne.getText(), ne.getType());
-                    namedEntity.setId(ne.getID());
-                    image.addAnnotation(namedEntity);
-                    if (ENTITIES.add(namedEntity.getToken().toLowerCase())) {
-                        ENTITIES_MAP.put(namedEntity.getToken().toLowerCase(), namedEntity);
-                    }
-                }
-                imageDAO.save(image);
-            }
-        }
+    		HashMap<String, NamedEntityList> REmap = new HashMap<>();
+    		for (Image image : images) {
+    			if (!StringUtils.isEmpty(image.getTitle())) {
+    				NamedEntityList entities = API.NER(image.getTitle(), API.FORMAT.TEXT_CERTH_TWEET, false);
+    				REmap.put(image.getTitle(), entities);
+    				for (gr.demokritos.iit.ner.NamedEntity ne : entities) {
+    					NamedEntity namedEntity = new NamedEntity(ne.getText(), ne.getType());
+    					namedEntity.setId(ne.getID());
+    					image.addAnnotation(namedEntity);
+    					if (ENTITIES.add(namedEntity.getToken().toLowerCase())) {
+    						ENTITIES_MAP.put(namedEntity.getToken().toLowerCase(), namedEntity);
+    					}
+    				}
+    				imageDAO.save(image);
+    			}
+    		}
+    		
+    		Iterable<Multiset.Entry<String>> cases = Multisets.copyHighestCountFirst(ENTITIES).entrySet();
+    		for (Multiset.Entry<String> s : cases) {
+    			NamedEntity namedEntity = ENTITIES_MAP.get(s.getElement());
+    			namedEntity.setCount(s.getCount());
+    			_entitiesDAO.save(namedEntity);
+    		}
 
-        Iterable<Multiset.Entry<String>> cases = Multisets.copyHighestCountFirst(ENTITIES).entrySet();
-        for (Multiset.Entry<String> s : cases) {
-            NamedEntity namedEntity = ENTITIES_MAP.get(s.getElement());
-            namedEntity.setCount(s.getCount());
-            _entitiesDAO.save(namedEntity);
-        }
+        	RelationCounter counter = API.RE(REmap, API.FORMAT.TEXT_CERTH_TWEET);
+        	LOGGER.info("### RELATIONS COUNT ### " + counter.getGroups().size());
+        	for (RelationList rl : counter.getGroups().values()) {
+            	for (Relation r : rl) {
+                	if (_entitiesDAO.exists("_id", r.getSubject().getID()) && _entitiesDAO.exists("_id", r.getArgument().getID())) {
+                    	int count = counter.getCount(r.getLabel());
+                    	RELATIONS_MULTISET.add(r.getLabel(), count);
+                    	RELATIONS_MAP.put(r.getLabel(), r);
+                	}
+            	}
+        	}
 
-        RelationCounter counter = API.RE(REmap, API.FORMAT.TEXT_CERTH_TWEET);
-        LOGGER.info("### RELATIONS COUNT ### " + counter.getGroups().size());
-        for (RelationList rl : counter.getGroups().values()) {
-            for (Relation r : rl) {
-                if (_entitiesDAO.exists("_id", r.getSubject().getID()) && _entitiesDAO.exists("_id", r.getArgument().getID())) {
-                    int count = counter.getCount(r.getLabel());
-                    RELATIONS_MULTISET.add(r.getLabel(), count);
-                    RELATIONS_MAP.put(r.getLabel(), r);
-                }
-            }
-        }
-
-        Iterable<Multiset.Entry<String>> rankedRelations = Multisets.copyHighestCountFirst(RELATIONS_MULTISET).entrySet();
-        for (Multiset.Entry<String> s : rankedRelations) {
-            Relation r = RELATIONS_MAP.get(s.getElement());
-            gr.demokritos.iit.ner.NamedEntity subject = r.getSubject();
-            gr.demokritos.iit.ner.NamedEntity argument = r.getArgument();
+        	Iterable<Multiset.Entry<String>> rankedRelations = Multisets.copyHighestCountFirst(RELATIONS_MULTISET).entrySet();
+        	for (Multiset.Entry<String> s : rankedRelations) {
+            	Relation r = RELATIONS_MAP.get(s.getElement());
+            	gr.demokritos.iit.ner.NamedEntity subject = r.getSubject();
+            	gr.demokritos.iit.ner.NamedEntity argument = r.getArgument();
             
-            String relation = r.getRelationText();
+            	String relation = r.getRelationText();
             
-            NamedEntity subjectSIMMO = new NamedEntity(subject.getText(), subject.getType());
-            subjectSIMMO.setId(subject.getID());
-            NamedEntity argumentSIMMO = new NamedEntity(argument.getText(), argument.getType());
-            argumentSIMMO.setId(argument.getID());
-            TextualRelation textualRelation = new TextualRelation(subjectSIMMO, argumentSIMMO, relation, s.getCount());
+            	NamedEntity subjectSIMMO = new NamedEntity(subject.getText(), subject.getType());
+            	subjectSIMMO.setId(subject.getID());
+            	NamedEntity argumentSIMMO = new NamedEntity(argument.getText(), argument.getType());
+            	argumentSIMMO.setId(argument.getID());
+            	TextualRelation textualRelation = new TextualRelation(subjectSIMMO, argumentSIMMO, relation, s.getCount());
             
-            _associationDAO.save(textualRelation);
-        }
+            	_associationDAO.save(textualRelation);
+        	}
+    	}
     }
     
 }

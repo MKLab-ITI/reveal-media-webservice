@@ -48,7 +48,7 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
 		VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, collection);   
 		
         TokenizerFactory tokFactory = new NormalizedTokenizerFactory();
-        DBSCANClustererIncr<ClusterableMedia> clusterer = new DBSCANClustererIncr<ClusterableMedia>(eps, minpoints);
+        DBSCANClusterer<ClusterableMedia> clusterer = new DBSCANClusterer<ClusterableMedia>(eps, minpoints);
         DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         List<org.apache.commons.math3.ml.clustering.Cluster<ClusterableMedia>> centroids = null;
 
@@ -110,8 +110,9 @@ public class ClusterEverythingCallable implements Callable<List<Cluster<Clustera
             System.out.println("After jaccard size " + filteredJaccard.size());
             filteredJaccard.stream().forEach(m -> cluster.addMember(m));
             cluster.setSize(filteredJaccard.size());
-            if (cluster.getSize() < 100)
+            if (cluster.getSize() < 100) {
                 clusterDAO.save(cluster);
+            }
         }
         return centroids;
     }

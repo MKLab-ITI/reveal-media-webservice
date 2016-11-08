@@ -5,6 +5,7 @@ import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
 import gr.iti.mklab.reveal.entities.IncrementalNeReExtractor;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.util.StreamManagerClient;
+import gr.iti.mklab.reveal.visual.VisualIndexer;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import it.unimi.di.law.bubing.Agent;
@@ -61,12 +62,12 @@ public class RevealAgent implements Runnable {
     @Override
     public void run() {
         try {
-            LOGGER.info("###### REVEAL agent run method for collection " + _request.getCollection());
+            LOGGER.info("Reveal agent run method for collection " + _request.getCollection());
             
             dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());           
+            
             visualIndexer = new VisualIndexer(_request.getCollection());
             visualIndexerHandle = executorService.submit(visualIndexer);
-            
             if(!visualIndexer.isRunning()) {
             	LOGGER.error("Visual Indexer failed to start for " + _request.getCollection());
             }
@@ -104,7 +105,6 @@ public class RevealAgent implements Runnable {
             rc.keywords = _request.getKeywords();
             rc.collectionName = _request.getCollection();
             
-            LOGGER.info("###### Agent for collection " + _request.getCollection() + " started");
             new Agent(_hostname, _jmxPort, rc);	// agent halts here    
             LOGGER.info("###### Agent for collection " + _request.getCollection() + " finished");
             
@@ -128,12 +128,19 @@ public class RevealAgent implements Runnable {
 
     public void stopServices() {
         
-    	LOGGER.info("###### stop indexing runner and social media crawler for " + _request.getCollection());
+    	LOGGER.info("Stop indexing runner, NeRe extractor and social media crawler for " + _request.getCollection());
     	visualIndexer.stop();
-        visualIndexerHandle.cancel(true);
+        boolean canceled = visualIndexerHandle.cancel(true);
+        if(!canceled) {
+        	LOGGER.error("Visual indexer failed to stop");
+        }
         
-        inereHandle.cancel(true);
-
+        inereExtractor.stop();
+        canceled = inereHandle.cancel(true);
+        if(!canceled) {
+        	LOGGER.error("NE and RE extractor failed to stop");
+        }
+        
         if (Configuration.ADD_SOCIAL_MEDIA) {
             _manager.deleteAllFeeds(false, _request.getCollection());
         }
