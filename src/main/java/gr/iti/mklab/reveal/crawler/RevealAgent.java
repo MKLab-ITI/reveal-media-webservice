@@ -4,6 +4,7 @@ import gr.iti.mklab.reveal.crawler.seeds.DogpileSource;
 import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
 import gr.iti.mklab.reveal.entities.IncrementalNeReExtractor;
 import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.util.StreamManagerClient;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import it.unimi.di.law.bubing.Agent;
@@ -60,11 +61,15 @@ public class RevealAgent implements Runnable {
     @Override
     public void run() {
         try {
-            LOGGER.info("###### REVEAL agent call method for collection " + _request.getCollection());
+            LOGGER.info("###### REVEAL agent run method for collection " + _request.getCollection());
             
             dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());           
             visualIndexer = new VisualIndexer(_request.getCollection());
             visualIndexerHandle = executorService.submit(visualIndexer);
+            
+            if(!visualIndexer.isRunning()) {
+            	LOGGER.error("Visual Indexer failed to start for " + _request.getCollection());
+            }
             
             inereExtractor = new IncrementalNeReExtractor(_request.getCollection());
             inereHandle = executorService.submit(inereExtractor);

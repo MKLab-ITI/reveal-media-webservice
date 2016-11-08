@@ -49,9 +49,8 @@ public class FilterParser<T> implements FilterParserConstants {
 /** Parser. */
   final public Filter<T> start() throws ParseException {
         Filter<T> res;
-    res = or();
-                {if (true) return res;}
-    throw new Error("Missing return statement in function");
+        res = or();
+        {if (true) return res;} throw new Error("Missing return statement in function");
   }
 
   final public Filter<T> or() throws ParseException {

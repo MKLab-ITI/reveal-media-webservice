@@ -40,7 +40,7 @@ public class DisturbingDetectorClient {
     public static String detect(String url, byte[] image, String collection, String id, String type) {
 
     	if(webServiceHost == null || httpClient == null) {
-    		return "Null http client";
+    		return "DisturbingDetectorClient has not been initialized.";
     	}
     	
         PostMethod postMethod = null;

@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.crawler;
 
+import gr.iti.mklab.reveal.util.StreamManagerClient;
 import gr.iti.mklab.simmo.core.jobs.CrawlJob;
 import gr.iti.mklab.simmo.core.jobs.Job;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;

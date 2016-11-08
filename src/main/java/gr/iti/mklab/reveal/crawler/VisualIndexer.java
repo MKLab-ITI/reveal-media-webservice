@@ -15,6 +15,7 @@ import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -96,10 +97,17 @@ public class VisualIndexer implements Runnable {
     @Override
     public void run() {
     			
+    	
         LOGGER.info("Indexing runner run for " + collection);
-		
-		Set<String> processed = new HashSet<String>();
-				
+        try {
+			vIndexClient.createCollection();
+		} catch (IOException ex) {
+			LOGGER.info("Cannot add index for collection " + collection, ex);
+			isRunning = false;
+			return;
+		}
+        
+		Set<String> processed = new HashSet<String>();			
         while (isRunning) {
             try {            	
                 List<Media> mediaToIndex = new ArrayList<Media>();
@@ -120,6 +128,7 @@ public class VisualIndexer implements Runnable {
                     	if(!isRunning) {
                     		break;
                     	}
+                    	
                         Thread.sleep(INDEXING_PERIOD);
                     } catch (InterruptedException ie) {
                     	LOGGER.info("Indexing runner " + collection + " interrupted.");
@@ -172,6 +181,10 @@ public class VisualIndexer implements Runnable {
             
             LOGGER.info(processed.size() + " media items processed so far.");
         }
+    }
+    
+    public boolean isRunning() {
+    	return isRunning;
     }
     
     public void stop() {

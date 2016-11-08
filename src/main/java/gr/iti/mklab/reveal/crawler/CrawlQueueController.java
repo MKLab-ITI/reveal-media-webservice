@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.util.Configuration;
+import gr.iti.mklab.reveal.util.StreamManagerClient;
 import gr.iti.mklab.reveal.visual.VisualIndexClient;
 import gr.iti.mklab.reveal.web.Responses;
 import gr.iti.mklab.simmo.core.items.Image;
@@ -159,17 +160,19 @@ public class CrawlQueueController {
             req.setLastStateChange(new Date());
             dao.save(req);
             
-            //Unload from memory
+            //Unload index from memory and delete it
+            VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, req.getCollection());
+        	boolean indexDeleted = vIndexClient.deleteCollection();
+        	if(!indexDeleted) {
+        		_logger.error("Visual index of " + req.getCollection() + " failed to be deleted.");
+        	}
+        	
             try {	
-            	VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost, req.getCollection());
-            	vIndexClient.removeCollection();
-            	
-                //Delete the crawl and index folders
+                //Delete the crawl folders
                 FileUtils.deleteDirectory(new File(req.getCrawlDataPath()));
-                FileUtils.deleteDirectory(new File(Configuration.VISUAL_DIR + req.getCollection()));
             }
             catch(Exception e) {
-            	_logger.error("Exception during visual index deletion of " + req.getCollection() + " => " + e.getMessage(), e);
+            	_logger.error("Exception during crawl deletion of " + req.getCollection() + " => " + e.getMessage(), e);
             }
             
             //Delete the request from the request DB
@@ -179,7 +182,7 @@ public class CrawlQueueController {
 
         } 
         else if(CrawlJob.STATE.RUNNING == req.getState() || CrawlJob.STATE.WAITING == req.getState() || CrawlJob.STATE.STARTING == req.getState()) {
-        	cancel(id, true);
+        	kill(id);
         	delete(id);
         }
         else if(CrawlJob.STATE.KILLING == req.getState() || CrawlJob.STATE.STOPPING == req.getState()) {
@@ -268,7 +271,7 @@ public class CrawlQueueController {
     }
     
     private void startCrawl(CrawlJob req) throws Exception {
-        _logger.info("METHOD: Start crawl " + req.getCollection() + " " + req.getState());
+        _logger.info("Start crawl " + req.getCollection() + " " + req.getState());
         if (req.getKeywords().isEmpty()) {
             geoCrawlerMap.put(req.getCollection(), new GeoCrawler(req, streamManager));
         } 

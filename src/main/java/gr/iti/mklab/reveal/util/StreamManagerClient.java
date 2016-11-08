@@ -1,4 +1,4 @@
-package gr.iti.mklab.reveal.crawler;
+package gr.iti.mklab.reveal.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -16,7 +16,6 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -45,20 +44,22 @@ public class StreamManagerClient {
     }
 
     public void addAllKeywordFeeds(Set<String> keywords, String collection) {
+    	
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MONTH, -1);
         
         KeywordsFeed feed = new KeywordsFeed();
         feed.addKeywords(new ArrayList<String>(keywords));
-        feed.setId(collection + "Twitter#1");
+        feed.setId("Twitter#" + collection);
         feed.setSinceDate(cal.getTime());
         feed.setSource("Twitter");
         feed.setLabel(collection);
+        
         addKeywordsFeed(feed);
         
         KeywordsFeed flickr = new KeywordsFeed();
         flickr.addKeywords(new ArrayList<String>(keywords));
-        flickr.setId(collection + "Flickr#1");
+        flickr.setId("Flickr#" + collection);
         flickr.setSinceDate(cal.getTime());
         flickr.setSource("Flickr");
         flickr.setLabel(collection);
@@ -66,7 +67,7 @@ public class StreamManagerClient {
         
         KeywordsFeed instagram = new KeywordsFeed();
         instagram.addKeywords(new ArrayList<String>(keywords));
-        instagram.setId(collection + "Instagram#1");
+        instagram.setId("Instagram#" + collection);
         instagram.setSinceDate(cal.getTime());
         instagram.setSource("Instagram");
         instagram.setLabel(collection);
@@ -74,7 +75,7 @@ public class StreamManagerClient {
 
         KeywordsFeed youtube = new KeywordsFeed();
         youtube.addKeywords(new ArrayList<String>(keywords));
-        youtube.setId(collection + "Youtube#1");
+        youtube.setId("Youtube#" + collection);
         youtube.setSinceDate(cal.getTime());
         youtube.setSource("YouTube");
         youtube.setLabel(collection);
@@ -82,7 +83,7 @@ public class StreamManagerClient {
         
         KeywordsFeed googleplus = new KeywordsFeed();
         googleplus.addKeywords(new ArrayList<String>(keywords));
-        googleplus.setId(collection + "GooglePlus#1");
+        googleplus.setId("GooglePlus#" + collection);
         googleplus.setSinceDate(cal.getTime());
         googleplus.setSource("GooglePlus");
         googleplus.setLabel(collection);
@@ -93,17 +94,18 @@ public class StreamManagerClient {
 
         double density = Math.abs((lon_max - lon_min) / 100);
         GeoFeed streetview = new GeoFeed(lon_min, lat_min, lon_max, lat_max, density);
-        streetview.setId(collection + "StreetView#1");
+        streetview.setId("StreetView#" + collection);
         streetview.setSource("StreetView");
         streetview.setLabel(collection);
         addGeoFeed(streetview);
+        
         GeoFeed panoramio = new GeoFeed(lon_min, lat_min, lon_max, lat_max);
-        panoramio.setId(collection + "Panoramio#1");
+        panoramio.setId("Panoramio#" + collection);
         panoramio.setSource("Panoramio");
         panoramio.setLabel(collection);
         addGeoFeed(panoramio);
         GeoFeed wikimapia = new GeoFeed(lon_min, lat_min, lon_max, lat_max);
-        wikimapia.setId(collection + "Wikimapia#1");
+        wikimapia.setId("Wikimapia# + collection");
         wikimapia.setSource("Wikimapia");
         wikimapia.setLabel(collection);
         addGeoFeed(wikimapia);
@@ -111,24 +113,24 @@ public class StreamManagerClient {
 
     public void deleteAllFeeds(boolean isGeo, String collection){
         if(isGeo){
-            deleteFeed(collection+"StreetView#1");
-            deleteFeed(collection+"Panoramio#1");
-            deleteFeed(collection+"Wikimapia#1");
+            deleteFeed("StreetView#" + collection);
+            deleteFeed("Panoramio#" + collection);
+            deleteFeed("Wikimapia#" + collection);
         }else{
-            deleteFeed(collection+"Flickr#1");
-            deleteFeed(collection+"Twitter#1");
-            deleteFeed(collection+"Instagram#1");
-            deleteFeed(collection+"GooglePlus#1");
-            deleteFeed(collection+"Youtube#1");
+            deleteFeed("Flickr#" + collection);
+            deleteFeed("Twitter#" + collection);
+            deleteFeed("Instagram#" + collection);
+            deleteFeed("GooglePlus#" + collection);
+            deleteFeed("Youtube#" + collection);
         }
     }
 
     public String addKeywordsFeed(KeywordsFeed kfeed) {
-        return addFeed("/sm/sm/feeds/addkeywords", kfeed);
+        return addFeed("/sm/api/feeds/addkeywords", kfeed);
     }
 
     public String addGeoFeed(GeoFeed gfeed) {
-        return addFeed("/sm/sm/feeds/addgeo", gfeed);
+        return addFeed("/sm/api/feeds/addgeo", gfeed);
     }
 
     private String addFeed(String path, Feed feed) {
@@ -160,7 +162,7 @@ public class StreamManagerClient {
         GetMethod queryMethod = null;
         String response = null;
         try {
-            queryMethod = new GetMethod(webServiceHost + "/sm/sm/feeds/delete");
+            queryMethod = new GetMethod(webServiceHost + "/sm/api/feeds/delete");
             queryMethod.setQueryString("id=" + id);
             int code = httpClient.executeMethod(queryMethod);
             if (code == 200) {
@@ -179,21 +181,4 @@ public class StreamManagerClient {
         }
         return response;
     }
-
-    public static void main(String[] args) {
-        Set<String> keywords = new HashSet<>();
-        keywords.add("grexit");
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MONTH, -1);
-        KeywordsFeed flickr = new KeywordsFeed();
-        flickr.addKeywords(new ArrayList<String>(keywords));
-        flickr.setId("Flickr#2");
-        flickr.setSinceDate(cal.getTime());
-        flickr.setSource("Flickr");
-        flickr.setLabel("tFlickr1");
-
-        StreamManagerClient client = new StreamManagerClient("http://127.0.0.1:8080");
-        client.deleteFeed(flickr.getId());
-    }
-
 }
