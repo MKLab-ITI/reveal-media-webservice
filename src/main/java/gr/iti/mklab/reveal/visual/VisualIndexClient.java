@@ -253,6 +253,7 @@ public class VisualIndexClient {
                     new FilePart("vector", source),
                     new StringPart("threshold", String.valueOf(threshold))
             };
+            
             queryMethod = new PostMethod(webServiceHost + "/rest/visual/qindex/" + collectionName);
             queryMethod.setRequestEntity(new MultipartRequestEntity(parts, queryMethod.getParams()));
             int code = httpClient.executeMethod(queryMethod);
@@ -283,6 +284,7 @@ public class VisualIndexClient {
      * @return
      */
     public JsonResultSet getSimilarImages(double[] vector, double threshold) {
+    	
         JsonResultSet similar = new JsonResultSet();
         byte[] vectorInBytes = new byte[8 * vector.length];
         ByteBuffer bbuf = ByteBuffer.wrap(vectorInBytes);
@@ -297,6 +299,7 @@ public class VisualIndexClient {
                     new FilePart("vector", source),
                     new StringPart("threshold", String.valueOf(threshold))
             };
+            
             queryMethod = new PostMethod(webServiceHost + "/rest/visual/query_vector/" + collectionName);
             queryMethod.setRequestEntity(new MultipartRequestEntity(parts, queryMethod.getParams()));
             int code = httpClient.executeMethod(queryMethod);
@@ -462,8 +465,7 @@ public class VisualIndexClient {
         GetMethod httpget = new GetMethod(request.replaceAll(" ", "%20"));
         int code = httpClient.executeMethod(httpget);
         if (code < 200 || code >= 300) { 	
-            _logger.error("Failed delete collection with name " + collectionName +
-                    ". Http code: " + code + " Error: " + httpget.getStatusLine());
+            _logger.error("Failed delete collection with name " + collectionName + ". Http code: " + code + " Error: " + httpget.getStatusLine());
             return false;
         }
        
@@ -476,8 +478,7 @@ public class VisualIndexClient {
        
         int code = httpClient.executeMethod(httpget);
         if (code < 200 || code >= 300) {
-            _logger.error("Failed delete collection with name " + collectionName +
-                    ". Http code: " + code + " Error: " + httpget.getStatusLine());
+            _logger.error("Failed delete collection with name " + collectionName + ". Http code: " + code + " Error: " + httpget.getStatusLine());
             return false;
         }
        
@@ -491,8 +492,7 @@ public class VisualIndexClient {
         System.out.println(httpget);
         int code = httpClient.executeMethod(httpget);
         if (code < 200 || code >= 300) {
-            _logger.error("Failed delete collection with name " + collectionName +
-                    ". Http code: " + code + " Error: " + httpget.getStatusLine());
+            _logger.error("Failed delete collection with name " + collectionName + ". Http code: " + code + " Error: " + httpget.getStatusLine());
             return 0;
         }
         

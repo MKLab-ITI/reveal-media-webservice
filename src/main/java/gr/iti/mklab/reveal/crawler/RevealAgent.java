@@ -27,6 +27,7 @@ import javax.management.remote.JMXServiceURL;
 
 import java.util.Date;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -49,7 +50,10 @@ public class RevealAgent implements Runnable {
     private IncrementalNeReExtractor inereExtractor = null;
     
     private Future<?> visualIndexerHandle = null, inereHandle = null;
-    private ExecutorService executorService = Executors.newFixedThreadPool(3);
+    private Future<Boolean> bubbingHandle = null;
+    
+    private ExecutorService executorService = Executors.newFixedThreadPool(4);
+    
     
     public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
     	LOGGER.info("RevealAgent constructor for hostname " + hostname);
@@ -83,73 +87,82 @@ public class RevealAgent implements Runnable {
             		LOGGER.error("Failed to add keywords in stream manager for " + _request.getCollection() , e);
             	}	
             }
+           
+            bubbingHandle = startBubingAgent();
+            if(bubbingHandle.isDone() || bubbingHandle.isCancelled()) {
+            	LOGGER.error("Bubing Agent failed to start for " + _request.getCollection());
+            }
             
             // Mark the request as running
             _request.setState(CrawlJob.STATE.RUNNING);
             _request.setLastStateChange(new Date());
             dao.save(_request);
-
-            final BaseConfiguration additional = new BaseConfiguration();
-            additional.addProperty("name", _request.getCollection());
-            additional.addProperty("group", "gr.iti.mklab");
-            additional.addProperty("crawlIsNew", _request.isNew());
-            additional.addProperty("weight", "1");
-            additional.addProperty("rootDir", Configuration.CRAWLS_DIR + _request.getCollection());
-            
-            //Add the dog-pile links
-    		SeedURLSource dogpile = new DogpileSource();
-    		Set<String> dogpileUrls = dogpile.getSeedURLs(_request.getKeywords());
-
-            LOGGER.info("###### Starting Agent for request id " + _request.getId() + " and collection " + _request.getCollection());
-            RuntimeConfiguration rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional), dogpileUrls);
-            rc.keywords = _request.getKeywords();
-            rc.collectionName = _request.getCollection();
-            
-            new Agent(_hostname, _jmxPort, rc);	// agent halts here    
-            LOGGER.info("###### Agent for collection " + _request.getCollection() + " finished");
-            
-            LOGGER.info("###### unregister bean for " + _request.getCollection());
-            unregisterBean(_request.getCollection());
-            
-            stopServices();
-            
-            // STOP or KILL 
-            if(_request.getState() == CrawlJob.STATE.KILLING || _request.getState() == CrawlJob.STATE.STOPPING) {
-            	LOGGER.info("###### Stop " + _request.getCollection());
-                _request.setState(CrawlJob.STATE.FINISHED);
-                _request.setLastStateChange(new Date());
-                dao.save(_request);
+           
+            while(true) {
+            	Thread.sleep(300000L);
+            	
+            	if(!visualIndexerHandle.isDone() && !visualIndexerHandle.isCancelled()) {
+                	LOGGER.info("Visual Indexer is running porperly for " + _request.getCollection());
+                }
+            	
+            	if(!inereHandle.isDone() && !inereHandle.isCancelled()) {
+                	LOGGER.info("NeRe Extractor is running porperly for " + _request.getCollection());
+                }
+            	
+            	if(!bubbingHandle.isDone() && !bubbingHandle.isCancelled()) {
+                	LOGGER.info("Bubbing Agent thread is running porperly for " + _request.getCollection());
+                }
             }
             
         } catch (Exception e) {
             LOGGER.error("Exception for collection " + _request.getCollection() + ". Message: "+ e.getMessage(), e);
         }
     }
+    
+    public Future<Boolean> startBubingAgent() {
+    	
+    	return executorService.submit( new Callable<Boolean>() {
+			@Override
+			public Boolean call() {
+				final BaseConfiguration additional = new BaseConfiguration();
+		        additional.addProperty("name", _request.getCollection());
+		        additional.addProperty("group", "gr.iti.mklab");
+		        additional.addProperty("crawlIsNew", _request.isNew());
+		        additional.addProperty("weight", "1");
+		        additional.addProperty("rootDir", Configuration.CRAWLS_DIR + _request.getCollection());
+		        
+		        //Add the dog-pile links
+				SeedURLSource dogpile = new DogpileSource();
+				Set<String> dogpileUrls = dogpile.getSeedURLs(_request.getKeywords());
 
-    public void stopServices() {
-        
-    	LOGGER.info("Stop indexing runner, NeRe extractor and social media crawler for " + _request.getCollection());
-    	visualIndexer.stop();
-        boolean canceled = visualIndexerHandle.cancel(true);
-        if(!canceled) {
-        	LOGGER.error("Visual indexer failed to stop");
-        }
-        
-        inereExtractor.stop();
-        canceled = inereHandle.cancel(true);
-        if(!canceled) {
-        	LOGGER.error("NE and RE extractor failed to stop");
-        }
-        
-        if (Configuration.ADD_SOCIAL_MEDIA) {
-            _manager.deleteAllFeeds(false, _request.getCollection());
-        }
+		        LOGGER.info("###### Starting Agent for request id " + _request.getId() + " and collection " + _request.getCollection());
+		        RuntimeConfiguration rc;
+				try {
+					rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional), dogpileUrls);
+					
+			        rc.keywords = _request.getKeywords();
+			        rc.collectionName = _request.getCollection();
+			        
+			        new Agent(_hostname, _jmxPort, rc);	// agent halts here    
+			        LOGGER.info("###### Agent for collection " + _request.getCollection() + " finished");
+
+			        LOGGER.info("###### unregister bean for " + _request.getCollection());
+			        unregisterBean(_request.getCollection());
+			        
+			        return true;
+				} catch (Exception e) {
+					return false;
+				}
+
+			}
+    		
+    	});
     }
     
     /**
      * Stops the BUbiNG Agent listening to the specified port
      */
-    public void stop() {
+    public void stopBubingAgent() {
     	LOGGER.info("Cancel BUbiNG Agent for " + _request.getCollection());
     	try {
     		JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
@@ -167,6 +180,46 @@ public class RevealAgent implements Runnable {
     	} catch (Exception e) {
     		LOGGER.error("Exception occurred for " + _request.getCollection(), e);
     	}
+    }
+    
+    public void stopServices() {
+        
+    	LOGGER.info("Stop indexing runner, NeRe extractor and social media crawler for " + _request.getCollection());
+    	visualIndexer.stop();
+        boolean canceled = visualIndexerHandle.cancel(true);
+        if(!canceled) {
+        	LOGGER.error("Visual indexer failed to stop");
+        }
+        
+        inereExtractor.stop();
+        canceled = inereHandle.cancel(true);
+        if(!canceled) {
+        	LOGGER.error("NE and RE extractor failed to stop");
+        }
+        
+        canceled = bubbingHandle.cancel(true);
+        if(!canceled) {
+        	LOGGER.error("bubbing agent thread failed to stop");
+        }
+        
+        if (Configuration.ADD_SOCIAL_MEDIA) {
+            _manager.deleteAllFeeds(false, _request.getCollection());
+        }
+    }
+    
+    public void stop() {
+    	
+    	stopBubingAgent();
+    	
+    	stopServices();
+        
+        // STOP or KILL 
+        if(_request.getState() == CrawlJob.STATE.KILLING || _request.getState() == CrawlJob.STATE.STOPPING) {
+        	LOGGER.info("###### Stop " + _request.getCollection());
+            _request.setState(CrawlJob.STATE.FINISHED);
+            _request.setLastStateChange(new Date());
+            dao.save(_request);
+        }
     }
     
     private void unregisterBean(String name) {

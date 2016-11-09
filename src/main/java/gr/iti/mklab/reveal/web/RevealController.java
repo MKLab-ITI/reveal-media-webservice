@@ -283,6 +283,7 @@ public class RevealController {
                                            		@RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                                 @RequestParam(value = "type", required = false) String type,
                                                 @PathVariable(value = "collection") String collection) {
+    	
         Responses.MediaResponse response = new Responses.MediaResponse();
         
         if (type == null || type.equalsIgnoreCase("image")) {
@@ -318,7 +319,7 @@ public class RevealController {
 
     @RequestMapping(value = "/media/{collection}/search", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public Responses.MediaResponse mediaItemsSearchV2(
+    public Responses.MediaResponse mediaItemsSearch(
             @PathVariable(value = "collection") String collection,
             @RequestParam(value = "user", required = false) String username,
             @RequestParam(value = "date", required = false, defaultValue = "-1") long date,
@@ -346,6 +347,7 @@ public class RevealController {
             response.images = imageDAO.search("crawlDate", new Date(date), w, h, count, offset, account, query, sourcesList);
             response.numImages = imageDAO.count();
         }
+        
         if (type == null || type.equalsIgnoreCase("video")) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
             response.videos = videoDAO.search("crawlDate", new Date(date), w, h, count, offset, account, query, sourcesList);
