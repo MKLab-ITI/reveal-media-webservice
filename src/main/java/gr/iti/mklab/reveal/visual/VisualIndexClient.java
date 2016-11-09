@@ -351,13 +351,16 @@ public class VisualIndexClient {
                 if (!success) {
                     _logger.error("Indexing failed: " + rawJson);
                 }
-            } else {
+            } 
+            else {
                 _logger.error("Http returned code: " + code);
             }
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             _logger.error("Exception for id: " + id, e);
             e.printStackTrace();
-        } finally {
+        } 
+        finally {
             if (indexMethod != null) {
                 indexMethod.releaseConnection();
             }

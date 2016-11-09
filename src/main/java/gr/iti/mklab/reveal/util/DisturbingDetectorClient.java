@@ -61,7 +61,6 @@ public class DisturbingDetectorClient {
             if (code == 200) {
                 InputStream responseStream = postMethod.getResponseBodyAsStream();
                 String raw = IOUtils.toString(responseStream);
-                //_logger.info("Http returned code: " + code + " for " + url + " in collection " + collection + ". Message: " + raw);
                
                 if(raw != null && raw.equals("\"ok\"")) {
                 	return raw;

@@ -99,8 +99,6 @@ public class RevealAgent implements Runnable {
             dao.save(_request);
            
             while(true) {
-            	Thread.sleep(300000L);
-            	
             	if(!visualIndexerHandle.isDone() && !visualIndexerHandle.isCancelled()) {
                 	LOGGER.info("Visual Indexer is running porperly for " + _request.getCollection());
                 }
@@ -112,6 +110,7 @@ public class RevealAgent implements Runnable {
             	if(!bubbingHandle.isDone() && !bubbingHandle.isCancelled()) {
                 	LOGGER.info("Bubbing Agent thread is running porperly for " + _request.getCollection());
                 }
+            	Thread.sleep(1800000L);
             }
             
         } catch (Exception e) {
@@ -163,8 +162,9 @@ public class RevealAgent implements Runnable {
      * Stops the BUbiNG Agent listening to the specified port
      */
     public void stopBubingAgent() {
-    	LOGGER.info("Cancel BUbiNG Agent for " + _request.getCollection());
     	try {
+    		LOGGER.info("Cancel BUbiNG Agent for " + _request.getCollection());
+    		
     		JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
     		JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
     		MBeanServerConnection mbsc = cc.getMBeanServerConnection();
@@ -178,12 +178,12 @@ public class RevealAgent implements Runnable {
     		// Close JMX connector
             cc.close();
     	} catch (Exception e) {
-    		LOGGER.error("Exception occurred for " + _request.getCollection(), e);
+    		LOGGER.error("Exception occurred during stoping of BUbiNG Agent for " + _request.getCollection(), e);
     	}
     }
     
     public void stopServices() {
-        
+
     	LOGGER.info("Stop indexing runner, NeRe extractor and social media crawler for " + _request.getCollection());
     	visualIndexer.stop();
         boolean canceled = visualIndexerHandle.cancel(true);
@@ -205,21 +205,27 @@ public class RevealAgent implements Runnable {
         if (Configuration.ADD_SOCIAL_MEDIA) {
             _manager.deleteAllFeeds(false, _request.getCollection());
         }
+  
     }
     
     public void stop() {
     	
-    	stopBubingAgent();
+    	_request = dao.findOne("_id", _request.getId());
     	
+    	stopBubingAgent();
     	stopServices();
         
         // STOP or KILL 
         if(_request.getState() == CrawlJob.STATE.KILLING || _request.getState() == CrawlJob.STATE.STOPPING) {
-        	LOGGER.info("###### Stop " + _request.getCollection());
+        	LOGGER.info("Stop " + _request.getCollection() + " was successfull.");
             _request.setState(CrawlJob.STATE.FINISHED);
             _request.setLastStateChange(new Date());
             dao.save(_request);
         }
+        else {
+        	LOGGER.error("State of " + _request + " is " + _request.getState() + " instead of STOPPING / KILLING.");
+        }
+        
     }
     
     private void unregisterBean(String name) {

@@ -187,6 +187,7 @@ public class CrawlQueueController {
         else if(CrawlJob.STATE.KILLING == req.getState() || CrawlJob.STATE.STOPPING == req.getState()) {
         	while(CrawlJob.STATE.KILLING == req.getState() || CrawlJob.STATE.STOPPING == req.getState()) {
         		Thread.sleep(5000);
+        		req = getCrawlRequest(id);
         	}
         	delete(id);
         }

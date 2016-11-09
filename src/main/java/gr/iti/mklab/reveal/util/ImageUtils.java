@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
  */
 public class ImageUtils {
 
-    private final static int MIN_CONTENT_LENGTH = 15000;
+    private final static int MIN_CONTENT_LENGTH = 10000;
     private final static int MIN_WIDTH = 400;
     private final static int MIN_HEIGHT = 400;
 

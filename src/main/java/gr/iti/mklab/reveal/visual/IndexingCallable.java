@@ -39,7 +39,8 @@ public class IndexingCallable implements Callable<IndexingResult> {
     private static Logger _logger = LoggerFactory.getLogger(IndexingCallable.class);
     private static CloseableHttpClient _httpclient;
     private static RequestConfig _requestConfig;
-    static{
+    
+    static {
     	 PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
     	 cm.setMaxTotal(50);
     	 cm.setDefaultMaxPerRoute(20);
@@ -47,6 +48,7 @@ public class IndexingCallable implements Callable<IndexingResult> {
     	 _httpclient = HttpClients.custom()
                  .setConnectionManager(cm)
                  .build();
+    	 
     	 _requestConfig = RequestConfig.custom()
                  .setSocketTimeout(30000)
                  .setConnectTimeout(30000)
@@ -130,7 +132,8 @@ public class IndexingCallable implements Callable<IndexingResult> {
                 if (media instanceof Image) {
                     ((Image) media).setWidth(width);
                     ((Image) media).setHeight(height);
-                } else if (media instanceof Video) {
+                } 
+                else if (media instanceof Video) {
                     ((Video) media).setWidth(width);
                     ((Video) media).setHeight(height);
                 }
@@ -138,8 +141,6 @@ public class IndexingCallable implements Callable<IndexingResult> {
                 ImageVectorizationResult imvr = imvec.call();
                
                 double[] vector = imvr.getImageVector();
-                _logger.info("Vectorization collected properly for " + url);
-                
                 if (vector == null || vector.length == 0) {
                     _logger.error("Error in feature extraction for " + id);
                     return null;
@@ -151,7 +152,7 @@ public class IndexingCallable implements Callable<IndexingResult> {
                 	}
                 }
                 catch(Exception e) {
-                	_logger.error("Exception for id=" + id + ", url=" + url + ", collection=" + collection, e);
+                	_logger.error("Exception in vectorization for id=" + id + ", url=" + url + ", collection=" + collection, e);
                 }
                 
                 return vector;
@@ -159,9 +160,11 @@ public class IndexingCallable implements Callable<IndexingResult> {
             else {
             	 _logger.error(image == null ? ("Image is null for " + id):("Image for " + id + " is not big enough."));
             }
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             _logger.error(e.getMessage(), e);
-        } finally {
+        } 
+        finally {
             if (httpget != null) {
                 httpget.abort();
             }

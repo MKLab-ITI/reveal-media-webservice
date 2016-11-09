@@ -142,6 +142,7 @@ public class VisualIndexer implements Runnable {
         			
         			List<Future<IndexingResult>> futures = submitTasks(mediaToIndex);
         			Map<String, Media> indexedMedia = consume(futures);
+        			
         			for(String mediaId : indexedMedia.keySet()) {
         				unindexedMedia.remove(mediaId);
         			}
@@ -175,10 +176,10 @@ public class VisualIndexer implements Runnable {
                 }
             }
             catch(Exception other) {
-                LOGGER.error("Exception " + other.getMessage());
+                LOGGER.error("Exception " + other.getMessage() + " for " + collection);
             }
             
-            LOGGER.info(processed.size() + " media items processed so far.");
+            LOGGER.info(processed.size() + " media items processed so far for " + collection);
         }
     }
     
@@ -235,6 +236,7 @@ public class VisualIndexer implements Runnable {
 	
 
 	public Map<String, Media> consume(List<Future<IndexingResult>> futures) {
+		
 		Map<String, Media> indexedMedia = new HashMap<String, Media>();
 		ArrayDeque<Future<IndexingResult>> queue = new ArrayDeque<Future<IndexingResult>>();
 		while (!queue.isEmpty()) {	
