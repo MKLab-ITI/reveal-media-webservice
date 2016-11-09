@@ -54,6 +54,7 @@ public class VisualIndexClient {
         params.setConnectionTimeout(30000);
         params.setSoTimeout(30000);
         cm.setParams(params);
+        
         this.httpClient = new HttpClient(cm);
         _logger.info("VisualIndexHandler end of constructor");
     }

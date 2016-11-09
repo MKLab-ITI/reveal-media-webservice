@@ -47,7 +47,7 @@ public class VisualIndexer implements Runnable {
     private final static Logger LOGGER = LoggerFactory.getLogger(VisualIndexer.class);
     
     private final static int INDEXING_PERIOD = 30 * 1000;	// 30 seconds delay if no new media are available
-    private final static int STEP = 200;					// number of media to be indexed per batch 
+    private final static int STEP = 100;					// number of media to be indexed per batch 
     
     private RabbitMQPublisher _publisher;
     
@@ -95,8 +95,6 @@ public class VisualIndexer implements Runnable {
 
     @Override
     public void run() {
-    			
-    	
         LOGGER.info("Indexing runner run for " + collection);
         try {
 			vIndexClient.createCollection();
@@ -106,21 +104,22 @@ public class VisualIndexer implements Runnable {
 			return;
 		}
         
-		Set<String> processed = new HashSet<String>();			
+		Set<String> processed = new HashSet<String>();	
+		
         while (isRunning) {
             try {            	
                 List<Media> mediaToIndex = new ArrayList<Media>();
                 mediaToIndex.addAll(imageDAO.getNotVIndexed(STEP));
                 mediaToIndex.addAll(videoDAO.getNotVIndexed(STEP));
                 
-				LOGGER.info("media list size before filtering " + mediaToIndex.size());
+				LOGGER.info("Media list size before filtering " + mediaToIndex.size());
 				CollectionUtils.filter(mediaToIndex, new Predicate<Media>() {
 					@Override
 					public boolean evaluate(Media m) {
 						return processed.contains(m.getId()) ? false : true;
 					}
 				});
-                LOGGER.info("media list size after filtering " + mediaToIndex.size());
+                LOGGER.info("Media list size after filtering " + mediaToIndex.size());
             
                 if (mediaToIndex.isEmpty()) {
                     try {
@@ -135,6 +134,7 @@ public class VisualIndexer implements Runnable {
                 } 
                 else {
                 	Map<String, Media> unindexedMedia = new HashMap<String, Media>();
+                	
         			for (Media media : mediaToIndex) {
         				processed.add(media.getId());
             			unindexedMedia.put(media.getId(), media);
@@ -165,14 +165,14 @@ public class VisualIndexer implements Runnable {
                 
             } 
             catch (IllegalStateException ex) {
-               LOGGER.error("Trying to recreate collections. IllegalStateException: " + ex.getMessage());
+               LOGGER.error("Trying to re-create collections. IllegalStateException: " + ex.getMessage());
                 try {
                     imageDAO = new MediaDAO<>(Image.class, collection);
                     videoDAO = new MediaDAO<>(Video.class, collection);
                     pageDAO = new ObjectDAO<>(Webpage.class, collection);
                 }
                 catch(Exception e) {
-                    LOGGER.error("Could not recreate collections. Exception: " + e.getMessage());
+                    LOGGER.error("Could not re-create collections. Exception: " + e.getMessage());
                 }
             }
             catch(Exception other) {
@@ -238,7 +238,7 @@ public class VisualIndexer implements Runnable {
 	public Map<String, Media> consume(List<Future<IndexingResult>> futures) {
 		
 		Map<String, Media> indexedMedia = new HashMap<String, Media>();
-		ArrayDeque<Future<IndexingResult>> queue = new ArrayDeque<Future<IndexingResult>>();
+		ArrayDeque<Future<IndexingResult>> queue = new ArrayDeque<Future<IndexingResult>>(futures);
 		while (!queue.isEmpty()) {	
 			Future<IndexingResult> future = queue.poll();
 			if(future.isCancelled()) {
@@ -261,6 +261,7 @@ public class VisualIndexer implements Runnable {
 							UpdateOperations<Image> ops = imageDAO.createUpdateOperations().add("annotations", ld);
 							UpdateResults r = imageDAO.update(q, ops); 
 							if(!r.getUpdatedExisting()) {
+								LOGGER.error("Visual Indexer failed to update media " + media.getId() + " in mongodb for " + collection);
 								continue;
 							}
 						}
@@ -269,6 +270,7 @@ public class VisualIndexer implements Runnable {
 							UpdateOperations<Video> ops = videoDAO.createUpdateOperations().add("annotations", ld);
 							UpdateResults r = videoDAO.update(q, ops);
 							if(!r.getUpdatedExisting()) {
+								LOGGER.error("Visual Indexer failed to update media " + media.getId() + " in mongodb for " + collection);
 								continue;
 							}
 						}

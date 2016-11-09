@@ -50,7 +50,7 @@ public class RevealAgent implements Runnable {
     private IncrementalNeReExtractor inereExtractor = null;
     
     private Future<?> visualIndexerHandle = null, inereHandle = null;
-    private Future<Boolean> bubbingHandle = null;
+    private Future<Boolean> bubingHandle = null;
     
     private ExecutorService executorService = Executors.newFixedThreadPool(4);
     
@@ -88,9 +88,9 @@ public class RevealAgent implements Runnable {
             	}	
             }
            
-            bubbingHandle = startBubingAgent();
-            if(bubbingHandle.isDone() || bubbingHandle.isCancelled()) {
-            	LOGGER.error("Bubing Agent failed to start for " + _request.getCollection());
+            bubingHandle = startBUbiNGAgent();
+            if(bubingHandle.isDone() || bubingHandle.isCancelled()) {
+            	LOGGER.error("BUbiNG Agent failed to start for " + _request.getCollection());
             }
             
             // Mark the request as running
@@ -102,14 +102,24 @@ public class RevealAgent implements Runnable {
             	if(!visualIndexerHandle.isDone() && !visualIndexerHandle.isCancelled()) {
                 	LOGGER.info("Visual Indexer is running porperly for " + _request.getCollection());
                 }
+            	else {
+            		LOGGER.info("Visual Indexer stopped for " + _request.getCollection());
+            	}
             	
             	if(!inereHandle.isDone() && !inereHandle.isCancelled()) {
                 	LOGGER.info("NeRe Extractor is running porperly for " + _request.getCollection());
                 }
+            	else {
+            		LOGGER.info("NeRe Extractor stopped for " + _request.getCollection());
+            	}
             	
-            	if(!bubbingHandle.isDone() && !bubbingHandle.isCancelled()) {
-                	LOGGER.info("Bubbing Agent thread is running porperly for " + _request.getCollection());
+            	if(!bubingHandle.isDone() && !bubingHandle.isCancelled()) {
+                	LOGGER.info("BUbiNG Agent thread is running porperly for " + _request.getCollection());
                 }
+            	else {
+            		LOGGER.info("BUbiNG Agent thread stopped for " + _request.getCollection());
+            	}
+            	
             	Thread.sleep(1800000L);
             }
             
@@ -118,23 +128,28 @@ public class RevealAgent implements Runnable {
         }
     }
     
-    public Future<Boolean> startBubingAgent() {
+    public Future<Boolean> startBUbiNGAgent() {
     	
     	return executorService.submit( new Callable<Boolean>() {
 			@Override
 			public Boolean call() {
+				boolean failed = false;
+				
 				final BaseConfiguration additional = new BaseConfiguration();
 		        additional.addProperty("name", _request.getCollection());
 		        additional.addProperty("group", "gr.iti.mklab");
 		        additional.addProperty("crawlIsNew", _request.isNew());
 		        additional.addProperty("weight", "1");
-		        additional.addProperty("rootDir", Configuration.CRAWLS_DIR + _request.getCollection());
+		        
+		        String rootDir = Configuration.CRAWLS_DIR + _request.getCollection();
+		        LOGGER.info("RootDir for BUbiNG Agent: " + rootDir);
+		        additional.addProperty("rootDir", rootDir);
 		        
 		        //Add the dog-pile links
 				SeedURLSource dogpile = new DogpileSource();
 				Set<String> dogpileUrls = dogpile.getSeedURLs(_request.getKeywords());
 
-		        LOGGER.info("###### Starting Agent for request id " + _request.getId() + " and collection " + _request.getCollection());
+		        LOGGER.info("Starting BUbiNG Agent for request id " + _request.getId() + " and collection " + _request.getCollection());
 		        RuntimeConfiguration rc;
 				try {
 					rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional), dogpileUrls);
@@ -143,18 +158,19 @@ public class RevealAgent implements Runnable {
 			        rc.collectionName = _request.getCollection();
 			        
 			        new Agent(_hostname, _jmxPort, rc);	// agent halts here    
-			        LOGGER.info("###### Agent for collection " + _request.getCollection() + " finished");
-
-			        LOGGER.info("###### unregister bean for " + _request.getCollection());
-			        unregisterBean(_request.getCollection());
+			        LOGGER.info("BUbiNG Agent for collection " + _request.getCollection() + " finished successfully");
 			        
-			        return true;
 				} catch (Exception e) {
-					return false;
+					LOGGER.error("Exception during starting of BUbiNG Agent for " + _request.getCollection() + ": " + e.getMessage(), e);
+					failed = true;
 				}
-
+				finally {
+			        LOGGER.info("Unregister BUbiNG Agent bean for " + _request.getCollection());
+			        unregisterBean(_request.getCollection());
+				}
+				
+				return failed;
 			}
-    		
     	});
     }
     
@@ -197,9 +213,9 @@ public class RevealAgent implements Runnable {
         	LOGGER.error("NE and RE extractor failed to stop");
         }
         
-        canceled = bubbingHandle.cancel(true);
+        canceled = bubingHandle.cancel(true);
         if(!canceled) {
-        	LOGGER.error("bubbing agent thread failed to stop");
+        	LOGGER.error("BUbiNG Agent thread failed to stop");
         }
         
         if (Configuration.ADD_SOCIAL_MEDIA) {
@@ -228,21 +244,20 @@ public class RevealAgent implements Runnable {
         
     }
     
-    private void unregisterBean(String name) {
+    private void unregisterBean(String collection) {
         try {
         	JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
             MBeanServerConnection mbsc = cc.getMBeanServerConnection();
             
             //This information is available in jconsole
-            ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=" + name);
+            ObjectName serviceConfigName = new ObjectName("it.unimi.di.law.bubing:type=Agent,name=" + collection);
             mbsc.unregisterMBean(serviceConfigName);
             
             // Close JMX connector
             cc.close();
         } catch (Exception e) {
-        	LOGGER.error("Exception occurred: " + e.toString());
-            e.printStackTrace();
+        	LOGGER.error("Exception occurred during bean unregister " + e.getMessage());
         }
     }
 
