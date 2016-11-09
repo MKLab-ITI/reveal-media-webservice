@@ -46,6 +46,7 @@ public class VisualIndexClient {
     	_logger.info("VisualIndexHandler start of constructor");
         this.webServiceHost = webServiceHost;
         this.collectionName = collectionName;
+        
         MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
         HttpConnectionManagerParams params = new HttpConnectionManagerParams();
         params.setMaxTotalConnections(50);
@@ -450,8 +451,7 @@ public class VisualIndexClient {
         GetMethod httpget = new GetMethod(request.replaceAll(" ", "%20"));
         int code = httpClient.executeMethod(httpget);
         if (code < 200 || code >= 300) {
-            _logger.error("Failed create collection with name " + collectionName + 
-            		". Http code: " + code + " Error: " + httpget.getStatusLine());
+            _logger.error("Failed create collection with name " + collectionName + ". Http code: " + code + " Error: " + httpget.getStatusLine());
             return false;
         }
         return true;

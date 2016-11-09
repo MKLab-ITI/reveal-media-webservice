@@ -118,8 +118,7 @@ public class IndexingCallable implements Callable<IndexingResult> {
             Header contentType = entity.getContentType();
             byte[] imageContent = IOUtils.toByteArray(input);
             if(!ImageUtils.checkContentHeaders(imageContent.length, contentType.getValue())) {
-            	_logger.error("Checking content and content type failed for id=" + id 
-            			+ ". Content:" + imageContent.length + " bytes, type:" + contentType.getValue());
+            	_logger.error("Checking content and content type failed for id=" + id + ". Content:" + imageContent.length + " bytes, type:" + contentType.getValue());
             	return null;
             }
             
@@ -136,12 +135,10 @@ public class IndexingCallable implements Callable<IndexingResult> {
                     ((Video) media).setHeight(height);
                 }
                 
-               _logger.info("Beginning vectorization for " + url);
                 ImageVectorizationResult imvr = imvec.call();
-                _logger.info("Vectorization called properly for " + url);
-                
+               
                 double[] vector = imvr.getImageVector();
-                _logger.info("imvr collected properly for " + url);
+                _logger.info("Vectorization collected properly for " + url);
                 
                 if (vector == null || vector.length == 0) {
                     _logger.error("Error in feature extraction for " + id);

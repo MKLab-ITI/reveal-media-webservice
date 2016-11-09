@@ -40,6 +40,7 @@ public class VisualFeatureExtractor {
     private static PCA pca;
     private static CloseableHttpClient _httpclient;
     private static RequestConfig _requestConfig;
+    
     private static Logger _logger = LoggerFactory.getLogger(VisualFeatureExtractor.class);
 
     private VisualIndexClient handler;
@@ -79,7 +80,7 @@ public class VisualFeatureExtractor {
         	
         	ImageVectorization.setVladAggregator(new VladAggregatorMultipleVocabularies(codebooks));
         	if (targetLengthMax < initialLength) {
-            	System.out.println("targetLengthMax : " + targetLengthMax + " initialLengh " + initialLength);
+            	_logger.info("targetLengthMax : " + targetLengthMax + " initialLengh: " + initialLength);
             	pca = new PCA(targetLengthMax, 1, initialLength, true);
             	pca.loadPCAFromFile(pcaFile);
             	ImageVectorization.setPcaProjector(pca);

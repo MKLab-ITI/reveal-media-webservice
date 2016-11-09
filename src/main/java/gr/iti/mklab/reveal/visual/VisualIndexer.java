@@ -71,6 +71,7 @@ public class VisualIndexer implements Runnable {
         
     	LOGGER.info("Creating IndexingRunner for collection " + collection);
         this.collection = collection;
+        
         if (Configuration.PUBLISH_RABBITMQ) {
             _publisher = new RabbitMQPublisher("localhost", collection);
         }
@@ -173,7 +174,7 @@ public class VisualIndexer implements Runnable {
                     LOGGER.error("Could not recreate collections. Exception: " + e.getMessage());
                 }
             }
-            catch(Exception other){
+            catch(Exception other) {
                 LOGGER.error("Exception " + other.getMessage());
             }
             
@@ -293,6 +294,7 @@ public class VisualIndexer implements Runnable {
 				LOGGER.error(e.getMessage());
 			}		
 		}
+		
 		return indexedMedia;
 	}	
 	
