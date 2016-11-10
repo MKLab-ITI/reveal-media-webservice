@@ -1,6 +1,6 @@
 package gr.iti.mklab.reveal.visual;
 
-import gr.iti.mklab.reveal.crawler.LinkDetector;
+import gr.iti.mklab.reveal.crawler.LinkDetectionRunner;
 import gr.iti.mklab.reveal.rabbitmq.RabbitMQPublisher;
 import gr.iti.mklab.reveal.util.Configuration;
 import gr.iti.mklab.reveal.util.DisturbingDetectorClient;
@@ -212,8 +212,8 @@ public class VisualIndexer implements Runnable {
     		LOGGER.info("Deleting image " + media.getId());
         	imageDAO.delete((Image)media);
         	pageDAO.deleteById(media.getId());
-        	if (LinkDetector.LAST_POSITION > 0) {
-        		LinkDetector.LAST_POSITION--;
+        	if (LinkDetectionRunner.LAST_POSITION > 0) {
+        		LinkDetectionRunner.LAST_POSITION--;
         	}
 		}
         else if(media instanceof Video) {

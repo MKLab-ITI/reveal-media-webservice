@@ -13,6 +13,7 @@ import it.unimi.di.law.bubing.RuntimeConfiguration;
 import it.unimi.di.law.bubing.StartupConfiguration;
 
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.io.FileUtils;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
@@ -25,6 +26,7 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
+import java.io.File;
 import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -51,6 +53,8 @@ public class RevealAgent implements Runnable {
     
     private Future<?> visualIndexerHandle = null, inereHandle = null;
     private Future<Boolean> bubingHandle = null;
+    
+    private Agent bubingAgent;
     
     private ExecutorService executorService = Executors.newFixedThreadPool(4);
     
@@ -120,6 +124,7 @@ public class RevealAgent implements Runnable {
             		LOGGER.info("BUbiNG Agent thread stopped for " + _request.getCollection());
             	}
             	
+            	bubingAgent.isConnected();
             	Thread.sleep(1800000L);
             }
             
@@ -130,18 +135,25 @@ public class RevealAgent implements Runnable {
     
     public Future<Boolean> startBUbiNGAgent() {
     	
+    	
     	return executorService.submit( new Callable<Boolean>() {
+
 			@Override
 			public Boolean call() {
 				boolean failed = false;
 				
-				final BaseConfiguration additional = new BaseConfiguration();
+				BaseConfiguration additional = new BaseConfiguration();
 		        additional.addProperty("name", _request.getCollection());
 		        additional.addProperty("group", "gr.iti.mklab");
 		        additional.addProperty("crawlIsNew", _request.isNew());
 		        additional.addProperty("weight", "1");
 		        
 		        String rootDir = Configuration.CRAWLS_DIR + _request.getCollection();
+		        File file = new File(rootDir);
+		        if(_request.isNew() && file.exists()) {
+		        	FileUtils.deleteQuietly(file);
+		        }
+		        
 		        LOGGER.info("RootDir for BUbiNG Agent: " + rootDir);
 		        additional.addProperty("rootDir", rootDir);
 		        
@@ -151,13 +163,13 @@ public class RevealAgent implements Runnable {
 
 		        LOGGER.info("Starting BUbiNG Agent for request id " + _request.getId() + " and collection " + _request.getCollection());
 		        RuntimeConfiguration rc;
-				try {
+		        try {
 					rc = new RuntimeConfiguration(new StartupConfiguration("reveal.properties", additional), dogpileUrls);
 					
 			        rc.keywords = _request.getKeywords();
 			        rc.collectionName = _request.getCollection();
 			        
-			        new Agent(_hostname, _jmxPort, rc);	// agent halts here    
+			        bubingAgent = new Agent(_hostname, _jmxPort, rc);	// agent halts here    
 			        LOGGER.info("BUbiNG Agent for collection " + _request.getCollection() + " finished successfully");
 			        
 				} catch (Exception e) {
@@ -244,7 +256,7 @@ public class RevealAgent implements Runnable {
         
     }
     
-    private void unregisterBean(String collection) {
+    private static void unregisterBean(String collection) {
         try {
         	JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
@@ -260,5 +272,4 @@ public class RevealAgent implements Runnable {
         	LOGGER.error("Exception occurred during bean unregister " + e.getMessage());
         }
     }
-
 }

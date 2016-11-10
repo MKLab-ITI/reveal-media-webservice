@@ -20,7 +20,7 @@ package it.unimi.di.law.bubing.frontier;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
-import gr.iti.mklab.reveal.crawler.LinkDetector;
+import gr.iti.mklab.reveal.crawler.LinkDetectionRunner;
 import it.unimi.di.law.bubing.RuntimeConfiguration;
 import it.unimi.di.law.bubing.parser.ITIHTMLParser;
 import it.unimi.di.law.bubing.parser.Parser;
@@ -262,17 +262,15 @@ public class ParsingThread extends Thread {
      * @param store    the place where pages must be stored, if required, after parsing.
      * @param index    the index of this thread (used to give it a name).
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
 	public ParsingThread(final Frontier frontier, final Store store, final int index) {
         setName(this.getClass().getSimpleName() + '-' + index);
         this.frontier = frontier;
         this.store = store;
         this.parsers = new ArrayList<Parser<?>>(frontier.rc.parsers.size());
         for (Parser<?> parser : frontier.rc.parsers) {
-            Parser<?> p = parser.copy();
-            if (p instanceof ITIHTMLParser) {
+            Parser p = parser.copy();
+            if (p instanceof ITIHTMLParser) 
                 ((ITIHTMLParser) p).setIndexParameters(frontier.rc.collectionName, frontier.rc.keywords);
-            }
             this.parsers.add(p);
         }
         setPriority((Thread.NORM_PRIORITY + Thread.MIN_PRIORITY) / 2); // Below main threads
@@ -287,7 +285,7 @@ public class ParsingThread extends Thread {
             final RuntimeConfiguration rc = frontier.rc;
             final FrontierEnqueuer frontierLinkReceiver = new FrontierEnqueuer(frontier, rc);
 
-            LinkDetector detective = new LinkDetector(frontier.rc.collectionName) {
+            LinkDetectionRunner detective = new LinkDetectionRunner(frontier.rc.collectionName) {
                 @Override
                 public void processLink(String link) {
                     try {

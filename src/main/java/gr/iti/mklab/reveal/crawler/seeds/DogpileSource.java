@@ -5,10 +5,12 @@ import java.net.URLDecoder;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+
 
 public class DogpileSource implements SeedURLSource {
 
@@ -19,13 +21,7 @@ public class DogpileSource implements SeedURLSource {
 		// The results list
 		Set<String> results = new HashSet<>();
 		// Form the query from the set of keywords
-		String query = "";
-		for (String keyword : keywords) {
-			query += keyword + "+";
-		}
-		// Remove the last "+" which is redundant
-		query = query.substring(0, query.length() - 1);
-
+		String query = StringUtils.join(keywords, "+");
 		for (int i = 1; i < RESULTS_MAX; i += 10) {
 			try {
 				// qsi= is used for getting more pages
@@ -36,9 +32,9 @@ public class DogpileSource implements SeedURLSource {
 				// Extract the pure URL from the dogpile html structure
 				for (Element el : elements) {
 					try {
-						String dogpilehref = el.select("a").attr("href");
-						String properLink = dogpilehref.substring(dogpilehref.indexOf("ru=") + 3,
-								dogpilehref.lastIndexOf("&ap"));
+						String dogpileHref = el.select("a").attr("href");
+						dogpileHref = URLDecoder.decode(dogpileHref, "UTF-8");
+						String properLink = dogpileHref.substring(dogpileHref.indexOf("ru=") + 3, dogpileHref.lastIndexOf("&coi"));
 						results.add(URLDecoder.decode(properLink, "UTF-8"));
 					} catch (Exception ex) {
 						System.out.println("Parsing exception " + ex);
@@ -47,6 +43,7 @@ public class DogpileSource implements SeedURLSource {
 				}
 			} catch (Exception ex) {
 				System.out.println("IO exception " + ex);
+				ex.printStackTrace();
 			}
 		}
 		return results;

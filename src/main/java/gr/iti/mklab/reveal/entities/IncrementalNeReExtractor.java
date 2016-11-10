@@ -74,7 +74,6 @@ public class IncrementalNeReExtractor implements Runnable {
     
     @Override
     public void run() {
-
     	while(isRunning) {
     		
     		try {
