@@ -88,11 +88,12 @@ public class IncrementalNeReExtractor implements Runnable {
     		Date until = new Date();
         
     		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, _collection);
-    		Query<Image> q = imageDAO.createQuery();
-    		q.filter("crawlDate >", since);
-    		q.filter("crawlDate <=", until);
+    		Query<Image> query = imageDAO.createQuery();
+    		
+    		query.filter("crawlDate >", since);
+    		query.filter("crawlDate <=", until);
         
-    		QueryResults<Image> result = imageDAO.find(q);
+    		QueryResults<Image> result = imageDAO.find(query);
     		List<Image> images = result.asList();
 		
     		since.setTime(until.getTime());

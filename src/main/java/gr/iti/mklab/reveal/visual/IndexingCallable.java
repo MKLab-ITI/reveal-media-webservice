@@ -88,7 +88,7 @@ public class IndexingCallable implements Callable<IndexingResult> {
                 type = "video";
             }
             else {
-            	_logger.error("Unknown insatnce of " + id);
+            	_logger.error("Unknown instance of " + id);
             }
             
             if(url == null) {
@@ -156,9 +156,6 @@ public class IndexingCallable implements Callable<IndexingResult> {
                 }
                 
                 return vector;
-            }
-            else {
-            	 _logger.error(image == null ? ("Image is null for " + id):("Image for " + id + " is not big enough."));
             }
         } 
         catch (Exception e) {

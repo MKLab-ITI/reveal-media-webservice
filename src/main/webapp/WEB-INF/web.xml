@@ -24,5 +24,4 @@
         <param-name>learningFolder</param-name>
         <param-value>/home/iti-310/VisualIndex/learning_files/</param-value>
     </context-param>
-
 </web-app>

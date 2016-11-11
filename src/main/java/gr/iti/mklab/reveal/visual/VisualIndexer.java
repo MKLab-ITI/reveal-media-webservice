@@ -30,12 +30,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.collections15.CollectionUtils;
 import org.apache.commons.collections15.Predicate;
+import org.apache.log4j.Logger;
 import org.mongodb.morphia.query.Query;
 import org.mongodb.morphia.query.UpdateOperations;
 import org.mongodb.morphia.query.UpdateResults;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * A runnable that indexes all non indexed images found in the specified collection
  * and waits if there are no new images or videos to index
@@ -43,9 +41,9 @@ import org.slf4j.LoggerFactory;
  * @author kandreadou
  */
 public class VisualIndexer implements Runnable {
-
-    private final static Logger LOGGER = LoggerFactory.getLogger(VisualIndexer.class);
     
+    private final static Logger LOGGER = Logger.getLogger(VisualIndexer.class);
+    		
     private final static int INDEXING_PERIOD = 30 * 1000;	// 30 seconds delay if no new media are available
     private final static int STEP = 100;					// number of media to be indexed per batch 
     
@@ -112,14 +110,14 @@ public class VisualIndexer implements Runnable {
                 mediaToIndex.addAll(imageDAO.getNotVIndexed(STEP));
                 mediaToIndex.addAll(videoDAO.getNotVIndexed(STEP));
                 
-				LOGGER.info("Media list size before filtering " + mediaToIndex.size());
+                LOGGER.info("Media list size before filtering for " + collection + " is " + mediaToIndex.size());
 				CollectionUtils.filter(mediaToIndex, new Predicate<Media>() {
 					@Override
 					public boolean evaluate(Media m) {
 						return processed.contains(m.getId()) ? false : true;
 					}
 				});
-                LOGGER.info("Media list size after filtering " + mediaToIndex.size());
+                LOGGER.info("Media list size after filtering for " + collection + " is " + mediaToIndex.size());
             
                 if (mediaToIndex.isEmpty()) {
                     try {
@@ -147,7 +145,7 @@ public class VisualIndexer implements Runnable {
         				unindexedMedia.remove(mediaId);
         			}
         			
-        			LOGGER.info(unindexedMedia.size() + " media failed to be indexed!");
+        			LOGGER.info(unindexedMedia.size() + " media out of " + mediaToIndex.size() + " failed to be indexed!");
         			for(Media failedMedia : unindexedMedia.values()) {
         				try {
         					LOGGER.info("Delete " + failedMedia.getId() + " from mongodb.");
@@ -165,7 +163,7 @@ public class VisualIndexer implements Runnable {
                 
             } 
             catch (IllegalStateException ex) {
-               LOGGER.error("Trying to re-create collections. IllegalStateException: " + ex.getMessage());
+               LOGGER.error("IllegalStateException: " + ex.getMessage(), ex);
                 try {
                     imageDAO = new MediaDAO<>(Image.class, collection);
                     videoDAO = new MediaDAO<>(Video.class, collection);
@@ -302,4 +300,34 @@ public class VisualIndexer implements Runnable {
 		return indexedMedia;
 	}	
 	
+	public static void main(String...args) {
+        MorphiaManager.setup("160.40.50.207");
+		MediaDAO<Image> dao =  new MediaDAO<>(Image.class, "uselections");
+		
+		LocalDescriptors ld = new LocalDescriptors();
+		ld.setDescriptorType(LocalDescriptors.DESCRIPTOR_TYPE.SURF);
+	    ld.setFeatureEncoding(LocalDescriptors.FEATURE_ENCODING.Vlad);
+	    ld.setNumberOfFeatures(1024);
+	    ld.setFeatureEncodingLibrary("multimedia-indexing");
+	        
+		while(true) {
+			List<Image> media = dao.getNotVIndexed(200);
+			System.out.println(media.size());
+			if(media.isEmpty())
+				break;
+			
+			for(Image m : media) {
+				Query<Image> q = dao.createQuery().filter("url", m.getUrl());
+				m.addAnnotation(ld);
+				UpdateOperations<Image> ops = dao.createUpdateOperations().add("annotations", ld);
+				UpdateResults r = dao.update(q, ops);
+			}
+		
+			try {
+				Thread.sleep(300000L);
+			} catch (InterruptedException e) {
+			}
+			
+		}
+	}
 }

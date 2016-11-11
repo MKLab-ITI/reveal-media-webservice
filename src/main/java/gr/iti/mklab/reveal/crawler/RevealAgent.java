@@ -14,11 +14,10 @@ import it.unimi.di.law.bubing.StartupConfiguration;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
@@ -39,7 +38,7 @@ import java.util.concurrent.Future;
  */
 public class RevealAgent implements Runnable {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(RevealAgent.class);
+    private final static Logger LOGGER = Logger.getLogger(RevealAgent.class);
 
     private final String _hostname;
     private final int _jmxPort;
@@ -173,7 +172,7 @@ public class RevealAgent implements Runnable {
 			        LOGGER.info("BUbiNG Agent for collection " + _request.getCollection() + " finished successfully");
 			        
 				} catch (Exception e) {
-					LOGGER.error("Exception during starting of BUbiNG Agent for " + _request.getCollection() + ": " + e.getMessage(), e);
+					LOGGER.error("Exception during starting of BUbiNG Agent for " + _request.getCollection() + ". Message: " + e.getMessage(), e);
 					failed = true;
 				}
 				finally {
@@ -206,7 +205,7 @@ public class RevealAgent implements Runnable {
     		// Close JMX connector
             cc.close();
     	} catch (Exception e) {
-    		LOGGER.error("Exception occurred during stoping of BUbiNG Agent for " + _request.getCollection(), e);
+    		LOGGER.error("Exception occurred during stoping of BUbiNG Agent for " + _request.getCollection() + ". Message: " + e.getMessage(), e);
     	}
     }
     
@@ -269,7 +268,7 @@ public class RevealAgent implements Runnable {
             // Close JMX connector
             cc.close();
         } catch (Exception e) {
-        	LOGGER.error("Exception occurred during bean unregister " + e.getMessage());
+        	LOGGER.error("Exception occurred during bean unregister for " + collection + ". Message: " + e.getMessage(), e);
         }
     }
 }
