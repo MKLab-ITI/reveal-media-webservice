@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.imageio.ImageIO;
 
@@ -39,6 +40,11 @@ public class IndexingCallable implements Callable<IndexingResult> {
     private static Logger _logger = LoggerFactory.getLogger(IndexingCallable.class);
     private static CloseableHttpClient _httpclient;
     private static RequestConfig _requestConfig;
+    
+    private static AtomicLong received = new AtomicLong(0L);
+    private static AtomicLong smallImages = new AtomicLong(0L);
+    private static AtomicLong failedFecthes = new AtomicLong(0L);
+    private static AtomicLong failedFeatures = new AtomicLong(0L);
     
     static {
     	 PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
@@ -76,6 +82,8 @@ public class IndexingCallable implements Callable<IndexingResult> {
         HttpGet httpget = null;
         try {
         	
+        	received.incrementAndGet();
+        	
             String id = media.getId();
             String type = null;
             String url = null;
@@ -107,12 +115,14 @@ public class IndexingCallable implements Callable<IndexingResult> {
             if (code < 200 || code >= 300) {
                 _logger.error("Failed fetch media item " + id + ". URL=" + url + ". Http code: " + code + " Error: " + status.getReasonPhrase());
                 EntityUtils.consumeQuietly(entity);
+                failedFecthes.incrementAndGet();
                 return null;
             }
             
             if (entity == null) {
                 _logger.error("Entity is null for " + id + ". URL=" + url +". Http code: " + code + " Error: " + status.getReasonPhrase());
                 EntityUtils.consumeQuietly(entity);
+                failedFecthes.incrementAndGet();
                 return null;
             }
             
@@ -121,6 +131,7 @@ public class IndexingCallable implements Callable<IndexingResult> {
             byte[] imageContent = IOUtils.toByteArray(input);
             if(!ImageUtils.checkContentHeaders(imageContent.length, contentType.getValue())) {
             	_logger.error("Checking content and content type failed for id=" + id + ". Content:" + imageContent.length + " bytes, type:" + contentType.getValue());
+            	smallImages.incrementAndGet();
             	return null;
             }
             
@@ -143,16 +154,15 @@ public class IndexingCallable implements Callable<IndexingResult> {
                 double[] vector = imvr.getImageVector();
                 if (vector == null || vector.length == 0) {
                     _logger.error("Error in feature extraction for " + id);
+                    failedFeatures.incrementAndGet();
                     return null;
                 }
                 
                 try {
-                	if(imageContent != null && imageContent.length > 0) {
-                		DisturbingDetectorClient.detect(url, imageContent, collection, id, type);
-                	}
+                	DisturbingDetectorClient.detect(url, imageContent, collection, id, type);
                 }
                 catch(Exception e) {
-                	_logger.error("Exception in vectorization for id=" + id + ", url=" + url + ", collection=" + collection, e);
+                	_logger.error("Exception in disturbing detector call for id=" + id + ", url=" + url + ", collection=" + collection, e);
                 }
                 
                 return vector;
@@ -169,4 +179,8 @@ public class IndexingCallable implements Callable<IndexingResult> {
 		return null;
     }
 
+	public static String stats() {
+		return received.get() + " images received for indexing. " + smallImages.get() + " failed to index due to small size. " + failedFecthes.get() + " failed to be fetched. " 
+				+ failedFeatures.get() + " images failed to be processed.";
+	}
 }

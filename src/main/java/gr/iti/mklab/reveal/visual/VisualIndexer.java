@@ -44,8 +44,8 @@ public class VisualIndexer implements Runnable {
     
     private final static Logger LOGGER = Logger.getLogger(VisualIndexer.class);
     		
-    private final static int INDEXING_PERIOD = 30 * 1000;	// 30 seconds delay if no new media are available
-    private final static int STEP = 100;					// number of media to be indexed per batch 
+    private final static int INDEXING_PERIOD = 60 * 1000;	// 60 seconds delay if no new media are available
+    private final static int STEP = 200;					// number of media to be indexed per batch 
     
     private RabbitMQPublisher _publisher;
     
@@ -146,9 +146,10 @@ public class VisualIndexer implements Runnable {
         			}
         			
         			LOGGER.info(unindexedMedia.size() + " media out of " + mediaToIndex.size() + " failed to be indexed!");
+        			LOGGER.info("Indexing statistics: " + IndexingCallable.stats());
+        			
         			for(Media failedMedia : unindexedMedia.values()) {
         				try {
-        					LOGGER.info("Delete " + failedMedia.getId() + " from mongodb.");
         					deleteMedia(failedMedia);
         				}
         				catch(Exception e) {
@@ -163,7 +164,8 @@ public class VisualIndexer implements Runnable {
                 
             } 
             catch (IllegalStateException ex) {
-               LOGGER.error("IllegalStateException: " + ex.getMessage(), ex);
+            	// This never should happen
+               LOGGER.error("IllegalStateException: " + ex.getMessage());
                 try {
                     imageDAO = new MediaDAO<>(Image.class, collection);
                     videoDAO = new MediaDAO<>(Video.class, collection);
@@ -207,7 +209,6 @@ public class VisualIndexer implements Runnable {
     
     private void deleteMedia(Media media) {
     	if(media instanceof Image) {
-    		LOGGER.info("Deleting image " + media.getId());
         	imageDAO.delete((Image)media);
         	pageDAO.deleteById(media.getId());
         	if (LinkDetectionRunner.LAST_POSITION > 0) {
@@ -215,7 +216,6 @@ public class VisualIndexer implements Runnable {
         	}
 		}
         else if(media instanceof Video) {
-        	LOGGER.info("Deleting video " + media.getId());
 			videoDAO.delete((Video)media);
 		}
     	else {
@@ -288,7 +288,7 @@ public class VisualIndexer implements Runnable {
 					}
 				}
 				else {
-					LOGGER.info("Vector for " + result.media.getId() + " is empty. This will be deleted!");
+					LOGGER.debug("Vector for " + result.media.getId() + " is empty. This will be deleted!");
 				}
 			} catch (InterruptedException e) {
 				LOGGER.error(e.getMessage());
@@ -299,35 +299,4 @@ public class VisualIndexer implements Runnable {
 		
 		return indexedMedia;
 	}	
-	
-	public static void main(String...args) {
-        MorphiaManager.setup("160.40.50.207");
-		MediaDAO<Image> dao =  new MediaDAO<>(Image.class, "uselections");
-		
-		LocalDescriptors ld = new LocalDescriptors();
-		ld.setDescriptorType(LocalDescriptors.DESCRIPTOR_TYPE.SURF);
-	    ld.setFeatureEncoding(LocalDescriptors.FEATURE_ENCODING.Vlad);
-	    ld.setNumberOfFeatures(1024);
-	    ld.setFeatureEncodingLibrary("multimedia-indexing");
-	        
-		while(true) {
-			List<Image> media = dao.getNotVIndexed(200);
-			System.out.println(media.size());
-			if(media.isEmpty())
-				break;
-			
-			for(Image m : media) {
-				Query<Image> q = dao.createQuery().filter("url", m.getUrl());
-				m.addAnnotation(ld);
-				UpdateOperations<Image> ops = dao.createUpdateOperations().add("annotations", ld);
-				UpdateResults r = dao.update(q, ops);
-			}
-		
-			try {
-				Thread.sleep(300000L);
-			} catch (InterruptedException e) {
-			}
-			
-		}
-	}
 }

@@ -53,13 +53,10 @@ public class RevealAgent implements Runnable {
     private Future<?> visualIndexerHandle = null, inereHandle = null;
     private Future<Boolean> bubingHandle = null;
     
-    private Agent bubingAgent;
-    
     private ExecutorService executorService = Executors.newFixedThreadPool(4);
     
-    
     public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
-    	LOGGER.info("RevealAgent constructor for hostname " + hostname);
+    	LOGGER.info("RevealAgent constructor for hostname: " + hostname);
         _hostname = hostname;
         _jmxPort = jmxPort;
         _request = request;
@@ -123,7 +120,7 @@ public class RevealAgent implements Runnable {
             		LOGGER.info("BUbiNG Agent thread stopped for " + _request.getCollection());
             	}
             	
-            	bubingAgent.isConnected();
+
             	Thread.sleep(1800000L);
             }
             
@@ -168,7 +165,7 @@ public class RevealAgent implements Runnable {
 			        rc.keywords = _request.getKeywords();
 			        rc.collectionName = _request.getCollection();
 			        
-			        bubingAgent = new Agent(_hostname, _jmxPort, rc);	// agent halts here    
+			        new Agent(_hostname, _jmxPort, rc);	// agent halts here    
 			        LOGGER.info("BUbiNG Agent for collection " + _request.getCollection() + " finished successfully");
 			        
 				} catch (Exception e) {
@@ -192,7 +189,8 @@ public class RevealAgent implements Runnable {
     	try {
     		LOGGER.info("Cancel BUbiNG Agent for " + _request.getCollection());
     		
-    		JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
+    		JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + _hostname + ":" + _jmxPort + "/jmxrmi");
+    		
     		JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
     		MBeanServerConnection mbsc = cc.getMBeanServerConnection();
                 
@@ -255,9 +253,10 @@ public class RevealAgent implements Runnable {
         
     }
     
-    private static void unregisterBean(String collection) {
+    public void unregisterBean(String collection) {
         try {
-        	JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://127.0.0.1:9999/jmxrmi");
+        	JMXServiceURL jmxServiceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + _hostname + ":" + _jmxPort + "/jmxrmi");
+
             JMXConnector cc = JMXConnectorFactory.connect(jmxServiceURL);
             MBeanServerConnection mbsc = cc.getMBeanServerConnection();
             
@@ -271,4 +270,5 @@ public class RevealAgent implements Runnable {
         	LOGGER.error("Exception occurred during bean unregister for " + collection + ". Message: " + e.getMessage(), e);
         }
     }
+    
 }

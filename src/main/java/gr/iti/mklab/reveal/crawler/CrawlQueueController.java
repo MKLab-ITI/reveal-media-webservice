@@ -178,7 +178,7 @@ public class CrawlQueueController {
             
             //Delete the request from the request DB
             dao.delete(req);
-            MorphiaManager.getDB(req.getCollection()).dropDatabase();
+            MorphiaManager.getDB(req.getCollection()).drop();
         } 
         else if(CrawlJob.STATE.RUNNING == req.getState() || CrawlJob.STATE.WAITING == req.getState() || CrawlJob.STATE.STARTING == req.getState()) {
         	kill(id);
@@ -409,7 +409,8 @@ public class CrawlQueueController {
         @Override
         public void run() {
             try {
-                tryLaunch();
+            	deleteAndStopCrawlsAtStartup();
+            	startRunningCrawlsAtStartup();
             } catch (Exception ex) {
             	_logger.error(ex);
             }

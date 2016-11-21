@@ -43,7 +43,6 @@ public class DogpileSource implements SeedURLSource {
 				}
 			} catch (Exception ex) {
 				System.out.println("IO exception " + ex);
-				ex.printStackTrace();
 			}
 		}
 		return results;
