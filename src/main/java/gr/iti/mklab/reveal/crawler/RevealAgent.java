@@ -1,5 +1,6 @@
 package gr.iti.mklab.reveal.crawler;
 
+import gr.iti.mklab.reveal.clustering.IncrementalClusterer;
 import gr.iti.mklab.reveal.crawler.seeds.DogpileSource;
 import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
 import gr.iti.mklab.reveal.entities.IncrementalNeReExtractor;
@@ -49,11 +50,12 @@ public class RevealAgent implements Runnable {
 
     private VisualIndexer visualIndexer = null;
     private IncrementalNeReExtractor inereExtractor = null;
-    
-    private Future<?> visualIndexerHandle = null, inereHandle = null;
+	private IncrementalClusterer clusterer;
+	
+    private Future<?> visualIndexerHandle = null, inereHandle = null, clustererHandle = null;
     private Future<Boolean> bubingHandle = null;
     
-    private ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private ExecutorService executorService = Executors.newFixedThreadPool(5);
     
     public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
     	LOGGER.info("RevealAgent constructor for hostname: " + hostname);
@@ -62,7 +64,7 @@ public class RevealAgent implements Runnable {
         _request = request;
         _manager = manager;
     }
-	
+    
     @Override
     public void run() {
         try {
@@ -78,6 +80,9 @@ public class RevealAgent implements Runnable {
             
             inereExtractor = new IncrementalNeReExtractor(_request.getCollection());
             inereHandle = executorService.submit(inereExtractor);
+            
+            clusterer = new IncrementalClusterer(_request.getCollection(), 0.5, 1.0, 0.5);
+            clustererHandle = executorService.submit(clusterer);
             
             if (Configuration.ADD_SOCIAL_MEDIA) {
             	try {
@@ -112,6 +117,14 @@ public class RevealAgent implements Runnable {
             	else {
             		LOGGER.info("NeRe Extractor stopped for " + _request.getCollection());
             	}
+            	
+            	if(!clustererHandle.isDone() && !clustererHandle.isCancelled()) {
+                	LOGGER.info("Clusterer is running porperly for " + _request.getCollection());
+                }
+            	else {
+            		LOGGER.info("Clusterer stopped for " + _request.getCollection());
+            	}
+            	
             	
             	if(!bubingHandle.isDone() && !bubingHandle.isCancelled()) {
                 	LOGGER.info("BUbiNG Agent thread is running porperly for " + _request.getCollection());
@@ -219,12 +232,18 @@ public class RevealAgent implements Runnable {
         inereExtractor.stop();
         canceled = inereHandle.cancel(true);
         if(!canceled) {
-        	LOGGER.error("NE and RE extractor failed to stop");
+        	LOGGER.error("NE and RE extractor failed to stop for " + _request.getCollection());
+        }
+        
+        clusterer.stop();
+        canceled = clustererHandle.cancel(true);
+        if(!canceled) {
+        	LOGGER.error("Clusterer failed to stop for " + _request.getCollection());
         }
         
         canceled = bubingHandle.cancel(true);
         if(!canceled) {
-        	LOGGER.error("BUbiNG Agent thread failed to stop");
+        	LOGGER.error("BUbiNG Agent thread failed to stop for " + _request.getCollection());
         }
         
         if (Configuration.ADD_SOCIAL_MEDIA) {

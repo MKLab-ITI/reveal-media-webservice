@@ -223,6 +223,31 @@ public class CrawlQueueController {
         startCrawl(req);
     }
 
+    private void startWaitingCrawls() {
+    	List<CrawlJob> crawlsToStart = getWaitingCrawls();
+   	 
+   	 	int running = 0;
+   	 	for(CrawlJob job : crawlsToStart) {
+   	 		try {
+   	 			if(running < Configuration.NUM_CRAWLS) {
+   	 				_logger.info("Run " + job.getCollection());
+   	 				job.setState(CrawlJob.STATE.STARTING);
+   	 				dao.save(job);
+   	        	
+   	 				startCrawl(job);
+   	 				running++;
+   	 			}
+   	 			else {
+   	 				_logger.info("Cannot run " + job.getCollection() + ". Number of crawls reached.");
+   	 				job.setState(CrawlJob.STATE.WAITING);
+   	 				dao.save(job);
+   	 			}
+   	 		} catch (Exception e) {
+				_logger.error("Failed to start " + job.getCollection());
+			}
+   	 	}
+    }
+    
     private void startRunningCrawlsAtStartup() {
     	List<CrawlJob> crawlsToStart = getRunningCrawls();
    	 
@@ -409,8 +434,7 @@ public class CrawlQueueController {
         @Override
         public void run() {
             try {
-            	deleteAndStopCrawlsAtStartup();
-            	startRunningCrawlsAtStartup();
+            	startWaitingCrawls();
             } catch (Exception ex) {
             	_logger.error(ex);
             }

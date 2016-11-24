@@ -21,8 +21,9 @@ public class Vector implements Serializable {
 	protected Double V = null;
 	
 	public Vector() {	
-		
+
 	}
+	
 	
 	public Vector(Collection<String> tokens) {
 		for(String token : tokens) {
@@ -224,5 +225,10 @@ public class Vector implements Serializable {
 			mergedVector.updateLength();
 			vectorsMap.put(clusterId, mergedVector);
 		}
+	}
+	
+	public void reset() {
+		this.TFs.clear();
+		this.V = null;
 	}
 }

@@ -2,13 +2,18 @@ package gr.iti.mklab.reveal.summarization;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import gr.iti.mklab.reveal.summarization.utils.VectorUtils;
 
 
 public class Vocabulary {
@@ -45,6 +50,55 @@ public class Vocabulary {
 		return vectors;
 	}
 	
+	public static Map<String, Vector> updateVocabulary(Map<String, String> texts, int ngrams) {
+		Map<String, Vector> vectors = new HashMap<String, Vector>();
+		for(Entry<String, String> entry : texts.entrySet()) {
+			String id = entry.getKey();
+			String text = entry.getValue();
+			Vector vector = process(text, ngrams);
+			if(vector != null) {
+				vectors.put(id, vector);
+			}
+		}
+		
+		Collection<String> stowords = Vocabulary.getStopwords();
+		Vocabulary.removeWords(stowords);
+		
+		return vectors;
+	}
+	
+	public static Map<String, Double[]> createVocabulary(Map<String, String> texts, int ngrams, int n) {
+		
+		Map<String, Double[]> tVectors = new HashMap<String, Double[]>();
+		Map<String, Vector> vectors = createVocabulary(texts, ngrams);
+		
+		System.out.println(Vocabulary.getTerms().size() + " terms");
+		
+		List<String> terms = getTopTerms(n);
+		n = terms.size();
+		
+		for(String id : vectors.keySet()) {
+			Vector vector = vectors.get(id);
+			
+			Double[] v = null;
+			if(vector.getTerms().isEmpty()) {
+				v = VectorUtils.getRandomVector(n);
+			}
+			else {
+				v = new Double[n];
+				Arrays.fill(v, .0);
+				for(String term : vector.getTerms()) {
+					int i = terms.indexOf(term);
+					if(i >= 0 && i < n) {
+						v[i] = vector.getTfIdf(term);
+					}
+				}
+			}
+			tVectors.put(id, v);
+		}
+		
+		return tVectors;
+	}
 	
 	
 	public static void create(List<String> texts) {
@@ -145,6 +199,26 @@ public class Vocabulary {
 		terms.addAll(map.keySet());
 		
 		return terms;
+	}
+	
+	public static List<String> getTopTerms(int n) {
+		List<String> terms = new ArrayList<String>();
+		terms.addAll(map.keySet());
+
+		Collections.sort(terms, new Comparator<String>() {
+			@Override
+			public int compare(String t1, String t2) {
+				Double v1 = Vocabulary.getDf(t1);
+				Double v2 = Vocabulary.getDf(t2);
+				
+				if(v1 == v2)
+					return 0;
+				else
+					return v1 > v2 ? 1 : -1;
+			}
+		});
+		
+		return terms.subList(0, Math.min(n, terms.size()-1));
 	}
 	
 	public static Set<String> getBoostedTerms() {

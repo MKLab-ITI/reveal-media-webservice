@@ -169,7 +169,7 @@ public class IndexingCallable implements Callable<IndexingResult> {
             }
         } 
         catch (Exception e) {
-            _logger.error(e.getMessage(), e);
+            _logger.error(e.getMessage());
         } 
         finally {
             if (httpget != null) {
