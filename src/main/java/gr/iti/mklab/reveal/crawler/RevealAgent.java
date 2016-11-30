@@ -60,6 +60,7 @@ public class RevealAgent implements Runnable {
     
     public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
     	LOGGER.info("RevealAgent constructor for hostname: " + hostname);
+    	
         _hostname = hostname;
         _jmxPort = jmxPort;
         _request = request;
@@ -71,7 +72,7 @@ public class RevealAgent implements Runnable {
         try {
             LOGGER.info("Reveal agent run method for collection " + _request.getCollection());
             
-            dao = new BasicDAO<>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());           
+            dao = new BasicDAO<CrawlJob, ObjectId>(CrawlJob.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getCrawlsDB().getName());           
             
             visualIndexer = new VisualIndexer(_request.getCollection());
             visualIndexerHandle = executorService.submit(visualIndexer);
@@ -134,7 +135,6 @@ public class RevealAgent implements Runnable {
             		LOGGER.info("BUbiNG Agent thread stopped for " + _request.getCollection());
             	}
             	
-
             	Thread.sleep(1800000L);
             }
             
