@@ -1,6 +1,7 @@
 package gr.iti.mklab.reveal.crawler;
 
 import gr.iti.mklab.reveal.clustering.IncrementalClusterer;
+import gr.iti.mklab.reveal.clustering.IncrementalClusterer.CLUSTERER_TYPE;
 import gr.iti.mklab.reveal.crawler.seeds.DogpileSource;
 import gr.iti.mklab.reveal.crawler.seeds.SeedURLSource;
 import gr.iti.mklab.reveal.entities.IncrementalNeReExtractor;
@@ -81,7 +82,7 @@ public class RevealAgent implements Runnable {
             inereExtractor = new IncrementalNeReExtractor(_request.getCollection());
             inereHandle = executorService.submit(inereExtractor);
             
-            clusterer = new IncrementalClusterer(_request.getCollection(), 0.5, 1.0, 0.5);
+            clusterer = new IncrementalClusterer(_request.getCollection(), 0.5, 1.0, 0.5, CLUSTERER_TYPE.THRESHOLD);
             clustererHandle = executorService.submit(clusterer);
             
             if (Configuration.ADD_SOCIAL_MEDIA) {

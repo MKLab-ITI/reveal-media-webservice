@@ -425,29 +425,52 @@ public class RevealController {
     public List<ClusterReduced> getClusters(@PathVariable(value = "collection") String collection,
                                             @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                             @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
-        DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+    
+    	MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
+    	MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
+    	
+    	DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
         Query<Cluster> clustersResult = clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).order("-size").offset(offset).limit(count);
         List<ClusterReduced> minimalList = new ArrayList<ClusterReduced>();
         Iterator<Cluster> it = clustersResult.iterator();
         while (it.hasNext()) {
         	try {
-        		gr.iti.mklab.simmo.core.cluster.Cluster c = it.next();
+        		gr.iti.mklab.simmo.core.cluster.Cluster cluster = it.next();
         		ClusterReduced cr = new ClusterReduced();
-        		cr.id = c.getId();
-        		cr.members = c.getSize();
-        		if(c.getCentroid() == null) {
-        			cr.item = (Image) c.getMembers().get(0);	
+        		
+        		cr.id = cluster.getId();
+        		cr.members = cluster.getSize();
+        		
+        		if(cluster.getCentroid() == null) {
+        			Map<String, String> centroids = cluster.getCentroids();
+        			if(centroids != null) {
+        				for(String centroidId : centroids.keySet()) {
+        					String type = centroids.get(centroidId);
+        					if(type.equals("image")) {
+        						cr.item = imageDAO.get(centroidId);
+        					}
+        					else {
+        						cr.item = videoDAO.get(centroidId);
+        					}
+        				}
+        			}
+        			
+        			if(cr.item == null && cr.members > 0) {
+        				cr.item = (Media) cluster.getMembers().get(0);	
+        			}
+        			
         		}
         		else {
-        			cr.item = (Image) c.getCentroid();
+        			cr.item = (Media) cluster.getCentroid();
         		}
         		
         		minimalList.add(cr);
         	}
         	catch(Exception e) {
-        		
+        		_logger.info(e.getMessage());
         	}
         }
+        
         return minimalList;
     }
 
@@ -471,7 +494,7 @@ public class RevealController {
     class ClusterReduced {
         public String id;
         public int members;
-        public Image item;
+        public Media item;
     }
 
     ////////////////////////////////////////////////////////
