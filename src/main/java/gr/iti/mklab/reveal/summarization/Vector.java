@@ -158,7 +158,8 @@ public class Vector implements Serializable {
 			return 0d;
 		}
 		
-		return similarity / (Math.sqrt(A) * Math.sqrt(B));
+		similarity = similarity / (Math.sqrt(A) * Math.sqrt(B));
+		return Math.min(similarity, .0);
 	}
 	
 	public Double tfIdfSimilarity(Vector other) {

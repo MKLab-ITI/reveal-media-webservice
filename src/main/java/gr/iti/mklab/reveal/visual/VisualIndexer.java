@@ -97,13 +97,21 @@ public class VisualIndexer implements Runnable {
         try {
 			vIndexClient.createCollection();
 		} catch (IOException ex) {
-			LOGGER.info("Cannot add index for collection " + collection, ex);
+			LOGGER.info("Cannot create index for collection " + collection, ex);
+			isRunning = false;
+			return;
+		} 
+        
+        try {
+        	imageDAO.count();
+        	videoDAO.count();
+        } catch (Exception ex) {
+			LOGGER.info("MongoDB DAOs are closed for " + collection, ex);
 			isRunning = false;
 			return;
 		}
         
 		Set<String> processed = new HashSet<String>();	
-		
         while (isRunning) {
             try {            	
                 List<Media> mediaToIndex = new ArrayList<Media>();

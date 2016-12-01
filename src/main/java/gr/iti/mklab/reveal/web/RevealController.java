@@ -360,35 +360,37 @@ public class RevealController {
     @RequestMapping(value = "/media/{collection}/similar", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<Responses.SimilarityResponse> findSimilarImages(@PathVariable(value = "collection") String collectionName,
-                                                              	@RequestParam(value = "imageurl", required = true) String imageurl,
+                                                              	@RequestParam(value = "imageurl", required = true) String imageUrl,
                                                               	@RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                                               	@RequestParam(value = "count", required = false, defaultValue = "50") int count,
                                                               	@RequestParam(value = "threshold", required = false, defaultValue = "0.6") double threshold) {
         try {
-            System.out.println("Find similar images " + imageurl);
-    
             MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collectionName);
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collectionName);
 
             VisualIndexClient handler = new VisualIndexClient("http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService", collectionName);
                
-            VisualFeatureExtractor vfe = new VisualFeatureExtractor(collectionName);
-            double[] vector = vfe.vectorizeImageFromUrl(imageurl);
+            double[] vector = VisualFeatureExtractor.vectorizeImageFromUrl(imageUrl);
+           _logger.info("Collection: " + collectionName + ". Find similar images for: " + imageUrl + ".  Vector length: " + vector.length);
+           
             JsonResultSet similar = handler.getSimilarImages(vector, threshold);
-                
+            _logger.info(similar.getResults().size() + " similar images found for " + imageUrl);
+            		
             List<JsonResultSet.JsonResult> temp = similar.getResults();
-            System.out.println("Result num " + temp.size());
             List<SimilarityResponse> simList = new ArrayList<Responses.SimilarityResponse>(temp.size());
-            for (JsonResultSet.JsonResult r : temp) {
-            	System.out.println("r.getExternalId " + r.getId());
-                Media found = imageDAO.getDatastore().find(Image.class).field("_id").equal(r.getId()).get();
+            for (JsonResultSet.JsonResult res : temp) {
+            	Media found = imageDAO.get(res.getId());
                 if (found != null) {
-                	simList.add(new Responses.SimilarityResponse(found, r.getRank()));
+                	simList.add(new Responses.SimilarityResponse(found, res.getRank()));
                 }
-                    
-                found = videoDAO.getDatastore().find(Video.class).field("_id").equal(r.getId()).get();
-                if (found != null) {
-                	simList.add(new Responses.SimilarityResponse(found, r.getRank()));
+                else {
+                	 found = videoDAO.get(res.getId());
+                     if (found != null) {
+                     	simList.add(new Responses.SimilarityResponse(found, res.getRank()));
+                     }
+                     else {
+                    	 _logger.error("Couldn't find " + res.getId() + " in " + collectionName);
+                     }
                 }
             }
             
@@ -400,7 +402,7 @@ public class RevealController {
             }
 
         } catch (Exception e) {
-            System.out.println(e);
+            _logger.error("Exception for similar retrieval of " + imageUrl + ": " + e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -429,8 +431,14 @@ public class RevealController {
     	MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
     	MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
     	
-    	DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
-        Query<Cluster> clustersResult = clusterDAO.getDatastore().find(gr.iti.mklab.simmo.core.cluster.Cluster.class).order("-size").offset(offset).limit(count);
+    	DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(
+    			gr.iti.mklab.simmo.core.cluster.Cluster.class, 
+    			MorphiaManager.getMongoClient(), 
+    			MorphiaManager.getMorphia(), 
+    			MorphiaManager.getDB(collection).getName());
+    	
+    	Query<Cluster> query = clusterDAO.createQuery().filter("size >", 1).order("-size").offset(offset).limit(count);
+		List<Cluster> clustersResult = clusterDAO.find(query).asList();
         List<ClusterReduced> minimalList = new ArrayList<ClusterReduced>();
         Iterator<Cluster> it = clustersResult.iterator();
         while (it.hasNext()) {

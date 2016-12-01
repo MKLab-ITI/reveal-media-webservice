@@ -25,12 +25,15 @@ public class JsonResultSet {
     }
 
     public class JsonResult {
+    	
         @Expose
         @SerializedName(value = "id")
         private String id;
+        
         @Expose
         @SerializedName(value = "rank")
         private int rank;
+        
         @Expose
         @SerializedName(value = "score")
         private String score;
@@ -38,9 +41,9 @@ public class JsonResultSet {
         public JsonResult(String id, int rank, double distance) {
             this.id = id;
             this.rank = rank;
-// transform distance into similarity
+            // transform distance into similarity
             double similarity = (2.0 - Math.sqrt(distance)) / 2.0;
-// format the score
+            // format the score
             this.score = df.format(similarity);
         }
 

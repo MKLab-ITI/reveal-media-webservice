@@ -80,18 +80,20 @@ public class CrawlQueueController {
     	_logger.info("CRAWL: submit " + collectionName + " keywords " + ArrayUtils.toString(keywords));
         
     	String crawlDataPath = Configuration.CRAWLS_DIR + collectionName;
-        List<CrawlJob> requestsWithSameName = dao.getDatastore().find(CrawlJob.class).field("collection").equal(collectionName).asList();
+    	Query<CrawlJob> q = dao.createQuery().filter("collection", collectionName);
+        List<CrawlJob> requestsWithSameName = dao.find(q).asList();
         if (isNew && (new File(crawlDataPath).exists() || requestsWithSameName.size() > 0)) {
         	_logger.error("The collection " + collectionName + " already exists. Choose a different name or mark not new");
             throw new Exception("The collection " + collectionName + " already exists. Choose a different name or mark not new");
         }
+        else {
+        	CrawlJob job = new CrawlJob(crawlDataPath, collectionName, keywords, isNew);
+        	dao.save(job);
         
-        CrawlJob job = new CrawlJob(crawlDataPath, collectionName, keywords, isNew);
-        dao.save(job);
+        	tryLaunch();
         
-        tryLaunch();
-        
-        return job;
+        	return job;
+        }
     }
 
     // submit geo-location crawl job

@@ -79,7 +79,7 @@ public class IncrementalNeReExtractor implements Runnable {
     		try {
 				Thread.sleep(60000L);
 			} catch (InterruptedException e) {
-				LOGGER.info("NeRe extractor interrupted for " + _collection, e);
+				LOGGER.info("NeRe extractor interrupted for " + _collection);
 				if(!isRunning) {
 					break;
 				}

@@ -26,7 +26,6 @@ import javax.imageio.ImageIO;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -42,8 +41,6 @@ public class VisualFeatureExtractor {
     private static RequestConfig _requestConfig;
     
     private static Logger _logger = LoggerFactory.getLogger(VisualFeatureExtractor.class);
-
-    private VisualIndexClient handler;
     
     public static void init(boolean loadVectorizer) throws Exception {
 
@@ -92,12 +89,8 @@ public class VisualFeatureExtractor {
     	init(true);
     }
 
-    public VisualFeatureExtractor(String collectionName) throws IOException {
-        handler.createCollection();
-    }
 
-
-    public double[] vectorizeImageFromUrl(String url) {
+    public static double[] vectorizeImageFromUrl(String url) {
         
         HttpGet httpget = null;
         try {

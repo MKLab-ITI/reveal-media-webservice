@@ -83,7 +83,7 @@ public class RevealAgent implements Runnable {
             inereExtractor = new IncrementalNeReExtractor(_request.getCollection());
             inereHandle = executorService.submit(inereExtractor);
             
-            clusterer = new IncrementalClusterer(_request.getCollection(), 0.5, 1.0, 0.5, CLUSTERER_TYPE.THRESHOLD);
+            clusterer = new IncrementalClusterer(_request.getCollection(), 0.8, 0.9, 0.5, CLUSTERER_TYPE.THRESHOLD);
             clustererHandle = executorService.submit(clusterer);
             
             if (Configuration.ADD_SOCIAL_MEDIA) {
@@ -183,12 +183,13 @@ public class RevealAgent implements Runnable {
 			        LOGGER.info("BUbiNG Agent for collection " + _request.getCollection() + " finished successfully");
 			        
 				} catch (Exception e) {
-					LOGGER.error("Exception during starting of BUbiNG Agent for " + _request.getCollection() + ". Message: " + e.getMessage(), e);
+					LOGGER.error("Exception during execution of BUbiNG Agent for " + _request.getCollection() + ". Message: " + e.getMessage(), e);
 					failed = true;
 				}
 				finally {
 			        LOGGER.info("Unregister BUbiNG Agent bean for " + _request.getCollection());
 			        unregisterBean(_request.getCollection());
+			        LOGGER.info("BUbiNG Agent bean for " + _request.getCollection() + " unregistered successfully");
 				}
 				
 				return failed;
