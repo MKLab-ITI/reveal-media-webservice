@@ -63,7 +63,7 @@ public class RevealController {
     
     public RevealController() throws Exception {
     	
-        Configuration.load(getClass().getResourceAsStream("/local.properties"));
+        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
         
         // initialize mongodb
         MorphiaManager.setup(Configuration.MONGO_HOST);
