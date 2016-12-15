@@ -37,6 +37,7 @@ import com.oculusinfo.ml.unsupervised.cluster.dpmeans.DPMeans;
 import com.oculusinfo.ml.unsupervised.cluster.threshold.ThresholdClusterer;
 
 import edu.stanford.nlp.util.ArrayUtils;
+import edu.stanford.nlp.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -140,7 +141,7 @@ public class IncrementalClusterer implements Runnable {
                 	texts.put(m.getId(), m.getTitle());
             	}
             });
-		
+
             Map<String, Vector> textualVectors = Vocabulary.createVocabulary(texts, 2);
             
             
@@ -156,8 +157,6 @@ public class IncrementalClusterer implements Runnable {
             	else
             		continue;
             }
-            
-            
             
             LOGGER.info(collection + " clustering: " + mediaToBeClustered.size() + " media items to be clustered. " + visualVectors.size() + " visual vectors. " + textualVectors.size());
             
@@ -189,7 +188,7 @@ public class IncrementalClusterer implements Runnable {
 					discardedMedia.add(mId);
 				}
 			}
-
+            
             AbstractClusterer clusterer;
 			if(type.equals(CLUSTERER_TYPE.THRESHOLD)) {
 				ThresholdClusterer tClusterer = new ThresholdClusterer();
@@ -228,6 +227,7 @@ public class IncrementalClusterer implements Runnable {
             		}
             		
             		if(newMembers.size() > 0) {
+            			LOGGER.info(collection + " clustering: update cluster " + cluster.getId() + " with " + newMembers.size() + " new members");
             			updateCluster(cluster, newMembers, centroidId);
             		}
             	}
@@ -285,7 +285,12 @@ public class IncrementalClusterer implements Runnable {
 		}
 		
 		simmoCluster.setSize(cluster.size());
-		clusterDAO.save(simmoCluster);
+		try {
+			clusterDAO.save(simmoCluster);
+		}
+		catch(Exception e) {
+			LOGGER.error("Exception during cluster saving: " + e.getMessage());
+		}
     }
     
     public void updateCluster(Cluster cluster, List<Media> newMembers, String centroidId) {
@@ -312,8 +317,13 @@ public class IncrementalClusterer implements Runnable {
 				ops.add("centroids", Collections.singletonMap(centroidId, type), false);
 			}
 		}
-	
-		clusterDAO.update(query, ops);
+		
+		try {
+			clusterDAO.update(query, ops);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
 		
 		for(Media media : newMembers) {
 			Clustered annotation = new Clustered(cluster.getId());
@@ -368,9 +378,7 @@ public class IncrementalClusterer implements Runnable {
     }
     
     public static void main(String...args) {
-        MorphiaManager.setup("160.40.50.207");
-        
-    	IncrementalClusterer cl = new IncrementalClusterer("test", 0.5, 1., 0.5, CLUSTERER_TYPE.THRESHOLD);
+    	IncrementalClusterer cl = new IncrementalClusterer("disturbing_revamp",  0.5, 0.8, 0.6, CLUSTERER_TYPE.DPMEANS);
     	cl.run();
     }
    
