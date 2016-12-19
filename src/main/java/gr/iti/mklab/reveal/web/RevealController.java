@@ -20,6 +20,7 @@ import gr.iti.mklab.simmo.core.Association;
 import gr.iti.mklab.simmo.core.UserAccount;
 import gr.iti.mklab.simmo.core.annotations.DisturbingScore;
 import gr.iti.mklab.simmo.core.annotations.NamedEntity;
+import gr.iti.mklab.simmo.core.annotations.NsfwScore;
 import gr.iti.mklab.simmo.core.associations.TextualRelation;
 import gr.iti.mklab.simmo.core.cluster.Cluster;
 import gr.iti.mklab.simmo.core.items.Image;
@@ -611,6 +612,7 @@ public class RevealController {
     		@RequestParam(value = "url", required = true) String url,
     		@RequestParam(value = "id", required = false) String id,
     		@RequestParam(value = "score", required = true) double score,
+    		@RequestParam(value = "nsfwScore", required = true) double nsfwScore,
     		@RequestParam(value = "type", required = true) String type) throws RevealException {
 
     	DBObject dbObj = new BasicDBObject();
@@ -626,6 +628,7 @@ public class RevealController {
     	}
     	
     	Annotation scoreAnnotation = new DisturbingScore(score);
+    	NsfwScore nsfwAnnotation = new NsfwScore(nsfwScore);
     	if(type.equals("image")) {
     		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
     		Query<Image> mq = imageDAO.createQuery();
@@ -637,7 +640,9 @@ public class RevealController {
     		}
     		
     		dbObj.put("q", mq.toString());
-    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", scoreAnnotation, true);
+    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations()
+    				.add("annotations", scoreAnnotation, false)
+    				.add("annotations", nsfwAnnotation, false);
     		dbObj.put("ops", mOps.toString());
     		
     		try {
@@ -660,7 +665,9 @@ public class RevealController {
     		}
     		
         	dbObj.put("q", vq.toString());
-        	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations().add("annotations", scoreAnnotation);
+        	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations()
+        			.add("annotations", scoreAnnotation, false)
+        			.add("annotations", nsfwAnnotation, false);
         	dbObj.put("ops", vOps.toString());
         	
         	try {
