@@ -51,8 +51,8 @@ public class VisualIndexClient {
         HttpConnectionManagerParams params = new HttpConnectionManagerParams();
         params.setMaxTotalConnections(50);
         params.setDefaultMaxConnectionsPerHost(20);
-        params.setConnectionTimeout(30000);
-        params.setSoTimeout(30000);
+        params.setConnectionTimeout(60000);
+        params.setSoTimeout(60000);
         cm.setParams(params);
         
         this.httpClient = new HttpClient(cm);

@@ -154,7 +154,7 @@ public class VisualIndexer implements Runnable {
         			}
         			
         			LOGGER.info(unindexedMedia.size() + " media out of " + mediaToIndex.size() + " failed to be indexed!");
-        			LOGGER.info("Indexing statistics: " + IndexingCallable.stats());
+        			LOGGER.info(collection + " indexing statistics: " + IndexingCallable.stats());
         			
         			for(Media failedMedia : unindexedMedia.values()) {
         				try {
