@@ -618,6 +618,7 @@ public class RevealController {
     	DBObject dbObj = new BasicDBObject();
     	dbObj.put("collection", collection);
     	dbObj.put("score", score);
+    	dbObj.put("nsfwScore", nsfwScore);
     	dbObj.put("url", url);
     	dbObj.put("type", type);
     	dbObj.put("id", id);

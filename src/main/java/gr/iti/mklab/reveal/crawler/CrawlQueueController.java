@@ -228,7 +228,7 @@ public class CrawlQueueController {
     private void startWaitingCrawls() {
     	List<CrawlJob> crawlsToStart = getWaitingCrawls();
    	 
-   	 	int running = 0;
+   	 	int running = getRunningCrawls().size();
    	 	for(CrawlJob job : crawlsToStart) {
    	 		try {
    	 			if(running < Configuration.NUM_CRAWLS) {
