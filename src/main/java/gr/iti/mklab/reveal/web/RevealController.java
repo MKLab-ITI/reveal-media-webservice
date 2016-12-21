@@ -642,7 +642,7 @@ public class RevealController {
     		}
     		
     		dbObj.put("q", mq.toString());
-    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", annotations, false);
+    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().addAll("annotations", annotations, false);
     		dbObj.put("ops", mOps.toString());
     		
     		try {
@@ -666,7 +666,7 @@ public class RevealController {
     		
         	dbObj.put("q", vq.toString());
         	
-        	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations().add("annotations", annotations, false);
+        	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations().addAll("annotations", annotations, false);
         	dbObj.put("ops", vOps.toString());
         	
         	try {
