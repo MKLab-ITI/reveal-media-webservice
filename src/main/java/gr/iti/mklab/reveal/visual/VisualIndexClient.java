@@ -42,6 +42,10 @@ public class VisualIndexClient {
     private String collectionName;
     private HttpClient httpClient;
 
+    public VisualIndexClient(String webServiceHost) {
+    	this(webServiceHost, null);
+    }
+    
     public VisualIndexClient(String webServiceHost, String collectionName) {
     	_logger.info("VisualIndexHandler start of constructor");
         this.webServiceHost = webServiceHost;
@@ -492,11 +496,10 @@ public class VisualIndexClient {
     public int numItems() throws Exception {
         String request = webServiceHost + "/rest/visual/statistics/" + collectionName;
         GetMethod httpget = new GetMethod(request.replaceAll(" ", "%20"));
-        
-        System.out.println(httpget);
+
         int code = httpClient.executeMethod(httpget);
         if (code < 200 || code >= 300) {
-            _logger.error("Failed delete collection with name " + collectionName + ". Http code: " + code + " Error: " + httpget.getStatusLine());
+            _logger.error("Failed to get number of items for collection with name " + collectionName + ". Http code: " + code + " Error: " + httpget.getStatusLine());
             return 0;
         }
         
@@ -506,7 +509,18 @@ public class VisualIndexClient {
         return jsonObject.getInt("ivfpqIndex");
     }
     
-    
+    public String statistics() throws Exception {
+        String request = webServiceHost + "/rest/visual/statistics";
+        GetMethod httpget = new GetMethod(request);
+        int code = httpClient.executeMethod(httpget);
+        if (code < 200 || code >= 300) {
+            _logger.error("Failed to get statistics. Http code: " + code + " Error: " + httpget.getStatusLine());
+            return "{}";
+        }
+        
+        String entityAsString = httpget.getResponseBodyAsString();
+        return entityAsString;
+    }
 }
 
 

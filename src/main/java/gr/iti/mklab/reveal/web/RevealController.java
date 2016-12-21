@@ -72,6 +72,12 @@ public class RevealController {
         // initialize visual feature extractor
         VisualFeatureExtractor.init(true);
         
+        // initialize visual index
+        String indexServiceHost = "http://" + Configuration.INDEX_SERVICE_HOST + ":8080/VisualIndexService";
+        VisualIndexClient vIndexClient = new VisualIndexClient(indexServiceHost);   
+        String visualIndexStatistics = vIndexClient.statistics();
+        _logger.info(visualIndexStatistics);
+        
         crawlControler = new CrawlQueueController();
     }
 
