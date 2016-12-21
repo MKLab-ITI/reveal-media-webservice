@@ -630,6 +630,7 @@ public class RevealController {
     	
     	Annotation scoreAnnotation = new DisturbingScore(score);
     	NsfwScore nsfwAnnotation = new NsfwScore(nsfwScore);
+    	List<Annotation> annotations = Arrays.asList(scoreAnnotation, nsfwAnnotation);
     	if(type.equals("image")) {
     		MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
     		Query<Image> mq = imageDAO.createQuery();
@@ -641,9 +642,7 @@ public class RevealController {
     		}
     		
     		dbObj.put("q", mq.toString());
-    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations()
-    				.add("annotations", scoreAnnotation, false)
-    				.add("annotations", nsfwAnnotation, false);
+    		UpdateOperations<Image> mOps = imageDAO.createUpdateOperations().add("annotations", annotations, false);
     		dbObj.put("ops", mOps.toString());
     		
     		try {
@@ -666,9 +665,8 @@ public class RevealController {
     		}
     		
         	dbObj.put("q", vq.toString());
-        	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations()
-        			.add("annotations", scoreAnnotation, false)
-        			.add("annotations", nsfwAnnotation, false);
+        	
+        	UpdateOperations<Video> vOps = videoDAO.createUpdateOperations().add("annotations", annotations, false);
         	dbObj.put("ops", vOps.toString());
         	
         	try {
