@@ -634,6 +634,35 @@ public class RevealController {
     		return dbObj.toString();	
     	}
     	
+    	if(nsfwScore > 0.5) {
+    		// delete media with nsfw score > 0.5
+    		if(type.equals("image")) {
+    			MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
+    			Query<Image> mq = imageDAO.createQuery();
+        		if(id != null && !id.equals(null) && !id.equals("")) {
+        			mq.filter("_id", id);
+        		}
+        		else {
+        			mq.filter("url", url);
+        		}
+        		imageDAO.deleteByQuery(mq);
+    		}
+    		else if(type.equals("video")) {
+    			MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
+    			Query<Video> vq = videoDAO.createQuery();
+        		if(id != null && !id.equals(null) && !id.equals("")) {
+        			vq.filter("_id", id);
+        		}
+        		else {
+        			vq.filter("url", url);
+        		}
+        		videoDAO.deleteByQuery(vq);
+    		}
+    		
+    		dbObj.put("status", "deleted due to high nsfw score");
+    		return dbObj.toString();
+    	}
+    	
     	Annotation scoreAnnotation = new DisturbingScore(score);
     	NsfwScore nsfwAnnotation = new NsfwScore(nsfwScore);
     	List<Annotation> annotations = Arrays.asList(scoreAnnotation, nsfwAnnotation);
