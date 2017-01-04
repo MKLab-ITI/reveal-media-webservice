@@ -36,7 +36,7 @@ public class VisualFeatureExtractor {
     protected static int maxNumPixels = 768 * 512;
     protected static int targetLengthMax = 1024;
     
-    private static PCA pca;
+    private static PCA pca = null;
     private static CloseableHttpClient _httpclient;
     private static RequestConfig _requestConfig;
     
@@ -77,10 +77,12 @@ public class VisualFeatureExtractor {
         	
         	ImageVectorization.setVladAggregator(new VladAggregatorMultipleVocabularies(codebooks));
         	if (targetLengthMax < initialLength) {
-            	_logger.info("targetLengthMax : " + targetLengthMax + " initialLengh: " + initialLength);
-            	pca = new PCA(targetLengthMax, 1, initialLength, true);
-            	pca.loadPCAFromFile(pcaFile);
-            	ImageVectorization.setPcaProjector(pca);
+        		if(pca == null) {
+        			_logger.info("targetLengthMax : " + targetLengthMax + " initialLengh: " + initialLength);
+            		pca = new PCA(targetLengthMax, 1, initialLength, true);
+            		pca.loadPCAFromFile(pcaFile);
+            		ImageVectorization.setPcaProjector(pca);
+        		}
         	}
         }
     }

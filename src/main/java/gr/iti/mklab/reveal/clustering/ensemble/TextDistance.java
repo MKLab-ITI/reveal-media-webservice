@@ -19,7 +19,10 @@ public class TextDistance extends DistanceFunction<TextVectorFeature> {
 	public double distance(TextVectorFeature tvf1, TextVectorFeature tvf2) {
 		Vector v1 = tvf1.getValue();
 		Vector v2 = tvf2.getValue();
-		double d = 1. - v1.cosine(v2);
+		
+		double similarity = Math.max(1, v1.cosine(v2));
+		
+		double d = 1. - similarity;
 		
 		if(d != 0 && (v1.getTerms().size() < 3 || v2.getTerms().size() < 3)) {
 			return 1.;

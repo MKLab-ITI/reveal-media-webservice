@@ -69,6 +69,9 @@ public class TextAnalyser {
 	public static List<String> getNgrams(String text, int N) throws IOException {
 		
 		List<String> tokens = new ArrayList<String>();
+		if(text == null) {
+			return tokens;
+		}
 		
 		Reader reader = new StringReader(text);
 		LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(reader);

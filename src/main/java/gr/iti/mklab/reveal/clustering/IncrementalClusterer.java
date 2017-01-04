@@ -3,6 +3,7 @@ package gr.iti.mklab.reveal.clustering;
 import gr.iti.mklab.reveal.clustering.ensemble.TextDistance;
 import gr.iti.mklab.reveal.clustering.ensemble.TextVectorFeature;
 import gr.iti.mklab.reveal.clustering.ensemble.VectorCentroid;
+import gr.iti.mklab.reveal.clustering.ensemble.VisualDistance;
 import gr.iti.mklab.reveal.crawler.LinkDetectionRunner;
 import gr.iti.mklab.reveal.summarization.Vector;
 import gr.iti.mklab.reveal.summarization.Vocabulary;
@@ -17,6 +18,7 @@ import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 import gr.iti.mklab.simmo.core.morphia.ObjectDAO;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.Logger;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
@@ -25,10 +27,10 @@ import org.mongodb.morphia.query.UpdateOperations;
 
 import com.oculusinfo.ml.DataSet;
 import com.oculusinfo.ml.Instance;
+import com.oculusinfo.ml.distance.DistanceFunction;
 import com.oculusinfo.ml.feature.Feature;
 import com.oculusinfo.ml.feature.numeric.NumericVectorFeature;
 import com.oculusinfo.ml.feature.numeric.centroid.MeanNumericVectorCentroid;
-import com.oculusinfo.ml.feature.numeric.distance.EuclideanDistance;
 import com.oculusinfo.ml.unsupervised.cluster.AbstractClusterer;
 import com.oculusinfo.ml.unsupervised.cluster.Cluster;
 import com.oculusinfo.ml.unsupervised.cluster.ClusterResult;
@@ -37,10 +39,9 @@ import com.oculusinfo.ml.unsupervised.cluster.dpmeans.DPMeans;
 import com.oculusinfo.ml.unsupervised.cluster.threshold.ThresholdClusterer;
 
 import edu.stanford.nlp.util.ArrayUtils;
-import edu.stanford.nlp.util.StringUtils;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -58,7 +59,7 @@ public class IncrementalClusterer implements Runnable {
 
     private boolean isRunning = true;
     
-    private int STEP = 200;
+    private int STEP = 1000;
 	private long SLEEP_TIME = 60l * 1000l;
 	
 	private MediaDAO<Image> imageDAO;
@@ -141,9 +142,7 @@ public class IncrementalClusterer implements Runnable {
                 	texts.put(m.getId(), m.getTitle());
             	}
             });
-
             Map<String, Vector> textualVectors = Vocabulary.createVocabulary(texts, 2);
-            
             
             if(mediaToBeClustered.isEmpty()) {
             	try {
@@ -209,11 +208,13 @@ public class IncrementalClusterer implements Runnable {
             }
 			
     		clusterer.registerFeatureType("text", VectorCentroid.class, new TextDistance(textualWeight));
-    		clusterer.registerFeatureType("visual", MeanNumericVectorCentroid.class, new EuclideanDistance(visualWeight));
+    		clusterer.registerFeatureType("visual", MeanNumericVectorCentroid.class, new VisualDistance(visualWeight));
     		
     		int newClusters = 0;
             ClusterResult clusterResult = clusterer.doIncrementalCluster(ds, new ArrayList<Cluster>(clustersMap.values()));
             for(Cluster cluster : clusterResult) {
+            	
+            	Map<String, Double> avgDistances = getAvgDistances(clusterer, cluster);
             	
             	String centroidId = getClusterCentroid(cluster, clusterer);
             	
@@ -228,12 +229,12 @@ public class IncrementalClusterer implements Runnable {
             		
             		if(newMembers.size() > 0) {
             			LOGGER.info(collection + " clustering: update cluster " + cluster.getId() + " with " + newMembers.size() + " new members");
-            			updateCluster(cluster, newMembers, centroidId);
+            			updateCluster(cluster, newMembers, centroidId, avgDistances);
             		}
             	}
             	else {
             		newClusters++;
-            		saveCluster(cluster, mediaToBeClustered, centroidId);
+            		saveCluster(cluster, mediaToBeClustered, centroidId,  avgDistances);
             	}
             	
             	clustersMap.put(cluster.getId(), cluster);
@@ -250,19 +251,63 @@ public class IncrementalClusterer implements Runnable {
         
     }
     
-    public void saveCluster(Cluster cluster, Map<String, Media> mediaToBeClustered, String centroidId) {
+    private Map<String, Double> getAvgDistances(AbstractClusterer clusterer, Cluster cluster) {
+    	
+    	double avgDistance = .0, textAvgDistance = .0, visualAvgDistance = .0;
+    	DistanceFunction<Feature> textDistFuct = clusterer.getDistanceFunction("text");
+    	DistanceFunction<Feature> visualDistFuct = clusterer.getDistanceFunction("visual");
+    	int tn = 0, vn = 0;
+    	
+    	for(Instance instance1 : cluster.getMembers()) {
+    		Feature textFtr1 = instance1.getFeature("text");
+    		Feature visualFtr1 = instance1.getFeature("visual");
+    		for(Instance instance2 : cluster.getMembers()) {
+    			Feature textFtr2 = instance2.getFeature("text");
+    			Feature visualFtr2 = instance2.getFeature("visual");
+    			if(instance1 != instance2) {
+    				avgDistance += clusterer.distance(instance1, instance2);
+    				
+    				if(textFtr1 != null && textFtr2 != null) {
+    					tn++;
+    					textAvgDistance += textDistFuct.distance(textFtr1, textFtr1);
+    				}
+    				if(visualFtr1 != null && visualFtr2 != null) {
+    					vn++;
+    					visualAvgDistance += visualDistFuct.distance(visualFtr1, visualFtr2);
+    				}
+    			}
+    		}
+    	}
+    	
+    	int n = cluster.getMembers().size();
+    	
+    	Map<String, Double> distances = new HashMap<String, Double>();
+    	distances.put("avgDistance", avgDistance / (n*(n-1)));
+    	
+    	distances.put("textAvgDistance", textAvgDistance / (tn == 0 ? 1 : tn));
+    	distances.put("visualAvgDistance", visualAvgDistance / (vn == 0 ? 1 : vn));
+    	
+    	return distances;
+    }
+    
+    public void saveCluster(Cluster cluster, Map<String, Media> mediaToBeClustered, String centroidId, Map<String, Double> avgDistances) {
    		gr.iti.mklab.simmo.core.cluster.Cluster simmoCluster = new gr.iti.mklab.simmo.core.cluster.Cluster();
 		simmoCluster.setId(cluster.getId());
+		
+		simmoCluster.setAvgDistances(avgDistances);
 		
 		if(centroidId != null) {
 			Media mediaCentroid = mediaToBeClustered.get(centroidId);
 			if(mediaCentroid != null) {
+				Map<String, String> hm = new HashMap<String, String>();
+				hm.put("id", centroidId);
 				if (mediaCentroid instanceof Image) {
-					simmoCluster.addCentroid(Collections.singletonMap(centroidId, "image"));
+					hm.put("type", "image");
 				}
 				else {
-					simmoCluster.addCentroid(Collections.singletonMap(centroidId, "video"));
+					hm.put("type", "video");
 				}
+				simmoCluster.addCentroid(hm);
 			}
 		}
 		
@@ -293,7 +338,7 @@ public class IncrementalClusterer implements Runnable {
 		}
     }
     
-    public void updateCluster(Cluster cluster, List<Media> newMembers, String centroidId) {
+    public void updateCluster(Cluster cluster, List<Media> newMembers, String centroidId, Map<String, Double> avgDistances) {
    	
 		Query<gr.iti.mklab.simmo.core.cluster.Cluster> query = clusterDAO.createQuery().filter("_id", cluster.getId());
 		
@@ -301,7 +346,8 @@ public class IncrementalClusterer implements Runnable {
 		
 		ops.addAll("members", newMembers, false);
 		ops.inc("size", newMembers.size());
-			
+		ops.set("avgDistances", avgDistances);	
+		
 		if(centroidId != null) {
 			String type = null;
 			for(Media media : newMembers) {
@@ -314,7 +360,10 @@ public class IncrementalClusterer implements Runnable {
 				}
 			}
 			if(type != null) {
-				ops.add("centroids", Collections.singletonMap(centroidId, type), false);
+				Map<String, String> hm = new HashMap<String, String>();
+				hm.put("id", centroidId);
+				hm.put("type", type);
+				ops.add("centroids", hm, false);
 			}
 		}
 		
@@ -377,8 +426,13 @@ public class IncrementalClusterer implements Runnable {
     	}
     }
     
-    public static void main(String...args) {
-    	IncrementalClusterer cl = new IncrementalClusterer("disturbing_revamp",  0.5, 0.8, 0.6, CLUSTERER_TYPE.DPMEANS);
+    public static void main(String...args) throws ConfigurationException, IOException {
+    	
+    	Configuration.load(IncrementalClusterer.class.getResourceAsStream("/remote.properties"));
+        
+        // initialize mongodb
+        MorphiaManager.setup("160.40.51.20");
+    	IncrementalClusterer cl = new IncrementalClusterer("istanbul",  0.68, 0.85, 0.63, CLUSTERER_TYPE.THRESHOLD);
     	cl.run();
     }
    

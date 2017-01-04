@@ -3,6 +3,10 @@ package gr.iti.mklab.reveal.web;
 import com.google.gson.Gson;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.DBRef;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 
 import gr.iti.mklab.reveal.clustering.ClusteringCallable;
 import gr.iti.mklab.reveal.summarization.MediaSummarizer;
@@ -23,6 +27,7 @@ import gr.iti.mklab.simmo.core.annotations.NamedEntity;
 import gr.iti.mklab.simmo.core.annotations.NsfwScore;
 import gr.iti.mklab.simmo.core.associations.TextualRelation;
 import gr.iti.mklab.simmo.core.cluster.Cluster;
+import gr.iti.mklab.simmo.core.cluster.Clusterable;
 import gr.iti.mklab.simmo.core.items.Image;
 import gr.iti.mklab.simmo.core.items.Media;
 import gr.iti.mklab.simmo.core.items.Video;
@@ -31,7 +36,14 @@ import gr.iti.mklab.simmo.core.morphia.AssociationDAO;
 import gr.iti.mklab.simmo.core.morphia.MediaDAO;
 import gr.iti.mklab.simmo.core.morphia.MorphiaManager;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
+import org.bson.BsonValue;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.mongodb.morphia.dao.BasicDAO;
 import org.mongodb.morphia.dao.DAO;
 import org.mongodb.morphia.query.Query;
@@ -90,6 +102,7 @@ public class RevealController {
         if (crawlControler != null) {
         	crawlControler.shutdown();
         }
+        
     }
 
     ////////////////////////////////////////////////////////
@@ -444,7 +457,13 @@ public class RevealController {
     			MorphiaManager.getMorphia(), 
     			MorphiaManager.getDB(collection).getName());
     	
-    	Query<Cluster> query = clusterDAO.createQuery().filter("size >", 1).order("-size").offset(offset).limit(count);
+
+    	String[] fields = {"_id", "size", "centroids"};
+    	Query<Cluster> query = clusterDAO.createQuery()
+    			.filter("avgDistances.visualAvgDistance < ", 1.15)
+    			.retrievedFields(true, fields)
+    			.filter("size >", 1).order("-size").offset(offset).limit(count);
+    	
 		List<Cluster> clustersResult = clusterDAO.find(query).asList();
         List<ClusterReduced> minimalList = new ArrayList<ClusterReduced>();
         Iterator<Cluster> it = clustersResult.iterator();
@@ -457,10 +476,11 @@ public class RevealController {
         		cr.members = cluster.getSize();
         		
         		if(cluster.getCentroid() == null) {
-        			Map<String, String> centroids = cluster.getCentroids();
+        			List<Map<String, String>> centroids = cluster.getCentroids();
         			if(centroids != null) {
-        				for(String centroidId : centroids.keySet()) {
-        					String type = centroids.get(centroidId);
+        				for(Map<String, String> centroid : centroids) {
+        					String centroidId = centroid.get("id");
+        					String type = centroid.get("type");
         					if(type.equals("image")) {
         						cr.item = imageDAO.get(centroidId);
         					}
@@ -489,13 +509,19 @@ public class RevealController {
         return minimalList;
     }
 
-    @RequestMapping(value = "/clusters/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/clusters_dep/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public gr.iti.mklab.simmo.core.cluster.Cluster getCluster(@PathVariable(value = "collection") String collection,
+    public gr.iti.mklab.simmo.core.cluster.Cluster getClusterDep(@PathVariable(value = "collection") String collection,
                                                               @PathVariable(value = "id") String id,
                                                               @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                                               @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
-        DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(gr.iti.mklab.simmo.core.cluster.Cluster.class, MorphiaManager.getMongoClient(), MorphiaManager.getMorphia(), MorphiaManager.getDB(collection).getName());
+        
+    	DAO<gr.iti.mklab.simmo.core.cluster.Cluster, String> clusterDAO = new BasicDAO<>(
+    			gr.iti.mklab.simmo.core.cluster.Cluster.class, 
+    			MorphiaManager.getMongoClient(), 
+    			MorphiaManager.getMorphia(), 
+    			MorphiaManager.getDB(collection).getName());
+    	
         gr.iti.mklab.simmo.core.cluster.Cluster c = clusterDAO.get(id);
         if (offset < c.getMembers().size()) {
             c.setMembers(c.getMembers().subList(offset, c.getMembers().size() < offset + count ? c.getMembers().size() : offset + count));
@@ -503,9 +529,66 @@ public class RevealController {
         else {
             c = new gr.iti.mklab.simmo.core.cluster.Cluster();
         }
+        
         return c;
     }
 
+    @RequestMapping(value = "/clusters/{collection}/{id}", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public gr.iti.mklab.simmo.core.cluster.Cluster getCluster(@PathVariable(value = "collection") String collection,
+                                                              @PathVariable(value = "id") String id,
+                                                              @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                                              @RequestParam(value = "count", required = false, defaultValue = "50") int count) {
+        
+    	MongoDatabase db = MorphiaManager.getDB(collection);
+    	MongoCollection<Document> dao = db.getCollection("Cluster");
+    	
+    	Cluster cluster = new gr.iti.mklab.simmo.core.cluster.Cluster();
+    	
+    	Document filter = new Document("_id", id);
+		Document document = dao.find(filter).first();
+
+        if (document != null) {
+        	cluster.setId(id);
+        	cluster.setSize(document.getInteger("size"));
+        	
+        	@SuppressWarnings("unchecked")
+			List<com.mongodb.DBRef> members = document.get("members", ArrayList.class);
+        	if(members != null && members.size() > offset) {
+        		List<Clusterable> media = new ArrayList<Clusterable>();
+        		List<DBRef> subMembers = members.subList(offset, members.size() < offset + count ? members.size() : offset + count);
+        		for(DBRef member : subMembers) {
+        			
+        			String mid = member.getId().toString();
+        			String type = member.getCollectionName();
+
+        			if(type.equals("Image")) {
+            			MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
+            			Query<Image> mq = imageDAO.createQuery().filter("_id", mid);
+            			
+            			Image image = imageDAO.findOne(mq);
+            			if(image != null) {
+            				media.add(image);
+            			}
+            		}
+            		else if(type.equals("Video")) {
+            			MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
+            			Query<Video> vq = videoDAO.createQuery().filter("_id", mid);
+            			
+            			Video video = videoDAO.findOne(vq);
+            			if(video != null) {
+            				media.add(video);
+            			}
+            		}
+        		}
+        		
+        		cluster.setMembers(media);
+        	}   
+        }
+        
+        return cluster;
+    }
+    
     class ClusterReduced {
         public String id;
         public int members;
