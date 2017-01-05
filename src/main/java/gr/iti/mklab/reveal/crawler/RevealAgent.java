@@ -58,8 +58,10 @@ public class RevealAgent implements Runnable {
     
     private ExecutorService executorService = Executors.newFixedThreadPool(5);
     
+    private Boolean running = true;
+    
     public RevealAgent(String hostname, int jmxPort, CrawlJob request, StreamManagerClient manager) {
-    	LOGGER.info("RevealAgent constructor for hostname: " + hostname);
+    	LOGGER.info("RevealAgent constructor for hostname: " + hostname + " and collection: " + request.getCollection());
     	
         _hostname = hostname;
         _jmxPort = jmxPort;
@@ -105,7 +107,7 @@ public class RevealAgent implements Runnable {
             _request.setLastStateChange(new Date());
             dao.save(_request);
            
-            while(true) {
+            while(running) {
             	if(!visualIndexerHandle.isDone() && !visualIndexerHandle.isCancelled()) {
                 	LOGGER.info("Visual Indexer is running porperly for " + _request.getCollection());
                 }
@@ -135,9 +137,15 @@ public class RevealAgent implements Runnable {
             		LOGGER.info("BUbiNG Agent thread stopped for " + _request.getCollection());
             	}
             	
-            	Thread.sleep(1800000L);
+            	try {
+            		running.wait(1800000L);
+            	}
+            	catch(InterruptedException e) {
+            		
+            	}
             }
             
+            LOGGER.info("RevealAgent main thread is about to stop for " + _request.getCollection());
         } catch (Exception e) {
             LOGGER.error("Exception for collection " + _request.getCollection() + ". Message: "+ e.getMessage(), e);
         }
@@ -261,6 +269,14 @@ public class RevealAgent implements Runnable {
     	stopBubingAgent();
     	stopServices();
         
+    	try {
+    		running = false;
+    		running.notify();
+    	}
+    	catch(Exception e) {
+    		LOGGER.error("Error during notification of RevealAgent for stoping. Collection: " + _request.getCollection(), e);
+    	}
+    	
         // STOP or KILL 
         if(_request.getState() == CrawlJob.STATE.KILLING || _request.getState() == CrawlJob.STATE.STOPPING) {
         	LOGGER.info("Stop " + _request.getCollection() + " was successfull.");
