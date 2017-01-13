@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 
 import javax.imageio.ImageIO;
@@ -47,7 +48,7 @@ public class VisualIndexClient {
     }
     
     public VisualIndexClient(String webServiceHost, String collectionName) {
-    	_logger.info("VisualIndexHandler start of constructor");
+    	_logger.info("VisualIndexHandler start of constructor for " + webServiceHost + " collection: " + collectionName);
         this.webServiceHost = webServiceHost;
         this.collectionName = collectionName;
         
@@ -60,7 +61,7 @@ public class VisualIndexClient {
         cm.setParams(params);
         
         this.httpClient = new HttpClient(cm);
-        _logger.info("VisualIndexHandler end of constructor");
+        _logger.info("VisualIndexHandler end of constructor for " + webServiceHost + " collection: " + collectionName);
     }
 
     public JsonResultSet getSimilarImages(String imageId) {
@@ -374,12 +375,13 @@ public class VisualIndexClient {
     }
 
     public Double[] getVector(String id) {
+    	
         GetMethod queryMethod = null;
         String response = null;
         Double[] vector = null;
         try {
-            queryMethod = new GetMethod(webServiceHost + "/rest/visual/vector/" + collectionName);
-            queryMethod.setQueryString("id=" + id);
+            queryMethod = new GetMethod(webServiceHost + "/rest/visual/vector/" + collectionName);            
+            queryMethod.setQueryString("id=" + URLEncoder.encode(id, "UTF-8"));
             int code = httpClient.executeMethod(queryMethod);
             if (code == 200) {
                 InputStream inputStream = queryMethod.getResponseBodyAsStream();
@@ -391,9 +393,13 @@ public class VisualIndexClient {
                         .create();
                 vector = gson.fromJson(response, Double[].class);
             }
+            else {
+            	_logger.info(queryMethod.getQueryString());
+            	_logger.error("Exception for id: " + id + " in " + collectionName + " collection. Resposne Code: " + queryMethod.getStatusLine());
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            _logger.error("Exception for id: " + id, e);
+            _logger.error("Exception for id: " + id + " in " + collectionName + " collection", e);
             response = null;
         } finally {
             if (queryMethod != null) {
@@ -518,7 +524,11 @@ public class VisualIndexClient {
             return "{}";
         }
         
-        String entityAsString = httpget.getResponseBodyAsString();
+        InputStream inputStream = httpget.getResponseBodyAsStream();
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(inputStream, writer);
+        String entityAsString = writer.toString();
+
         return entityAsString;
     }
 }

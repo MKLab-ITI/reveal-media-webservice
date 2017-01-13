@@ -159,6 +159,8 @@ public class IncrementalClusterer implements Runnable {
             
             LOGGER.info(collection + " clustering: " + mediaToBeClustered.size() + " media items to be clustered. " + visualVectors.size() + " visual vectors. " + textualVectors.size());
             
+            int textualMissing = 0, visualMissing = 0;
+            
             Set<String> discardedMedia = new HashSet<String>();
             DataSet ds = new DataSet();
             for(String mId : mediaToBeClustered.keySet()) {
@@ -172,12 +174,18 @@ public class IncrementalClusterer implements Runnable {
             		tfv.setValue(vector);
 					instance.addFeature(tfv);
             	}
+            	else {
+            		textualMissing++;
+            	}
             	
 				Double[] visualVector = visualVectors.get(mId);
 				if(visualVector != null) {
 					NumericVectorFeature vfv = new NumericVectorFeature("visual");
 					vfv.setValue(ArrayUtils.toPrimitive(visualVector));
 					instance.addFeature(vfv);
+				}
+				else {
+					visualMissing++;
 				}
 				
 				if(instance.numFeatures() > 0) {
@@ -187,6 +195,8 @@ public class IncrementalClusterer implements Runnable {
 					discardedMedia.add(mId);
 				}
 			}
+            
+            LOGGER.info(collection + " clustering: " + textualMissing + " textual features are missing. " + visualMissing + " visual features are missing.");
             
             AbstractClusterer clusterer;
 			if(type.equals(CLUSTERER_TYPE.THRESHOLD)) {
