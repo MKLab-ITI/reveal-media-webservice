@@ -38,6 +38,7 @@ public class VectorCentroid implements Centroid<TextVectorFeature> {
 	@Override
 	public TextVectorFeature getCentroid() {
 		TextVectorFeature tfv = new TextVectorFeature(name);
+		fv.updateLength();
 		
 		tfv.setValue(fv);
 		return tfv;

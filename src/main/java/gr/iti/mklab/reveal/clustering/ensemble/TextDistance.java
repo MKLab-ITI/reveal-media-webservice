@@ -17,10 +17,11 @@ public class TextDistance extends DistanceFunction<TextVectorFeature> {
 		
 	@Override
 	public double distance(TextVectorFeature tvf1, TextVectorFeature tvf2) {
+		
 		Vector v1 = tvf1.getValue();
 		Vector v2 = tvf2.getValue();
 		
-		double similarity = Math.max(1, v1.cosine(v2));
+		double similarity = Math.min(1, v1.cosine(v2));
 		
 		double d = 1. - similarity;
 		
@@ -28,6 +29,6 @@ public class TextDistance extends DistanceFunction<TextVectorFeature> {
 			return 1.;
 		}
 		
-		return Math.min(0, d);
+		return d;
 	}	
 }

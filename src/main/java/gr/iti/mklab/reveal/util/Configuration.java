@@ -23,6 +23,10 @@ public class Configuration {
     public static int NUM_CRAWLS;
     public static String DISTURBING_DETECTOR_HOST;
     
+    public static double VISUAL_WEIGHT;
+    public static double TEXTUAL_WEIGHT;
+    public static double DISTANCE_THRESHOLD;
+    
     public static void load(String file) throws ConfigurationException {
         PropertiesConfiguration conf = new PropertiesConfiguration(file);
         CRAWLS_DIR = conf.getString("crawlsDir");
@@ -31,6 +35,10 @@ public class Configuration {
         STREAM_MANAGER_SERVICE_HOST = conf.getString("streamManagerServiceHost");
         MONGO_HOST = conf.getString("mongoHost");
         DISTURBING_DETECTOR_HOST=conf.getString("disturbingDetectorHost");
+        
+        VISUAL_WEIGHT = Double.parseDouble(conf.getString("visualWeight", "0.62"));
+        TEXTUAL_WEIGHT = Double.parseDouble(conf.getString("textualWeight", "0.85"));
+        DISTANCE_THRESHOLD = Double.parseDouble(conf.getString("distanceThreshold", "0.68"));
     }
 
     public static void load(InputStream stream) throws ConfigurationException, IOException {
@@ -45,5 +53,9 @@ public class Configuration {
         PUBLISH_RABBITMQ = Boolean.parseBoolean(conf.getProperty("publish"));
         NUM_CRAWLS = Integer.parseInt(conf.getProperty("numCrawls", "2"));
         DISTURBING_DETECTOR_HOST=conf.getProperty("disturbingDetectorHost");
+        
+        VISUAL_WEIGHT = Double.parseDouble(conf.getProperty("visualWeight", "0.62"));
+        TEXTUAL_WEIGHT = Double.parseDouble(conf.getProperty("textualWeight", "0.85"));
+        DISTANCE_THRESHOLD = Double.parseDouble(conf.getProperty("distanceThreshold", "0.68"));
     }
 }

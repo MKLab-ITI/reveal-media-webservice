@@ -85,7 +85,8 @@ public class RevealAgent implements Runnable {
             inereExtractor = new IncrementalNeReExtractor(_request.getCollection());
             inereHandle = executorService.submit(inereExtractor);
             
-            clusterer = new IncrementalClusterer(_request.getCollection(), 0.68, 0.85, 0.62, CLUSTERER_TYPE.THRESHOLD);
+            clusterer = new IncrementalClusterer(_request.getCollection(), 
+            		Configuration.DISTANCE_THRESHOLD, Configuration.TEXTUAL_WEIGHT, Configuration.VISUAL_WEIGHT, CLUSTERER_TYPE.THRESHOLD);
             clustererHandle = executorService.submit(clusterer);
             
             if (Configuration.ADD_SOCIAL_MEDIA) {
