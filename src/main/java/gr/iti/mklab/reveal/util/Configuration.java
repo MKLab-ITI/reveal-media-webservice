@@ -26,6 +26,7 @@ public class Configuration {
     public static double VISUAL_WEIGHT;
     public static double TEXTUAL_WEIGHT;
     public static double DISTANCE_THRESHOLD;
+    public static String CLUSTERER_TYPE;
     
     public static void load(String file) throws ConfigurationException {
         PropertiesConfiguration conf = new PropertiesConfiguration(file);
@@ -39,6 +40,7 @@ public class Configuration {
         VISUAL_WEIGHT = Double.parseDouble(conf.getString("visualWeight", "0.62"));
         TEXTUAL_WEIGHT = Double.parseDouble(conf.getString("textualWeight", "0.85"));
         DISTANCE_THRESHOLD = Double.parseDouble(conf.getString("distanceThreshold", "0.68"));
+        CLUSTERER_TYPE = conf.getString("clustererType", "THRESHOLD");
     }
 
     public static void load(InputStream stream) throws ConfigurationException, IOException {
@@ -57,5 +59,6 @@ public class Configuration {
         VISUAL_WEIGHT = Double.parseDouble(conf.getProperty("visualWeight", "0.62"));
         TEXTUAL_WEIGHT = Double.parseDouble(conf.getProperty("textualWeight", "0.85"));
         DISTANCE_THRESHOLD = Double.parseDouble(conf.getProperty("distanceThreshold", "0.68"));
+        CLUSTERER_TYPE = conf.getProperty("clustererType", "THRESHOLD");
     }
 }
