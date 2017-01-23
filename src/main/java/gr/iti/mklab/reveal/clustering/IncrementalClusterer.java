@@ -60,8 +60,8 @@ public class IncrementalClusterer implements Runnable {
 
     private boolean isRunning = true;
     
-    private int STEP = 100;
-	private long SLEEP_TIME = 6l * 1000l;
+    private int STEP = 1000;
+	private long SLEEP_TIME = 60l * 1000l;
 	
 	private MediaDAO<Image> imageDAO;
 	private MediaDAO<Video> videoDAO;
