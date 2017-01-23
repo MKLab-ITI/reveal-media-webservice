@@ -83,6 +83,8 @@ public class IncrementalClusterer implements Runnable {
     public IncrementalClusterer(String collection, double threshold, double textualWeight, double visualWeight, CLUSTERER_TYPE type) {
         this.collection = collection;
 
+        LOGGER.info("Initialize clusterer. Threshold: " + threshold + ", TextualWeight: " + textualWeight  + ", VisualWeight: " + visualWeight + ", Type: " + type);
+        
         this.threshold = threshold;
         this.textualWeight = textualWeight;
         this.visualWeight = visualWeight;
@@ -238,12 +240,13 @@ public class IncrementalClusterer implements Runnable {
             		}
             		
             		if(newMembers.size() > 0) {
-            			LOGGER.info(collection + " clustering: update cluster " + cluster.getId() + " with " + newMembers.size() + " new members");
+            			LOGGER.info(collection + " clustering: update cluster " + cluster.getId() + " (" + cluster.size() + ") with " + newMembers.size() + " new members");
             			updateCluster(cluster, newMembers, centroidId, avgDistances);
             		}
             	}
             	else {
             		newClusters++;
+            		LOGGER.info(collection + " clustering: save new cluster " + cluster.getId() + " (" + cluster.size() + ")");
             		saveCluster(cluster, mediaToBeClustered, centroidId,  avgDistances);
             	}
             	
@@ -266,8 +269,8 @@ public class IncrementalClusterer implements Runnable {
     	double avgDistance = .0, textAvgDistance = .0, visualAvgDistance = .0;
     	DistanceFunction<Feature> textDistFuct = clusterer.getDistanceFunction("text");
     	DistanceFunction<Feature> visualDistFuct = clusterer.getDistanceFunction("visual");
-    	int tn = 0, vn = 0;
     	
+    	int tn = 0, vn = 0;
     	for(Instance instance1 : cluster.getMembers()) {
     		Feature textFtr1 = instance1.getFeature("text");
     		Feature visualFtr1 = instance1.getFeature("visual");
@@ -439,11 +442,18 @@ public class IncrementalClusterer implements Runnable {
     public static void main(String...args) throws ConfigurationException, IOException {
     	
     	Configuration.load(IncrementalClusterer.class.getResourceAsStream("/remote.properties"));
-        
+       
         // initialize mongodb
         MorphiaManager.setup("160.40.51.20");
-    	IncrementalClusterer cl = new IncrementalClusterer("istanbul",  0.68, 0.85, 0.63, CLUSTERER_TYPE.THRESHOLD);
-    	cl.run();
+    	
+        
+        IncrementalClusterer cl = new IncrementalClusterer("test_thresh",  0.68, 0.85, 0.63, CLUSTERER_TYPE.THRESHOLD);
+    	
+        cl.imageDAO.removeClusterAnnotations();
+        cl.videoDAO.removeClusterAnnotations();
+        
+        cl.clusterDAO.deleteByQuery(cl.clusterDAO.createQuery());
+        //cl.run();
     }
    
 }
