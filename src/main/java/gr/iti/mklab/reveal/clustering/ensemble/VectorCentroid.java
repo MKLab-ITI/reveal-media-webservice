@@ -14,7 +14,7 @@ public class VectorCentroid implements Centroid<TextVectorFeature> {
 	 */
 	private static final long serialVersionUID = 3889074315061705689L;
 	
-	private Vector fv;
+	private Vector fv = new Vector();
 	private String name;
 
 	public VectorCentroid() {
@@ -23,10 +23,6 @@ public class VectorCentroid implements Centroid<TextVectorFeature> {
 	
 	@Override
 	public void add(TextVectorFeature tfv) {
-		if(fv == null) {
-			fv = new Vector();
-		}
-		
 		fv.mergeVector(tfv.getValue());
 	}
 

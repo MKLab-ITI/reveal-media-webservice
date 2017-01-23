@@ -25,7 +25,7 @@ public class TextDistance extends DistanceFunction<TextVectorFeature> {
 		
 		double d = 1. - similarity;
 		
-		if(d != 0 && (v1.getTerms().size() < 3 || v2.getTerms().size() < 3)) {
+		if(d == 0 && (v1.getTerms().size() <= 4 || v2.getTerms().size() <= 4)) {
 			return 1.;
 		}
 		

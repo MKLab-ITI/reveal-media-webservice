@@ -42,6 +42,7 @@ import edu.stanford.nlp.util.ArrayUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,8 +60,8 @@ public class IncrementalClusterer implements Runnable {
 
     private boolean isRunning = true;
     
-    private int STEP = 1000;
-	private long SLEEP_TIME = 60l * 1000l;
+    private int STEP = 100;
+	private long SLEEP_TIME = 6l * 1000l;
 	
 	private MediaDAO<Image> imageDAO;
 	private MediaDAO<Video> videoDAO;
@@ -109,10 +110,18 @@ public class IncrementalClusterer implements Runnable {
     @Override
     public void run() {
 	
+    	try {
+			boolean created = vIndexClient.createCollection();
+			LOGGER.info("Collection " + collection + " created: " + created);
+		} catch (IOException e) {
+		}
+    	
     	Map<String, Cluster> clustersMap = new HashMap<String, Cluster>();
         Set<String> processed = new HashSet<String>();	
         while(isRunning) {
     
+        	LOGGER.info("Run clustering for " + collection + ": " + new Date());
+        	
         	Map<String, Media> mediaToBeClustered = new HashMap<String, Media>();
         	Map<String, String> texts = new HashMap<String, String>();
             Map<String, Double[]> visualVectors = new HashMap<String, Double[]>();
@@ -145,7 +154,7 @@ public class IncrementalClusterer implements Runnable {
             	}
             });
             Map<String, Vector> textualVectors = Vocabulary.createVocabulary(texts, 2);
-            
+       
             if(mediaToBeClustered.isEmpty()) {
             	try {
 					Thread.sleep(SLEEP_TIME);
@@ -447,13 +456,14 @@ public class IncrementalClusterer implements Runnable {
         MorphiaManager.setup("160.40.51.20");
     	
         
-        IncrementalClusterer cl = new IncrementalClusterer("test_thresh",  0.68, 0.85, 0.63, CLUSTERER_TYPE.THRESHOLD);
+        IncrementalClusterer cl = new IncrementalClusterer("test_thresh",  0.9, 0.35, 0.55, CLUSTERER_TYPE.THRESHOLD);
     	
         cl.imageDAO.removeClusterAnnotations();
         cl.videoDAO.removeClusterAnnotations();
         
         cl.clusterDAO.deleteByQuery(cl.clusterDAO.createQuery());
-        //cl.run();
+        cl.run();
+        
     }
    
 }
