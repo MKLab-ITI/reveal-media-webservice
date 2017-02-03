@@ -477,6 +477,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
             item.setId(itId);
             wp.setId(itId);
             item.setCrawlDate(wp.getCrawlDate());
+            item.setCreationDate(wp.getCrawlDate());
             wp.addItem(item);
             processImageURL(wp);
         } else
@@ -557,6 +558,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
                 item.setLastModifiedDate(new Date(con.getLastModified()));
                 item.setId("Web#" + resolvedStr.hashCode());
                 item.setCrawlDate(new Date());
+                item.setCreationDate(new Date());
                 wp.addItem(item);
                 manager.saveWebpage(wp);
                 //imageDAO.save(item);
@@ -695,6 +697,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
                         item.setTitle(startTag.getAttributeValue("alt"));
                         item.setWebPageUrl(uri.toString());
                         item.setLastModifiedDate(webpageLastModifiedDate);
+                        item.setCrawlDate(wp.getCrawlDate());
                         item.setCrawlDate(wp.getCrawlDate());
                         item.setUrl(resolveStr);
                         String gId = "Web#" + resolveStr.hashCode();
