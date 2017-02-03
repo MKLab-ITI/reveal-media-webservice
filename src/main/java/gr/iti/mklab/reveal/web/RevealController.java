@@ -308,13 +308,13 @@ public class RevealController {
         
         if (type == null || type.equalsIgnoreCase("image")) {
             MediaDAO<Image> imageDAO = new MediaDAO<>(Image.class, collection);
-            response.images = imageDAO.getItems(count, offset, "creationDate");
+            response.images = imageDAO.getItems(count, offset, "-creationDate");
             response.numImages = imageDAO.count();
         }
         
         if (type == null || type.equalsIgnoreCase("video")) {
             MediaDAO<Video> videoDAO = new MediaDAO<>(Video.class, collection);
-            response.videos = videoDAO.getItems(count, offset, "creationDate");
+            response.videos = videoDAO.getItems(count, offset, "-creationDate");
             response.numVideos = videoDAO.count();
         }
         
