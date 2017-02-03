@@ -107,6 +107,8 @@ public class ITIHTMLParser<T> implements Parser<T> {
     public String collectionName;
     private DAOManager manager;
 
+    private Random rand = new Random(System.currentTimeMillis()); 
+    
     //private MediaDAO<Image> imageDAO;
 
     static {
@@ -477,7 +479,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
             item.setId(itId);
             wp.setId(itId);
             item.setCrawlDate(wp.getCrawlDate());
-            item.setCreationDate(wp.getCrawlDate());
+            item.setCreationDate(getRandomDate(wp.getCrawlDate()));
             wp.addItem(item);
             processImageURL(wp);
         } else
@@ -558,7 +560,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
                 item.setLastModifiedDate(new Date(con.getLastModified()));
                 item.setId("Web#" + resolvedStr.hashCode());
                 item.setCrawlDate(new Date());
-                item.setCreationDate(new Date());
+                item.setCreationDate(getRandomDate());
                 wp.addItem(item);
                 manager.saveWebpage(wp);
                 //imageDAO.save(item);
@@ -698,7 +700,7 @@ public class ITIHTMLParser<T> implements Parser<T> {
                         item.setWebPageUrl(uri.toString());
                         item.setLastModifiedDate(webpageLastModifiedDate);
                         item.setCrawlDate(wp.getCrawlDate());
-                        item.setCrawlDate(wp.getCrawlDate());
+                        item.setCreationDate(getRandomDate(wp.getCrawlDate()));
                         item.setUrl(resolveStr);
                         String gId = "Web#" + resolveStr.hashCode();
                         item.setId(gId);
@@ -981,4 +983,19 @@ public class ITIHTMLParser<T> implements Parser<T> {
 
     }
 
+    // 	TODO: temporary code to randomize creation date of web media items. 
+    //	TO BE REMOVED!!! 
+    private Date getRandomDate() {
+    	return getRandomDate(new Date());
+    }
+
+    private Date getRandomDate(Date date) {
+    	
+    	long current = date.getTime();
+    	int hours = rand.nextInt(2400);
+    	
+    	long time = current - (hours*36*1000l);
+    	date = new Date(time);
+    	return date;
+    }
 }
