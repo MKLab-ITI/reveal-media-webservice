@@ -14,6 +14,7 @@ import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.apache.log4j.Logger;
 
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Set;
@@ -164,6 +165,8 @@ public class StreamManagerClient {
         String response = null;
         try {
             queryMethod = new GetMethod(webServiceHost + "/sm/api/feeds/delete");
+            
+            id = URLEncoder.encode(id, "UTF-8");
             queryMethod.setQueryString("id=" + id);
             int code = httpClient.executeMethod(queryMethod);
             if (code == 200) {
