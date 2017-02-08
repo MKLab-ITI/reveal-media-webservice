@@ -76,7 +76,7 @@ public class RevealController {
     
     public RevealController() throws Exception {
     	
-        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
+        Configuration.load(getClass().getResourceAsStream("/docker.properties"));
         
         // initialize mongodb
         MorphiaManager.setup(Configuration.MONGO_HOST);
