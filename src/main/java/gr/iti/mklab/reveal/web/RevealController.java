@@ -79,7 +79,13 @@ public class RevealController {
         Configuration.load(getClass().getResourceAsStream("/docker.properties"));
         
         // initialize mongodb
-        MorphiaManager.setup(Configuration.MONGO_HOST);
+        if(Configuration.MONGO_USERNAME != null && !Configuration.MONGO_USERNAME.equals("") 
+        		&& Configuration.MONGO_PASSWORD != null && !Configuration.MONGO_PASSWORD.equals("")) {
+        	MorphiaManager.setup(Configuration.MONGO_HOST, Configuration.MONGO_USERNAME, Configuration.MONGO_PASSWORD);
+        }
+        else {
+        	MorphiaManager.setup(Configuration.MONGO_HOST);
+        }
         
         // initialize visual feature extractor
         VisualFeatureExtractor.init(true);

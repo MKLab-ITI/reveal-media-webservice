@@ -18,6 +18,8 @@ public class Configuration {
     public static String INDEX_SERVICE_HOST;
     public static String STREAM_MANAGER_SERVICE_HOST;
     public static String MONGO_HOST;
+    public static String MONGO_USERNAME;
+    public static String MONGO_PASSWORD;
     public static boolean ADD_SOCIAL_MEDIA;
     public static boolean PUBLISH_RABBITMQ;
     public static int NUM_CRAWLS;
@@ -35,6 +37,8 @@ public class Configuration {
         INDEX_SERVICE_HOST = conf.getString("indexServiceHost");
         STREAM_MANAGER_SERVICE_HOST = conf.getString("streamManagerServiceHost");
         MONGO_HOST = conf.getString("mongoHost");
+        MONGO_USERNAME = conf.getString("mongoUsername");
+        MONGO_PASSWORD = conf.getString("mongoPassword");
         DISTURBING_DETECTOR_HOST=conf.getString("disturbingDetectorHost");
         
         VISUAL_WEIGHT = Double.parseDouble(conf.getString("visualWeight", "0.62"));
@@ -51,6 +55,8 @@ public class Configuration {
         INDEX_SERVICE_HOST = conf.getProperty("indexServiceHost");
         STREAM_MANAGER_SERVICE_HOST = conf.getProperty("streamManagerServiceHost");
         MONGO_HOST = conf.getProperty("mongoHost");
+        MONGO_USERNAME = conf.getProperty("mongoUsername");
+        MONGO_PASSWORD = conf.getProperty("mongoPassword");
         ADD_SOCIAL_MEDIA = Boolean.valueOf(conf.getProperty("getSocialMedia"));
         PUBLISH_RABBITMQ = Boolean.parseBoolean(conf.getProperty("publish"));
         NUM_CRAWLS = Integer.parseInt(conf.getProperty("numCrawls", "2"));
