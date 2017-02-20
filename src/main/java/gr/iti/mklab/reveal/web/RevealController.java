@@ -76,7 +76,7 @@ public class RevealController {
     
     public RevealController() throws Exception {
     	
-        Configuration.load(getClass().getResourceAsStream("/docker.properties"));
+        Configuration.load(getClass().getResourceAsStream("/remote.properties"));
         
         // initialize mongodb
         if(Configuration.MONGO_USERNAME != null && !Configuration.MONGO_USERNAME.equals("") 
